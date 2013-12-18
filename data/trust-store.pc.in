@@ -1,0 +1,10 @@
+prefix=@CMAKE_INSTALL_PREFIX@
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${exec_prefix}/include
+ 
+Name: @CMAKE_PROJECT_NAME@
+Description: Provides a common implementation of a trust store to be used by trusted helpers.
+Version: @TRUST_STORE_VERSION_MAJOR@.@TRUST_STORE_VERSION_MINOR@.@TRUST_STORE_VERSION_PATCH@
+Libs: -L${libdir} -ltrust-store
+Cflags: -I${includedir}
