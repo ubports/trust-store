@@ -31,6 +31,20 @@ namespace core
 {
 namespace trust
 {
+/**
+ * @brief The Request struct encapsulates information about a trust request answered by the user.
+ *
+ * A Request is the main entity managed by the trust-store API. Whenever an
+ * application tries to access the functionality offered by a trusted helper,
+ * the trusted helper checks whether the application has issued a request
+ * before. If a query against the trust store returns yes and the user
+ * previously granted trust to the application, the application's request to
+ * the trusted helpers functionality is granted. If the user previously
+ * rejected the request, the app's request is denied. If no previous request
+ * can be found, the trusted helper issues a question to the user, collects the
+ * answer and transacts the complete request to the store.
+ *
+ */
 struct CORE_TRUST_DLL_PUBLIC Request
 {
     /** @brief Requests are timestamped with wallclock time. */
@@ -46,36 +60,6 @@ struct CORE_TRUST_DLL_PUBLIC Request
         granted ///< Yup, I do trust this application.
     };
 
-    inline bool operator==(const Request& rhs) const
-    {
-        return from == rhs.from &&
-               feature == rhs.feature &&
-               when == rhs.when &&
-               answer == rhs.answer;
-    }
-
-    inline friend std::ostream& operator<<(std::ostream& out, const Request::Answer& a)
-    {
-        switch (a)
-        {
-        case Request::Answer::granted: out << "granted"; break;
-        case Request::Answer::denied: out << "denied"; break;
-        }
-
-        return out;
-    }
-
-    inline friend std::ostream& operator<<(std::ostream& out, const Request& r)
-    {
-        out << "Request("
-            << "from: " << r.from << ", "
-            << "feature: " << r.feature << ", "
-            << "when: " << r.when.time_since_epoch().count() << ", "
-            << "answer: " << r.answer << ")";
-
-        return out;
-    }
-
     /** The application id of the application that resulted in the request. */
     std::string from;
     /** An application-specific feature identifier. */
@@ -85,6 +69,53 @@ struct CORE_TRUST_DLL_PUBLIC Request
     /** The user's answer. */
     Answer answer;
 };
+/**
+ * @brief operator == compares two Requests for equality.
+ * @param lhs [in] The left-hand-side of the comparison.
+ * @param rhs [in] The right-hand-side of the comparison.
+ * @return true iff both requests are equal.
+ */
+inline bool operator==(const Request& lhs, const Request& rhs)
+{
+    return lhs.from == rhs.from &&
+           lhs.feature == rhs.feature &&
+           lhs.when == rhs.when &&
+           lhs.answer == rhs.answer;
+}
+
+/**
+ * @brief operator << pretty prints answers to the provided output stream.
+ * @param out [in, out] The stream to print to.
+ * @param a The answer to be printed.
+ * @return The output stream.
+ */
+inline std::ostream& operator<<(std::ostream& out, const Request::Answer& a)
+{
+    switch (a)
+    {
+    case Request::Answer::granted: out << "granted"; break;
+    case Request::Answer::denied: out << "denied"; break;
+    }
+
+    return out;
+}
+
+/**
+ * @brief operator << pretty prints a request to the provided output stream.
+ * @param out [in, out] The stream to print to.
+ * @param r The request to be printed.
+ * @return The output stream.
+ */
+inline std::ostream& operator<<(std::ostream& out, const Request& r)
+{
+    out << "Request("
+        << "from: " << r.from << ", "
+        << "feature: " << r.feature << ", "
+        << "when: " << r.when.time_since_epoch().count() << ", "
+        << "answer: " << r.answer << ")";
+
+    return out;
+}
 }
 }
 

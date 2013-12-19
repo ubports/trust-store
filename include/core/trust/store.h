@@ -29,14 +29,19 @@ namespace core
 {
 namespace trust
 {
+/**
+ * @brief Models read/write/query access to persisted trust requests.
+ */
 class CORE_TRUST_DLL_PUBLIC Store
 {
 public:
     struct Errors
     {
         Errors() = delete;
-        ~Errors() = delete;
 
+        /**
+         * @brief Thrown if a store implementation could not access the persistence backend.
+         */
         struct ErrorOpeningStore : public std::runtime_error
         {
             ErrorOpeningStore(const char* implementation_specific)
@@ -45,6 +50,9 @@ public:
             }
         };
 
+        /**
+         * @brief Thrown if a store implementation could not reset state and drop all previously stored requests.
+         */
         struct ErrorResettingStore : public std::runtime_error
         {
             ErrorResettingStore(const char* implementation_specific)
@@ -55,11 +63,18 @@ public:
 
     };
 
+    /**
+     * @brief The Query class encapsulates queries against a trust store instance.
+     */
     class Query
     {
     public:
         struct Error
         {
+            Error() = delete;
+            /**
+             * @brief Thrown if functionality of a query is accessed although the query is in error state.
+             */
             struct QueryIsInErrorState : public std::runtime_error
             {
                 QueryIsInErrorState() : std::runtime_error("Query is in error state, cannot extract result.")
@@ -67,6 +82,9 @@ public:
                 }
             };
 
+            /**
+             * @brief Thrown when trying to access the current result although the query status is not has_more_results.
+             */
             struct NoCurrentResult : public std::runtime_error
             {
                 NoCurrentResult() : std::runtime_error("Query does not have a current result.")
@@ -75,6 +93,7 @@ public:
             };
         };
 
+        /** @brief The state of the query. */
         enum class Status
         {
             armed, ///< The query is armed but hasn't been run.
@@ -145,7 +164,29 @@ protected:
     Store() = default;
 };
 
-CORE_TRUST_DLL_PUBLIC std::shared_ptr<Store> create_default_store();
+struct Error
+{
+    Error() = delete;
+
+    /**
+     * @brief The ServiceNameMustNotBeEmpty is thrown if an empty service name
+     * is provided when creating a store.
+     */
+    struct ServiceNameMustNotBeEmpty : public std::runtime_error
+    {
+        ServiceNameMustNotBeEmpty() : std::runtime_error("Service name must not be empty")
+        {
+        }
+    };
+};
+
+/**
+  * @brief Creates an instance for the default store implementation.
+  * @throw Error::ServiceNameMustNotBeEmpty.
+  * @param service_name [in] The service name, must not be empty.
+  * @return An instance of trust::Store.
+  */
+CORE_TRUST_DLL_PUBLIC std::shared_ptr<Store> create_default_store(const std::string& service_name);
 }
 }
 

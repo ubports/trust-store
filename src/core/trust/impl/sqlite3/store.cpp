@@ -20,18 +20,289 @@
 
 #include <sqlite3.h>
 
+#include <cstring>
 #include <iostream>
 #include <sstream>
 #include <mutex>
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 namespace core
 {
+std::string home()
+{
+    return std::string{::getenv("HOME")};
+}
+
+std::string runtime_persistent_data_dir()
+{
+    char* value = ::getenv("XDG_DATA_HOME");
+    if (!value || value[0] == '0')
+    {
+        return std::string{home() + "/.local/share"};
+    }
+
+    return std::string{value};
+}
+
+struct Directory
+{
+    Directory(const std::string& name)
+    {
+        // This is only a helper and we are consciously ignoring
+        // errors. We will fail later on when trying to opening the
+        // database anyway.
+        mkdir(name.c_str(), 0777);
+    }
+};
+
 namespace trust
 {
 namespace impl
 {
 namespace sqlite
 {
+std::pair<int, bool> is_error(int result)
+{
+    switch(result)
+    {
+    case SQLITE_OK:
+    case SQLITE_DONE:
+    case SQLITE_ROW:
+        return std::make_pair(result, false);
+        break;
+    default:
+        return std::make_pair(result, true);
+    }
+}
+
+struct Database;
+
+template<typename Tag>
+class PreparedStatement
+{
+public:
+    enum class State
+    {
+        done = SQLITE_DONE,
+        row = SQLITE_ROW
+    };
+
+    PreparedStatement() : db(nullptr), statement(nullptr)
+    {
+    }
+
+    PreparedStatement(const PreparedStatement<Tag>&) = delete;
+    PreparedStatement(PreparedStatement<Tag>&& rhs)
+        : db(rhs.db),
+          statement(rhs.statement)
+    {
+        rhs.db = nullptr;
+        rhs.statement = nullptr;
+    }
+
+    ~PreparedStatement()
+    {
+        sqlite3_finalize(statement);
+    }
+
+    PreparedStatement<Tag>& operator=(PreparedStatement<Tag>&& rhs)
+    {
+        if (statement)
+        {
+            sqlite3_finalize(statement);
+        }
+
+        db = rhs.db;
+        statement = rhs.statement;
+
+        rhs.db = nullptr;
+        rhs.statement = nullptr;
+
+        return *this;
+    }
+
+    PreparedStatement<Tag>& operator=(const PreparedStatement<Tag>&) = delete;
+    bool operator==(const PreparedStatement<Tag>&) const = delete;
+
+    template<int index>
+    void bind_null()
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_bind_null(statement, index));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    template<int index>
+    void bind_double(double d)
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_bind_double(statement, index, d));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    template<int index>
+    void bind_text(const std::string& s)
+    {
+        if (s.empty())
+            return;
+
+        auto memory = (char*)::malloc(s.size());
+        ::memcpy(memory, s.c_str(), s.size());
+
+        auto deleter = [](void* p) { if (p) ::free(p); };
+
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_bind_text(statement, index, memory, s.size(), deleter));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    template<int index>
+    void bind_int(std::int32_t i)
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_bind_int(statement, index, i));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    template<int index>
+    void bind_int64(std::int64_t i)
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_bind_int64(statement, index, i));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    template<int index>
+    std::int32_t column_int()
+    {
+        return sqlite3_column_int(statement, index);
+    }
+
+    template<int index>
+    std::int64_t column_int64()
+    {
+        return sqlite3_column_int64(statement, index);
+    }
+
+    template<int index>
+    std::string column_text()
+    {
+        auto ptr = reinterpret_cast<const char*>(sqlite3_column_text(statement, index));
+        return (ptr ? ptr : "");
+    }
+
+    void reset()
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_reset(statement));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    void clear_bindings()
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_clear_bindings(statement));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+    }
+
+    State step()
+    {
+        int result; bool error;
+        std::tie(result, error) = is_error(sqlite3_step (statement));
+
+        if (error)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error_from_db());
+
+        return static_cast<State>(result);
+    }
+
+private:
+    friend struct Database;
+
+    PreparedStatement(Database* db, sqlite3_stmt* statement)
+        : db(db),
+          statement(statement)
+    {
+        if (!statement)
+            throw std::runtime_error("Cannot construct prepared statement for null statement.");
+    }
+
+    std::string error_from_db() const;
+
+    Database* db;
+    sqlite3_stmt* statement;
+};
+
+struct Database
+{
+    Database(const std::string& fn)
+    {
+        auto result = sqlite3_open(fn.c_str(), &db);
+        if (result != SQLITE_OK)
+            throw std::runtime_error(sqlite3_errstr(result));
+        sqlite3_extended_result_codes(db, 1);
+    }
+
+    Database(const Database&) = delete;
+
+    ~Database()
+    {
+        sqlite3_close(db);
+    }
+
+    Database& operator=(const Database&) = delete;
+    bool operator==(const Database&) = delete;
+
+    template<typename Statement>
+    PreparedStatement<Statement> prepare_statement()
+    {
+        sqlite3_stmt* stmt = nullptr;
+        int result; bool e;
+        std::tie(result, e) = is_error(
+                    sqlite3_prepare(
+                        db,
+                        Statement::statement().c_str(),
+                        Statement::statement().size(),
+                        &stmt,
+                        nullptr));
+
+        if (e)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error());
+
+        return PreparedStatement<Statement>(this, stmt);
+    }
+
+    std::string error() const
+    {
+        auto msg = sqlite3_errmsg(db);
+        return std::string{(msg ? msg : "")};
+    }
+
+    sqlite3* db = nullptr;
+};
+
+template<typename Tag>
+std::string PreparedStatement<Tag>::error_from_db() const
+{
+    return db->error();
+}
+
 // A store implementation persisting requests in an sqlite database.
 struct Store : public core::trust::Store,
         public std::enable_shared_from_this<Store>
@@ -50,9 +321,9 @@ struct Store : public core::trust::Store,
 
         // Collects all columns, their names and indices.
         //
-        // |-----------------------------------------------------------------------|
+        // |-------------------------------------------------------------------------------------|
         // |  Id : int | ApplicationId : Text | Feature : int | Timestamp : int64 | Answer : int |
-        // |-----------------------------------------------------------------------|
+        // |-------------------------------------------------------------------------------------|
         struct Column
         {
             Column() = delete;
@@ -61,7 +332,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string& name()
                 {
-                    static const std::string s{"Id"};
+                    static const std::string s{"'Id'"};
                     return s;
                 }
 
@@ -72,7 +343,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string& name()
                 {
-                    static const std::string s{"ApplicationId"};
+                    static const std::string s{"'ApplicationId'"};
                     return s;
                 }
 
@@ -83,7 +354,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string& name()
                 {
-                    static const std::string s{"Feature"};
+                    static const std::string s{"'Feature'"};
                     return s;
                 }
 
@@ -94,7 +365,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string& name()
                 {
-                    static const std::string s{"Timestamp"};
+                    static const std::string s{"'Timestamp'"};
                     return s;
                 }
 
@@ -105,7 +376,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string& name()
                 {
-                    static const std::string s{"Answer"};
+                    static const std::string s{"'Answer'"};
                     return s;
                 }
 
@@ -114,57 +385,107 @@ struct Store : public core::trust::Store,
         };
     };
 
-    // An implementation of the query interface for the SQLite-based store.
-    struct Query : public core::trust::Store::Query
+    struct Statements
     {
-        // Encodes the parameter-index for the prepared delete statement.
+        struct CreateIfNotExists
+        {
+            static const std::string& statement()
+            {
+                static const std::string s
+                {
+                    "CREATE TABLE IF NOT EXISTS " +
+                    sqlite::Store::Table::name() + " (" +
+                    sqlite::Store::Table::Column::Id::name() + " INTEGER PRIMARY KEY ASC, " +
+                    sqlite::Store::Table::Column::ApplicationId::name() + " TEXT NOT NULL, " +
+                    sqlite::Store::Table::Column::Feature::name() + " INTEGER, " +
+                    sqlite::Store::Table::Column::Timestamp::name() + " BIGINT, " +
+                    sqlite::Store::Table::Column::Answer::name() + " INTEGER);"
+                };
+                return s;
+            }
+        };
+
         struct Delete
         {
             static const std::string& statement()
             {
                 static const std::string s
                 {
-                    "DELETE FROM " +
-                    Store::Table::name() +
-                    " WHERE Id=?;"
+                    "DELETE FROM " + sqlite::Store::Table::name()
                 };
-
                 return s;
             }
-
-            struct Parameter
-            {
-                struct Id { static const int index = 1; };
-            };
         };
 
-        // Encodes the parameter-indices for the prepared select statement.
-        struct Select
+        struct Insert
         {
             static const std::string& statement()
             {
-                static const std::string select
+                static const std::string s
                 {
-                    "SELECT * FROM " +
-                    Store::Table::name() +
-                    " WHERE ApplicationId=IFNULL(?,ApplicationId) AND"
-                    " Feature=IFNULL(?,Feature) AND"
-                    " (Timestamp BETWEEN IFNULL(?, Timestamp) AND IFNULL(?,Timestamp)) AND"
-                    " Answer=IFNULL(?,Answer);"
+                    "INSERT INTO " + Store::Table::name() + " ('ApplicationId','Feature','Timestamp','Answer') VALUES (?,?,?,?);"
                 };
-                return select;
+                return s;
             }
+        };
 
-            struct Parameter
+
+    };
+
+    // An implementation of the query interface for the SQLite-based store.
+    struct Query : public core::trust::Store::Query
+    {
+        struct Statements
+        {
+            // Encodes the parameter-index for the prepared delete statement.
+            struct Delete
             {
-                struct ApplicationId { static const int index = 1; };
-                struct Feature { static const int index = ApplicationId::index + 1; };
-                struct Timestamp
+                static const std::string& statement()
                 {
-                    struct LowerBound { static const int index = Feature::index + 1; };
-                    struct UpperBound { static const int index = LowerBound::index + 1; };
+                    static const std::string s
+                    {
+                        "DELETE FROM " +
+                        Store::Table::name() +
+                        " WHERE Id=?;"
+                    };
+
+                    return s;
+                }
+
+                struct Parameter
+                {
+                    struct Id { static const int index = 1; };
                 };
-                struct Answer { static const int index = Timestamp::UpperBound::index + 1; };
+            };
+
+            // Encodes the parameter-indices for the prepared select statement.
+            struct Select
+            {
+                static const std::string& statement()
+                {
+                    static const std::string select
+                    {
+                        "SELECT * FROM " +
+                        Store::Table::name() +
+                        " WHERE ApplicationId=IFNULL(?,ApplicationId) AND"
+                        " Feature=IFNULL(?,Feature) AND"
+                        " (Timestamp BETWEEN IFNULL(?, Timestamp) AND IFNULL(?,Timestamp)) AND"
+                        " Answer=IFNULL(?,Answer);"
+                    };
+                    return select;
+                }
+
+                struct Parameter
+                {
+                    struct ApplicationId { static const int index = 1; };
+                    struct Feature { static const int index = ApplicationId::index + 1; };
+                    struct Timestamp
+                    {
+                        struct LowerBound { static const int index = Feature::index + 1; };
+                        struct UpperBound { static const int index = LowerBound::index + 1; };
+                    };
+                    struct Answer { static const int index = Timestamp::UpperBound::index + 1; };
+                };
             };
         };
 
@@ -172,22 +493,7 @@ struct Store : public core::trust::Store,
         // That is: As long as a query is alive, the store is kept alive, too.
         Query(const std::shared_ptr<Store>& store) : d{store}
         {
-            d.store->throw_if_result_is_error(
-                        sqlite3_prepare(
-                            d.store->db,
-                            Delete::statement().c_str(),
-                            Delete::statement().size(),
-                            &d.delete_statement,
-                            nullptr));
-
-            d.store->throw_if_result_is_error(
-                        sqlite3_prepare(
-                            d.store->db,
-                            Select::statement().c_str(),
-                            Select::statement().size(),
-                            &d.select_statement,
-                            nullptr));
-
+            // A freshly constructed query finds all entries.
             all();
         }
 
@@ -198,99 +504,69 @@ struct Store : public core::trust::Store,
 
         void for_application_id(const std::string& id)
         {
-            d.store->throw_if_result_is_error(
-                        sqlite3_bind_text(d.select_statement,
-                                          Select::Parameter::ApplicationId::index,
-                                          id.c_str(),
-                                          id.size(),
-                                          nullptr));
+            d.select_statement.bind_text<
+                Statements::Select::Parameter::ApplicationId::index
+            >(id);
         }
 
         void for_feature(unsigned int feature)
         {
-            d.store->throw_if_result_is_error(
-                        sqlite3_bind_int(d.select_statement,
-                                         Select::Parameter::Feature::index,
-                                         feature));
+            d.select_statement.bind_int<
+                Statements::Select::Parameter::Feature::index
+            >(feature);
         }
 
         void for_interval(const Request::Timestamp& begin, const Request::Timestamp& end)
         {
-            d.store->throw_if_result_is_error(
-                        sqlite3_bind_int64(
-                            d.select_statement,
-                            Select::Parameter::Timestamp::LowerBound::index,
-                            begin.time_since_epoch().count()));
-            d.store->throw_if_result_is_error(
-                        sqlite3_bind_int64(
-                            d.select_statement,
-                            Select::Parameter::Timestamp::UpperBound::index,
-                            end.time_since_epoch().count()));
+            d.select_statement.bind_int64<
+                Statements::Select::Parameter::Timestamp::LowerBound::index
+            >(begin.time_since_epoch().count());
+
+            d.select_statement.bind_int64<
+                Statements::Select::Parameter::Timestamp::UpperBound::index
+            >(end.time_since_epoch().count());
         }
 
         void for_answer(Request::Answer answer)
         {
-            d.store->throw_if_result_is_error(
-                        sqlite3_bind_int(
-                            d.select_statement,
-                            Select::Parameter::Answer::index,
-                            static_cast<int>(answer)));
+            d.select_statement.bind_int<
+                Statements::Select::Parameter::Answer::index
+            >(static_cast<int>(answer));
         }
 
         void all()
         {
-            d.store->throw_if_result_is_error(sqlite3_bind_null(
-                                                  d.select_statement,
-                                                  Select::Parameter::ApplicationId::index));
-            d.store->throw_if_result_is_error(sqlite3_bind_null(
-                                                  d.select_statement,
-                                                  Select::Parameter::Feature::index));
-            d.store->throw_if_result_is_error(sqlite3_bind_null(
-                                                  d.select_statement,
-                                                  Select::Parameter::Timestamp::LowerBound::index));
-            d.store->throw_if_result_is_error(sqlite3_bind_null(
-                                                  d.select_statement,
-                                                  Select::Parameter::Timestamp::UpperBound::index));
-            d.store->throw_if_result_is_error(sqlite3_bind_null(
-                                                  d.select_statement,
-                                                  Select::Parameter::Answer::index));
+            d.select_statement.reset();
+            d.select_statement.clear_bindings();
         }
 
         void execute()
         {
-            d.store->throw_if_result_is_error(sqlite3_reset(d.select_statement));
-            auto result = sqlite3_step(d.select_statement);
+            d.select_statement.reset();
+            auto result = d.select_statement.step();
 
             switch(result)
             {
-            case SQLITE_DONE:
+            case PreparedStatement<Statements::Select>::State::done:
                 d.status = Status::eor;
                 break;
-            case SQLITE_ROW:
+            case PreparedStatement<Statements::Select>::State::row:
                 d.status = Status::has_more_results;
-                break;
-            default:
-                d.status = Status::error;
-                d.error = sqlite3_errstr(result);
                 break;
             }
         }
 
         void next()
         {
-            auto result = sqlite3_step(d.select_statement);
+            auto result = d.select_statement.step();
 
             switch(result)
             {
-            case SQLITE_DONE:
+            case PreparedStatement<Statements::Select>::State::done:
                 d.status = Status::eor;
                 break;
-            case SQLITE_ROW:
+            case PreparedStatement<Statements::Select>::State::row:
                 d.status = Status::has_more_results;
-                break;
-            default:
-                d.status = Status::error;
-                d.error = sqlite3_errstr(result);
                 break;
             }
         }
@@ -300,16 +576,11 @@ struct Store : public core::trust::Store,
             if (Status::eor == d.status)
                 throw std::runtime_error("Cannot delete request as query points beyond the result set.");
 
-            auto id = sqlite3_column_int(
-                        d.select_statement,
-                        Store::Table::Column::Id::index);
+            auto id = d.select_statement.column_int<Store::Table::Column::Id::index>();
 
-            sqlite3_reset(d.delete_statement);
-            d.store->throw_if_result_is_error(sqlite3_bind_int(
-                                                  d.delete_statement,
-                                                  Delete::Parameter::Id::index,
-                                                  id));
-            d.store->throw_if_result_is_error(sqlite3_step(d.delete_statement));
+            d.delete_statement.reset();
+            d.delete_statement.bind_int<Statements::Delete::Parameter::Id::index>(id);
+            d.delete_statement.step();
 
             next();
         }
@@ -323,26 +594,19 @@ struct Store : public core::trust::Store,
             case Status::armed: throw Error::NoCurrentResult{};
             default:
             {
-                trust::Request request;
-                auto ptr = reinterpret_cast<const char*>(sqlite3_column_text(
-                                                             d.select_statement,
-                                                             Store::Table::Column::ApplicationId::index));
-                request.from = ptr ? ptr : "";
-                request.feature = sqlite3_column_int64(
-                            d.select_statement,
-                            Store::Table::Column::Feature::index);
-                request.when = std::chrono::system_clock::time_point{
+                trust::Request request
+                {
+                    d.select_statement.column_text<Store::Table::Column::ApplicationId::index>(),
+                    static_cast<unsigned int>(d.select_statement.column_int<Store::Table::Column::Feature::index>()),
+                    std::chrono::system_clock::time_point
+                    {
                         std::chrono::system_clock::duration
                         {
-                            sqlite3_column_int64(
-                                d.select_statement,
-                                Store::Table::Column::Timestamp::index)
+                            d.select_statement.column_int64<Store::Table::Column::Timestamp::index>()
                         }
+                    },
+                    (Request::Answer)d.select_statement.column_int<Store::Table::Column::Answer::index>()
                 };
-                request.answer = static_cast<Request::Answer>(
-                            sqlite3_column_int64(
-                                d.select_statement,
-                                Store::Table::Column::Answer::index));
                 return request;
             }
             }
@@ -353,35 +617,28 @@ struct Store : public core::trust::Store,
         struct Private
         {
             Private(const std::shared_ptr<Store>& store)
-                : store(store)
+                : store(store),
+                  delete_statement(store->db.prepare_statement<Statements::Delete>()),
+                  select_statement(store->db.prepare_statement<Statements::Select>())
             {
             }
 
             ~Private()
             {
-                if (delete_statement)
-                    sqlite3_finalize(delete_statement);
-                if (select_statement)
-                    sqlite3_finalize(select_statement);
             }
 
             std::shared_ptr<Store> store;
-            sqlite3_stmt* delete_statement = nullptr;
-            sqlite3_stmt* select_statement = nullptr;
+            PreparedStatement<Statements::Delete> delete_statement;
+            PreparedStatement<Statements::Select> select_statement;
             Status status = Status::armed;
             std::string error;
         } d;
     };
 
-    Store();
+    Store(const std::string &service_name);
     ~Store();
 
     const char* error() const;
-    void throw_if_result_is_error(int result);
-
-    void prepare_delete_statement();
-    void prepare_drop_statement();
-    void prepare_insert_statement();
 
     void create_table_if_not_exists();
 
@@ -391,10 +648,11 @@ struct Store : public core::trust::Store,
     std::shared_ptr<core::trust::Store::Query> query();
 
     std::mutex guard;
-    sqlite3* db;
-    sqlite3_stmt* delete_statement = nullptr;
-    sqlite3_stmt* drop_statement = nullptr;
-    sqlite3_stmt* insert_statement = nullptr;
+    core::Directory runtime_peristent_data_directory;
+    Database db;
+    PreparedStatement<Statements::CreateIfNotExists> create_statement;
+    PreparedStatement<Statements::Delete> delete_statement;
+    PreparedStatement<Statements::Insert> insert_statement;
 };
 }
 }
@@ -404,125 +662,24 @@ struct Store : public core::trust::Store,
 namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
-sqlite::Store::Store() : db{nullptr}
+sqlite::Store::Store(const std::string& service_name)
+    : runtime_peristent_data_directory{core::runtime_persistent_data_dir() + "/" + service_name},
+      db{core::runtime_persistent_data_dir() + "/" + service_name + "/trust.db"}
 {
-    static const char* db_name = "/tmp/db";
-    auto result = sqlite3_open(db_name, &db);
-
-    switch(result)
-    {
-    case SQLITE_OK: break;
-    default: throw trust::Store::Errors::ErrorOpeningStore{sqlite3_errstr(result)};
-    }
-
-    sqlite3_extended_result_codes(db, 1);
-
+    create_statement = db.prepare_statement<Statements::CreateIfNotExists>();
     create_table_if_not_exists();
 
-    prepare_delete_statement();
-    prepare_drop_statement();
-    prepare_insert_statement();
+    delete_statement = db.prepare_statement<Statements::Delete>();
+    insert_statement = db.prepare_statement<Statements::Insert>();
 }
 
 sqlite::Store::~Store()
 {
-    sqlite3_finalize(delete_statement);
-    sqlite3_finalize(drop_statement);
-    sqlite3_finalize(insert_statement);
-    sqlite3_close(db);
-}
-
-void sqlite::Store::throw_if_result_is_error(int result)
-{
-    switch(result)
-    {
-    case SQLITE_OK:
-    case SQLITE_DONE:
-    case SQLITE_ROW:
-        break;
-    default:
-        throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + std::string(sqlite3_errmsg(db)));
-    }
-}
-
-void sqlite::Store::prepare_delete_statement()
-{
-    if (delete_statement)
-    {
-        sqlite3_finalize(delete_statement);
-        delete_statement = nullptr;
-    }
-
-    static const std::string del = "DELETE FROM " + sqlite::Store::Table::name();
-
-    throw_if_result_is_error(sqlite3_prepare(
-                                 db,
-                                 del.c_str(),
-                                 del.size(),
-                                 &delete_statement,
-                                 nullptr));
-}
-
-void sqlite::Store::prepare_drop_statement()
-{
-    if (drop_statement)
-    {
-        sqlite3_finalize(drop_statement);
-        drop_statement = nullptr;
-    }
-
-    static const std::string drop = "DROP TABLE " + sqlite::Store::Table::name();
-
-    throw_if_result_is_error(sqlite3_prepare(
-                                 db,
-                                 drop.c_str(),
-                                 drop.size(),
-                                 &drop_statement,
-                                 nullptr));
-}
-
-void sqlite::Store::prepare_insert_statement()
-{
-    if (insert_statement)
-    {
-        sqlite3_finalize(insert_statement);
-        insert_statement = nullptr;
-    }
-
-    std::stringstream ss;
-    ss << "INSERT INTO " << Store::Table::name()
-       << " ('ApplicationId','Feature','Timestamp','Answer') VALUES (?,?,?,?);";
-
-    const auto insert = ss.str();
-    throw_if_result_is_error(sqlite3_prepare(db,
-                                             insert.c_str(),
-                                             insert.size(),
-                                             &insert_statement,
-                                             nullptr));
 }
 
 void sqlite::Store::create_table_if_not_exists()
 {
-    std::stringstream ss;
-    ss << "CREATE TABLE IF NOT EXISTS " << sqlite::Store::Table::name() << "("
-       << "\"Id\" INTEGER PRIMARY KEY ASC,"
-       << "\"ApplicationId\" TEXT NOT NULL,"
-       << "\"Feature\" INTEGER,"
-       << "\"Timestamp\" BIGINT,"
-       << "\"Answer\" INTEGER"
-       << ");";
-    const std::string create_statement{ss.str()};
-
-    sqlite3_stmt* statement{nullptr};
-    throw_if_result_is_error(sqlite3_prepare(
-                                 db,
-                                 create_statement.c_str(),
-                                 create_statement.size(),
-                                 &statement,
-                                 nullptr));
-
-    throw_if_result_is_error(sqlite3_step(statement));
-    sqlite3_finalize(statement);
+    create_statement.step();
 }
 
 void sqlite::Store::reset()
@@ -530,8 +687,8 @@ void sqlite::Store::reset()
     std::lock_guard<std::mutex> lg(guard);
     try
     {
-        throw_if_result_is_error(sqlite3_reset(delete_statement));
-        throw_if_result_is_error(sqlite3_step(delete_statement));
+        delete_statement.reset();
+        delete_statement.step();
     } catch(const std::runtime_error& e)
     {
         throw trust::Store::Errors::ErrorResettingStore{e.what()};
@@ -543,28 +700,12 @@ void sqlite::Store::add(const trust::Request& request)
 {
     std::lock_guard<std::mutex> lg(guard);
 
-    throw_if_result_is_error(sqlite3_reset(insert_statement));
-
-    throw_if_result_is_error(sqlite3_bind_text(
-                                 insert_statement,
-                                 sqlite::Store::Table::Column::ApplicationId::index,
-                                 request.from.c_str(),
-                                 request.from.size(),
-                                 nullptr));
-    throw_if_result_is_error(sqlite3_bind_int(
-                                 insert_statement,
-                                 sqlite::Store::Table::Column::Feature::index,
-                                 request.feature));
-    throw_if_result_is_error(sqlite3_bind_int64(
-                                 insert_statement,
-                                 sqlite::Store::Table::Column::Timestamp::index,
-                                 request.when.time_since_epoch().count()));
-    throw_if_result_is_error(sqlite3_bind_int(
-                                 insert_statement,
-                                 sqlite::Store::Table::Column::Answer::index,
-                                 static_cast<int>(request.answer)));
-
-    throw_if_result_is_error(sqlite3_step(insert_statement));
+    insert_statement.reset();
+    insert_statement.bind_text<sqlite::Store::Table::Column::ApplicationId::index>(request.from);
+    insert_statement.bind_int<sqlite::Store::Table::Column::Feature::index>(request.feature);
+    insert_statement.bind_int64<sqlite::Store::Table::Column::Timestamp::index>(request.when.time_since_epoch().count());
+    insert_statement.bind_int<sqlite::Store::Table::Column::Answer::index>(static_cast<int>(request.answer));
+    insert_statement.step();
 }
 
 std::shared_ptr<trust::Store::Query> sqlite::Store::query()
@@ -572,7 +713,10 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
     return std::shared_ptr<trust::Store::Query>{new sqlite::Store::Query{shared_from_this()}};
 }
 
-std::shared_ptr<core::trust::Store> core::trust::create_default_store()
+std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
 {
-    return std::shared_ptr<trust::Store>{new sqlite::Store()};
+    if (service_name.empty())
+        throw std::runtime_error("Cannot create trust store instance for empty service name.");
+
+    return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
 }

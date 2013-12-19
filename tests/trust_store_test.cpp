@@ -22,6 +22,11 @@
 
 #include <thread>
 
+namespace
+{
+static const std::string service_name{"52EB2494-76F2-4ABB-A188-20B2D5B3CC94"};
+}
+
 TEST(TrustStoreRequestAnswer, is_printed_correctly)
 {
     {
@@ -51,13 +56,13 @@ TEST(TrustStoreRequest, is_printed_correctly)
 
 TEST(TrustStore, default_implementation_is_available)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     EXPECT_TRUE(store != nullptr);
 }
 
 TEST(TrustStore, resetting_the_store_purges_requests)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
 
     store->reset();
 
@@ -75,7 +80,7 @@ TEST(TrustStore, resetting_the_store_purges_requests)
 
 TEST(TrustStore, added_requests_are_found_by_query)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
 
     store->reset();
 
@@ -114,7 +119,7 @@ TEST(TrustStore, added_requests_are_found_by_query)
 
 TEST(TrustStore, limiting_query_to_app_id_returns_correct_results)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     const std::string app1{"com.does.not.exist.app1"};
@@ -149,7 +154,7 @@ TEST(TrustStore, limiting_query_to_app_id_returns_correct_results)
 
 TEST(TrustStore, limiting_query_to_feature_returns_correct_results)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     const std::string app1{"com.does.not.exist.app1"};
@@ -183,7 +188,7 @@ TEST(TrustStore, limiting_query_to_feature_returns_correct_results)
 
 TEST(TrustStore, limiting_query_to_answer_returns_correct_results)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     const std::string app1{"com.does.not.exist.app1"};
@@ -217,7 +222,7 @@ TEST(TrustStore, limiting_query_to_answer_returns_correct_results)
 
 TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     const std::string app1{"com.does.not.exist.app1"};
@@ -264,7 +269,7 @@ TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
 
 TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_result)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     const std::string app1{"com.does.not.exist.app1"};
@@ -273,7 +278,7 @@ TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_resu
     {
         app1,
         0,
-                std::chrono::system_clock::time_point(std::chrono::seconds{0}),
+        std::chrono::system_clock::time_point(std::chrono::seconds{0}),
         core::trust::Request::Answer::granted
     };
 
@@ -311,7 +316,7 @@ TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_resu
 
 TEST(TrustStore, added_requests_are_found_by_query_multi_threaded)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
 
     store->reset();
 
@@ -358,7 +363,7 @@ TEST(TrustStore, added_requests_are_found_by_query_multi_threaded)
 
 TEST(TrustStore, erasing_requests_empties_store)
 {
-    auto store = core::trust::create_default_store();
+    auto store = core::trust::create_default_store(service_name);
     store->reset();
 
     // Insert a bunch of requests and erase them after that.
