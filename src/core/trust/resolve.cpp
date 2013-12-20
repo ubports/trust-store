@@ -24,10 +24,10 @@
 #include "codec.h"
 #include "dbus_interface.h"
 
-#include <org/freedesktop/dbus/service.h>
-#include <org/freedesktop/dbus/stub.h>
+#include <core/dbus/service.h>
+#include <core/dbus/stub.h>
 
-namespace dbus = org::freedesktop::dbus;
+namespace dbus = core::dbus;
 
 namespace
 {
@@ -43,23 +43,141 @@ std::shared_ptr<dbus::Bus> session_bus()
 
 struct Store :
         public core::trust::Store,
-        public dbus::Stub<core::trust::DBusInterface>
+        public dbus::Stub<core::trust::dbus::Store>
 {
     Store()
-        : dbus::Stub<core::trust::DBusInterface>(session_bus()),
+        : dbus::Stub<core::trust::dbus::Store>(session_bus()),
           proxy(access_service()->object_for_path(dbus::types::ObjectPath::root()))
     {
     }
+
+    struct Query : public core::trust::Store::Query
+    {
+        core::dbus::types::ObjectPath path;
+        std::shared_ptr<dbus::Object> parent;
+        std::shared_ptr<dbus::Object> object;
+
+        Query(const core::dbus::types::ObjectPath& path,
+              const std::shared_ptr<dbus::Object>& parent,
+              const std::shared_ptr<dbus::Object>& object)
+            : path(path),
+              parent(parent),
+              object(object)
+        {
+        }
+
+        ~Query()
+        {
+            try
+            {
+                parent->invoke_method_synchronously<core::trust::dbus::Store::RemoveQuery, void>(path);
+            } catch(...)
+            {
+            }
+        }
+
+        void all()
+        {
+            object->invoke_method_synchronously<core::trust::dbus::Store::Query::All, void>();
+        }
+
+        core::trust::Request current()
+        {
+            auto result = object->invoke_method_synchronously<
+                    core::trust::dbus::Store::Query::Current,
+                    core::trust::Request>();
+
+            if (result.is_error())
+            {
+                throw core::trust::Store::Query::Error::NoCurrentResult{};
+            }
+
+            return result.value();
+        }
+
+        void erase()
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::Erase, void>();
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void execute()
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::Execute, void>();
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void for_answer(core::trust::Request::Answer answer)
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::ForAnswer, void>(answer);
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void for_application_id(const std::string &id)
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::ForApplicationId, void>(id);
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void for_feature(unsigned int feature)
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::ForFeature, void>(feature);
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void for_interval(const core::trust::Request::Timestamp &begin, const core::trust::Request::Timestamp &end)
+        {
+            auto result = object->invoke_method_synchronously<
+                    core::trust::dbus::Store::Query::ForInterval,
+                    void>(
+                        std::make_tuple(
+                            begin.time_since_epoch().count(),
+                            end.time_since_epoch().count()));
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        void next()
+        {
+            auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::Next, void>();
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+        }
+
+        core::trust::Store::Query::Status status() const
+        {
+            auto result = object->invoke_method_synchronously<
+                    core::trust::dbus::Store::Query::Status,
+                    core::trust::Store::Query::Status>();
+
+            if (result.is_error())
+                throw std::runtime_error(result.error().print());
+
+            return result.value();
+        }
+    };
 
     void add(const core::trust::Request& r)
     {
         auto response =
                 proxy->invoke_method_synchronously<
-                    core::trust::DBusInterface::Add,
+                    core::trust::dbus::Store::Add,
                     void>(r);
 
         if (response.is_error())
-            throw std::runtime_error(response.error());
+            throw std::runtime_error(response.error().print());
     }
 
     void reset()
@@ -68,12 +186,12 @@ struct Store :
         {
             auto response =
                     proxy->invoke_method_synchronously<
-                        core::trust::DBusInterface::Reset,
+                        core::trust::dbus::Store::Reset,
                         void>();
 
             if (response.is_error())
             {
-                throw std::runtime_error(response.error());
+                throw std::runtime_error(response.error().print());
             }
         } catch(const std::runtime_error& e)
         {
@@ -85,7 +203,23 @@ struct Store :
 
     std::shared_ptr<core::trust::Store::Query> query()
     {
-        return std::shared_ptr<core::trust::Store::Query>{};
+        auto result = proxy->invoke_method_synchronously<
+                core::trust::dbus::Store::AddQuery,
+                core::dbus::types::ObjectPath>();
+
+        if (result.is_error())
+            throw std::runtime_error(result.error().print());
+
+        auto path = result.value();
+
+        auto query = std::shared_ptr<core::trust::Store::Query>(new detail::Store::Query
+        {
+            path,
+            proxy,
+            access_service()->object_for_path(path)
+        });
+
+        return query;
     }
 
     std::shared_ptr<dbus::Object> proxy;
@@ -99,6 +233,6 @@ std::shared_ptr<core::trust::Store> core::trust::resolve_store_in_session_with_n
     if (name.empty())
         throw Error::ServiceNameMustNotBeEmpty{};
 
-    core::trust::DBusInterface::mutable_name() = "com.ubuntu.trust.store." + name;
+    core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
     return std::shared_ptr<core::trust::Store>{new detail::Store()};
 }

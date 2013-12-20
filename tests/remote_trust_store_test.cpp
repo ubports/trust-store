@@ -132,6 +132,18 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
             EXPECT_NO_THROW(store->add(r));
         }
 
+        // Resetting the feature counter and checking if all requests have been stored.
+        r.feature = 0;
+        auto query = store->query();
+        query->execute();
+        EXPECT_EQ(core::trust::Store::Query::Status::has_more_results, query->status());
+        while(query->status() != core::trust::Store::Query::Status::eor)
+        {
+            EXPECT_EQ(r, query->current());
+            query->next();
+            r.feature++;
+        }
+
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
             core::posix::exit::Status::failure : core::posix::exit::Status::success;
     };

@@ -19,7 +19,7 @@ pkg_check_modules(DBUS dbus-1 REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
 include_directories(
-  ${DBUS_CPP_INCLUDE_DIRS}/dbus
+  ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
   ${SQLITE3_INCLUDE_DIRS}
 )
@@ -34,6 +34,8 @@ add_library(
 
 target_link_libraries(
   trust-store
+
+  dbus-cpp
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}

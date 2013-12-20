@@ -52,7 +52,7 @@ struct Directory
     {
         // This is only a helper and we are consciously ignoring
         // errors. We will fail later on when trying to opening the
-        // database anyway.
+        // database, anyway.
         mkdir(name.c_str(), 0777);
     }
 };
