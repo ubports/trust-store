@@ -716,7 +716,7 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
 std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
 {
     if (service_name.empty())
-        throw std::runtime_error("Cannot create trust store instance for empty service name.");
+        throw core::trust::Error::ServiceNameMustNotBeEmpty();
 
     return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
 }

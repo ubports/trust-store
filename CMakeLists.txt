@@ -27,6 +27,11 @@ IF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
   SET(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -ftest-coverage -fprofile-arcs" )
 ENDIF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 
+find_package(PkgConfig)
+find_package(Boost COMPONENTS system REQUIRED)
+
+pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
+
 set(TRUST_STORE_VERSION_MAJOR 0)
 set(TRUST_STORE_VERSION_MINOR 0)
 set(TRUST_STORE_VERSION_PATCH 1)

@@ -14,14 +14,21 @@
 #
 # Authored by: Thomas Voss <thomas.voss@canonical.com>
 
-find_package(PkgConfig)
+pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
+pkg_check_modules(DBUS dbus-1 REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
-include_directories(${SQLITE3_INCLUDE_DIRS})
+include_directories(
+  ${DBUS_CPP_INCLUDE_DIRS}/dbus
+  ${DBUS_INCLUDE_DIRS}
+  ${SQLITE3_INCLUDE_DIRS}
+)
 
 add_library(
   trust-store SHARED
   
+  core/trust/expose.cpp
+  core/trust/resolve.cpp
   core/trust/impl/sqlite3/store.cpp
 )
 
@@ -29,6 +36,7 @@ target_link_libraries(
   trust-store
 
   ${Boost_LIBRARIES}
+  ${DBUS_LIBRARIES}
   ${SQLITE3_LIBRARIES}
 )
 
