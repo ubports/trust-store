@@ -205,10 +205,10 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
             });
             object->install_method_handler<core::trust::dbus::Store::Query::ForInterval>([bus, query](const core::dbus::Message::Ptr& msg)
             {
-                std::tuple<std::uint64_t, std::uint64_t> interval; msg->reader() >> interval;
+                std::tuple<std::int64_t, std::int64_t> interval; msg->reader() >> interval;
 
-                auto begin = core::trust::Request::Timestamp{std::chrono::microseconds{std::get<0>(interval)}};
-                auto end = core::trust::Request::Timestamp{std::chrono::microseconds{std::get<1>(interval)}};
+                auto begin = core::trust::Request::Timestamp{std::chrono::nanoseconds{std::get<0>(interval)}};
+                auto end = core::trust::Request::Timestamp{std::chrono::nanoseconds{std::get<1>(interval)}};
 
                 query->for_interval(begin, end);
 

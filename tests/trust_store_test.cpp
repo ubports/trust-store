@@ -231,7 +231,7 @@ TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
     {
         app1,
         0,
-                std::chrono::system_clock::time_point(std::chrono::seconds{0}),
+        std::chrono::system_clock::time_point(std::chrono::seconds{0}),
         core::trust::Request::Answer::granted
     };
 

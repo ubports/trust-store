@@ -397,7 +397,7 @@ struct Store : public core::trust::Store,
                     sqlite::Store::Table::name() + " (" +
                     sqlite::Store::Table::Column::Id::name() + " INTEGER PRIMARY KEY ASC, " +
                     sqlite::Store::Table::Column::ApplicationId::name() + " TEXT NOT NULL, " +
-                    sqlite::Store::Table::Column::Feature::name() + " INTEGER, " +
+                    sqlite::Store::Table::Column::Feature::name() + " BIGINT, " +
                     sqlite::Store::Table::Column::Timestamp::name() + " BIGINT, " +
                     sqlite::Store::Table::Column::Answer::name() + " INTEGER);"
                 };
@@ -428,8 +428,6 @@ struct Store : public core::trust::Store,
                 return s;
             }
         };
-
-
     };
 
     // An implementation of the query interface for the SQLite-based store.
@@ -509,9 +507,9 @@ struct Store : public core::trust::Store,
             >(id);
         }
 
-        void for_feature(unsigned int feature)
+        void for_feature(std::uint64_t feature)
         {
-            d.select_statement.bind_int<
+            d.select_statement.bind_int64<
                 Statements::Select::Parameter::Feature::index
             >(feature);
         }

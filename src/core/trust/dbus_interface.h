@@ -206,7 +206,7 @@ struct Store
                 return s;
             }
             typedef core::trust::Store::Query Interface;
-            typedef std::tuple<std::uint64_t, std::uint64_t> ArgumentType;
+            typedef std::tuple<std::int64_t, std::int64_t> ArgumentType;
             typedef void ResultType;
 
             inline static const std::chrono::milliseconds default_timeout()

@@ -127,7 +127,7 @@ struct Store :
                 throw std::runtime_error(result.error().print());
         }
 
-        void for_feature(unsigned int feature)
+        void for_feature(std::uint64_t feature)
         {
             auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::ForFeature, void>(feature);
 
@@ -197,8 +197,6 @@ struct Store :
         {
             std::cout << e.what() << std::endl;
         }
-
-
     }
 
     std::shared_ptr<core::trust::Store::Query> query()

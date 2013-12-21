@@ -111,8 +111,8 @@ public:
         /** @brief Limit the query to a specific application Id. */
         virtual void for_application_id(const std::string& id) = 0;
 
-        /** @brief Limit the query to an application-specific feature. */
-        virtual void for_feature(unsigned int feature) = 0;
+        /** @brief Limit the query to a service-specific feature. */
+        virtual void for_feature(std::uint64_t feature) = 0;
 
         /** @brief Limit the query to the specified time interval. */
         virtual void for_interval(const Request::Timestamp& begin, const Request::Timestamp& end) = 0;
