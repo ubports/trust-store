@@ -47,6 +47,28 @@ std::shared_ptr<dbus::Bus> session_bus()
     return bus;
 }
 
+template<typename Key, typename Value>
+class Store
+{
+public:
+    bool insert(const Key& key, const Value& value)
+    {
+        std::lock_guard<std::mutex> lg(guard);
+        bool result = false;
+        std::tie(std::ignore, result) = map.insert(std::make_pair(key, value));
+        return result;
+    }
+
+    void erase(const Key& key)
+    {
+        std::lock_guard<std::mutex> lg(guard);
+        map.erase(key);
+    }
+private:
+    std::mutex guard;
+    std::map<Key, Value> map;
+};
+
 struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbus::Store>
 {
     Token(const std::shared_ptr<dbus::Bus>& bus,
@@ -229,10 +251,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                 bus->send(reply);
             });
 
-            {
-                std::lock_guard<std::mutex> lg{guard};
-                query_store.insert(std::make_pair(path, object));
-            }
+            query_store.insert(path, object);
 
             auto reply = dbus::Message::make_method_return(msg);
             reply->writer() << path;
@@ -253,11 +272,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
         try
         {
             core::dbus::types::ObjectPath path; msg->reader() >> path;
-
-            {
-                std::lock_guard<std::mutex> lg{guard};
-                query_store.erase(path);
-            }
+            query_store.erase(path);
 
             auto reply = dbus::Message::make_method_return(msg);
             access_bus()->send(reply);
@@ -274,8 +289,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
     std::shared_ptr<dbus::Object> object;
     std::thread worker;
 
-    std::mutex guard;
-    std::map<core::dbus::types::ObjectPath, std::shared_ptr<core::dbus::Object>> query_store;
+    detail::Store<core::dbus::types::ObjectPath, std::shared_ptr<core::dbus::Object>> query_store;
 };
 }
 }
