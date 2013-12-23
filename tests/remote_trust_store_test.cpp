@@ -21,6 +21,7 @@
 
 #include <core/trust/store.h>
 
+#include <core/testing/cross_process_sync.h>
 #include <core/testing/fork_and_run.h>
 
 #include <gtest/gtest.h>
@@ -35,13 +36,17 @@ static const std::string service_name{"does_not_exist"};
 
 TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
 {
-    auto service = []()
+    core::testing::CrossProcessSync cps;
+
+    auto service = [&cps]()
     {
         static bool finish = false;
         ::signal(SIGTERM, [](int) { finish = true; });
 
         auto store = core::trust::create_default_store(service_name);
         auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
         while (!finish)
         {
@@ -51,9 +56,9 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
         return core::posix::exit::Status::success;
     };
 
-    auto client = []()
+    auto client = [&cps]()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         EXPECT_NO_THROW(store->reset(););
@@ -67,6 +72,7 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
 
 TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
 {
+    core::testing::CrossProcessSync cps;
     static const unsigned int request_count = 100;
 
     core::trust::Request prototype_request
@@ -77,7 +83,7 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
         core::trust::Request::Answer::granted
     };
 
-    auto service = [prototype_request]()
+    auto service = [prototype_request, &cps]()
     {
         core::trust::Request r
         {
@@ -93,6 +99,8 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
         auto store = core::trust::create_default_store(service_name);
         store->reset();
         auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
         while (!finish)
         {
@@ -113,7 +121,7 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
             core::posix::exit::Status::failure : core::posix::exit::Status::success;
     };
 
-    auto client = [prototype_request]()
+    auto client = [prototype_request, &cps]()
     {
         core::trust::Request r
         {
@@ -123,7 +131,7 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
             prototype_request.answer
         };
 
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         for (unsigned int i = 0; i < request_count; i++)
@@ -154,6 +162,8 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
 // Taken from trust store test
 namespace
 {
+core::testing::CrossProcessSync cps;
+
 auto service = []()
 {
     static bool finish = false;
@@ -161,6 +171,8 @@ auto service = []()
 
     auto store = core::trust::create_default_store(service_name);
     auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
+
+    cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
     while (!finish)
     {
@@ -174,7 +186,7 @@ TEST(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         store->reset();
@@ -219,7 +231,7 @@ TEST(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         store->reset();
@@ -263,7 +275,7 @@ TEST(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         store->reset();
@@ -307,7 +319,7 @@ TEST(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         store->reset();
@@ -364,7 +376,7 @@ TEST(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_correc
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
         auto store = core::trust::create_default_store(service_name);
         store->reset();
@@ -421,7 +433,7 @@ TEST(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
 
         store->reset();
@@ -477,7 +489,7 @@ TEST(RemoteTrustStore, erasing_requests_empties_store)
 {
     auto client = []()
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
         auto store = core::trust::resolve_store_in_session_with_name(service_name);
         store->reset();
 
