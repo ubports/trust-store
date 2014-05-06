@@ -1,0 +1,15 @@
+{
+global:
+    extern "C++" {
+        core::trust::*;
+	typeinfo?for?core::trust::*;
+	typeinfo?name?for?core::trust::*;
+	VTT?for?core::trust::*;
+	virtual?thunk?to?core::trust::*;
+	vtable?for?core::trust::*;
+    };
+local:
+    extern "C++" {
+        *;
+    };
+};

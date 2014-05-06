@@ -43,6 +43,14 @@ target_link_libraries(
   ${SQLITE3_LIBRARIES}
 )
 
+# We compile with all symbols visible by default. For the shipping library, we strip
+# out all symbols that are not in core::dbus::*
+set(symbol_map "${CMAKE_SOURCE_DIR}/symbols.map")
+set_target_properties(
+  trust-store PROPERTIES
+  LINK_FLAGS "${ldflags} -Wl,--version-script,${symbol_map}"
+  LINK_DEPENDS ${symbol_map})
+
 set_target_properties(
   trust-store
 

@@ -1,0 +1,31 @@
+libtrust-store.so.0 libtrust-store0 #MINVER#
+ (c++)"core::trust::create_default_store(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::expose_store_to_bus_with_name(std::shared_ptr<core::trust::Store> const&, std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::resolve_store_on_bus_with_name(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::expose_store_to_session_with_name(std::shared_ptr<core::trust::Store> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::resolve_store_in_session_with_name(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::Store::Query::Error::NoCurrentResult::~NoCurrentResult()@Base" 0replaceme
+ (c++)"core::trust::Store::Query::Error::QueryIsInErrorState::~QueryIsInErrorState()@Base" 0replaceme
+ (c++)"core::trust::Store::Errors::ErrorResettingStore::~ErrorResettingStore()@Base" 0replaceme
+ (c++)"core::trust::Request::~Request()@Base" 0replaceme
+ (c++)"core::trust::operator==(core::trust::Request const&, core::trust::Request const&)@Base" 0replaceme
+ (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request::Answer const&)@Base" 0replaceme
+ (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request const&)@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Query::Error::NoCurrentResult@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Query@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Errors::ErrorResettingStore@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Token@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Query::Error::NoCurrentResult@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Query@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Errors::ErrorResettingStore@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Token@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Query::Error::NoCurrentResult@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Query@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Errors::ErrorResettingStore@Base" 0replaceme
+ (c++)"vtable for core::trust::Store@Base" 0replaceme
+ (c++)"vtable for core::trust::Token@Base" 0replaceme
