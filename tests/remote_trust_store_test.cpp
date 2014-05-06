@@ -16,13 +16,19 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
+#include <core/dbus/fixture.h>
+#include <core/dbus/asio/executor.h>
+
 #include <core/trust/expose.h>
 #include <core/trust/resolve.h>
 
 #include <core/trust/store.h>
 
+#include <core/posix/signal.h>
 #include <core/testing/cross_process_sync.h>
 #include <core/testing/fork_and_run.h>
+
+#include "test_data.h"
 
 #include <gtest/gtest.h>
 
@@ -32,35 +38,54 @@
 namespace
 {
 static const std::string service_name{"does_not_exist"};
+
+struct RemoteTrustStore : public core::dbus::testing::Fixture
+{
+};
+
+auto session_bus_config_file =
+        core::dbus::testing::Fixture::default_session_bus_config_file() =
+        core::testing::session_bus_configuration_file();
+
+auto system_bus_config_file =
+        core::dbus::testing::Fixture::default_system_bus_config_file() =
+        core::testing::system_bus_configuration_file();
 }
 
-TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
+TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
 {
     core::testing::CrossProcessSync cps;
 
-    auto service = [&cps]()
+    auto service = [this, &cps]()
     {
-        static bool finish = false;
-        ::signal(SIGTERM, [](int) { finish = true; });
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
 
         auto store = core::trust::create_default_store(service_name);
-        auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
 
         cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
-        while (!finish)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds{500});
-        }
+        trap->run();
 
         return core::posix::exit::Status::success;
     };
 
-    auto client = [&cps]()
+    auto client = [this, &cps]()
     {
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
+        std::cout << "here" << std::endl;
         EXPECT_NO_THROW(store->reset(););
 
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
@@ -70,9 +95,9 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
+TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
 {
-    core::testing::CrossProcessSync cps;
+    core::testing::CrossProcessSync cps1, cps2;
     static const unsigned int request_count = 100;
 
     core::trust::Request prototype_request
@@ -83,45 +108,29 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
         core::trust::Request::Answer::granted
     };
 
-    auto service = [prototype_request, &cps]()
+    auto service = [this, prototype_request, &cps1]()
     {
-        core::trust::Request r
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
         {
-            prototype_request.from,
-            prototype_request.feature,
-            prototype_request.when,
-            prototype_request.answer
-        };
+           trap->stop();
+        });
 
-        static bool finish = false;
-        ::signal(SIGTERM, [](int) { finish = true; });
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
 
-        auto store = core::trust::create_default_store(service_name);
-        store->reset();
-        auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
+        auto store = core::trust::create_default_store(service_name); store->reset();
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
 
-        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+        cps1.try_signal_ready_for(std::chrono::milliseconds{500});
 
-        while (!finish)
-        {
-            std::this_thread::sleep_for(std::chrono::milliseconds{500});
-        }
-
-        auto query = store->query();
-        query->execute();
-        EXPECT_EQ(core::trust::Store::Query::Status::has_more_results, query->status());
-        while(query->status() != core::trust::Store::Query::Status::eor)
-        {
-            EXPECT_EQ(r, query->current());
-            query->next();
-            r.feature++;
-        }
+        trap->run();
 
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
             core::posix::exit::Status::failure : core::posix::exit::Status::success;
     };
 
-    auto client = [prototype_request, &cps]()
+    auto client = [this, prototype_request, &cps1]()
     {
         core::trust::Request r
         {
@@ -131,13 +140,17 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
             prototype_request.answer
         };
 
-        cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
+        cps1.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
+
         for (unsigned int i = 0; i < request_count; i++)
         {
             r.feature = i;
-            EXPECT_NO_THROW(store->add(r));
+            store->add(r);
         }
 
         // Resetting the feature counter and checking if all requests have been stored.
@@ -163,32 +176,39 @@ TEST(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
 namespace
 {
 core::testing::CrossProcessSync cps;
-
-auto service = []()
-{
-    static bool finish = false;
-    ::signal(SIGTERM, [](int) { finish = true; });
-
-    auto store = core::trust::create_default_store(service_name);
-    auto mapping = core::trust::expose_store_to_session_with_name(store, service_name);
-
-    cps.try_signal_ready_for(std::chrono::milliseconds{500});
-
-    while (!finish)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds{500});
-    }
-
-    return core::posix::exit::Status::success;
-};
 }
-TEST(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
+
+TEST_F(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
 {
-    auto client = []()
+    auto service = [this]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+           trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
     {
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         const std::string app1{"com.does.not.exist.app1"};
@@ -227,13 +247,37 @@ TEST(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
+TEST_F(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
 {
-    auto client = []()
+    auto service = [this]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+           trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
     {
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         const std::string app1{"com.does.not.exist.app1"};
@@ -271,13 +315,37 @@ TEST(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
+TEST_F(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
 {
-    auto client = []()
+    auto service = [this]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+           trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
     {
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         const std::string app1{"com.does.not.exist.app1"};
@@ -315,13 +383,37 @@ TEST(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
+TEST_F(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
 {
-    auto client = []()
+    auto service = [this]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
     {
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         const std::string app1{"com.does.not.exist.app1"};
@@ -372,13 +464,37 @@ TEST(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_correct_result)
+TEST_F(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_correct_result)
 {
-    auto client = []()
+    auto service = [this]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
     {
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
-        auto store = core::trust::create_default_store(service_name);
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         const std::string app1{"com.does.not.exist.app1"};
@@ -429,12 +545,36 @@ TEST(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_correc
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
+TEST_F(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
 {
-    auto client = []()
+    auto service = [this]()
     {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
+    {
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
 
         store->reset();
 
@@ -453,7 +593,13 @@ TEST(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
             for (unsigned int i = 0; i < 100; i++)
             {
                 r.feature = base + i;
-                store->add(r);
+                try
+                {
+                    store->add(r);
+                } catch(...)
+                {
+
+                }
             }
         };
 
@@ -476,7 +622,7 @@ TEST(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
             counter++;
         }
 
-        EXPECT_EQ(500, counter);
+        EXPECT_EQ(500u, counter);
 
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
                     core::posix::exit::Status::failure : core::posix::exit::Status::success;
@@ -485,12 +631,36 @@ TEST(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
     EXPECT_EQ(core::testing::ForkAndRunResult::empty, core::testing::fork_and_run(service, client));
 }
 
-TEST(RemoteTrustStore, erasing_requests_empties_store)
+TEST_F(RemoteTrustStore, erasing_requests_empties_store)
 {
-    auto client = []()
+    auto service = [this]()
     {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        auto store = core::trust::create_default_store(service_name);
+        auto mapping = core::trust::expose_store_to_bus_with_name(store, bus, service_name);
+
+        cps.try_signal_ready_for(std::chrono::milliseconds{500});
+
+        trap->run();
+
+        return core::posix::exit::Status::success;
+    };
+
+    auto client = [this]()
+    {
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
         cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
-        auto store = core::trust::resolve_store_in_session_with_name(service_name);
+        auto store = core::trust::resolve_store_on_bus_with_name(bus, service_name);
         store->reset();
 
         // Insert a bunch of requests and erase them after that.

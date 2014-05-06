@@ -358,7 +358,7 @@ TEST(TrustStore, added_requests_are_found_by_query_multi_threaded)
         counter++;
     }
 
-    EXPECT_EQ(500, counter);
+    EXPECT_EQ(500u, counter);
 }
 
 TEST(TrustStore, erasing_requests_empties_store)

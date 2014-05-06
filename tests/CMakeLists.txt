@@ -8,9 +8,19 @@ include_directories(
 )
 set (CMAKE_CXX_FLAGS ${OLD_CMAKE_CXX_FLAGS})
 
+pkg_check_modules(DBUS dbus-1)
+
+add_definitions(-DCORE_DBUS_ENABLE_GOOGLE_TEST_FIXTURE)
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/test_data.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/test_data.h @ONLY)
+
 include_directories(
+  ${CMAKE_CURRENT_BINARY_DIR}
   ${GTEST_INCLUDE_DIRS}
   ${PROCESS_CPP_INCLUDE_DIRS}
+  ${DBUS_INCLUDE_DIRS}
 )
 
 add_executable(

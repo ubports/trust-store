@@ -26,10 +26,24 @@
 
 namespace core
 {
+namespace dbus
+{
+class Bus;
+}
 namespace trust
 {
 // Forward declarations
 class Store;
+
+/**
+ * @brief Resolves an existing store instance within the current user session.
+ * @throw Error::ServiceNameMustNotBeEmpty.
+ * @param name The name under which the service can be found within the session.
+ * @return A token that limits the lifetime of the exposure.
+ */
+CORE_TRUST_DLL_PUBLIC std::shared_ptr<Store> resolve_store_on_bus_with_name(
+        const std::shared_ptr<core::dbus::Bus>& bus,
+        const std::string& name);
 
 /**
  * @brief Resolves an existing store instance within the current user session.

@@ -26,6 +26,10 @@
 
 namespace core
 {
+namespace dbus
+{
+class Bus;
+}
 namespace trust
 {
 // Forward declarations
@@ -44,6 +48,18 @@ public:
 protected:
     Token() = default;
 };
+
+/**
+ * @brief Exposes an existing store instance on the given bus.
+ * @throw Error::ServiceNameMustNotBeEmpty.
+ * @param store The instance to be exposed.
+ * @param name The name under which the service can be found within the session.
+ * @return A token that limits the lifetime of the exposure.
+ */
+CORE_TRUST_DLL_PUBLIC std::unique_ptr<Token> expose_store_to_bus_with_name(
+        const std::shared_ptr<Store>& store,
+        const std::shared_ptr<dbus::Bus>& bus,
+        const std::string& name);
 
 /**
  * @brief Exposes an existing store instance with the current user session.

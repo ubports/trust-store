@@ -47,11 +47,13 @@ namespace trust
  */
 struct CORE_TRUST_DLL_PUBLIC Request
 {
+    /** @brief Duration in wallclock time. */
+    typedef std::chrono::system_clock::duration Duration;
     /** @brief Requests are timestamped with wallclock time. */
     typedef std::chrono::system_clock::time_point Timestamp;
 
     /** @brief Default feature identifier. */
-    static const unsigned int default_feature = 0;
+    static constexpr const unsigned int default_feature = 0;
 
     /** @brief Enumerates the possible answers given by a user. */
     enum class Answer
@@ -75,13 +77,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
  * @param rhs [in] The right-hand-side of the comparison.
  * @return true iff both requests are equal.
  */
-inline bool operator==(const Request& lhs, const Request& rhs)
-{
-    return lhs.from == rhs.from &&
-           lhs.feature == rhs.feature &&
-           lhs.when == rhs.when &&
-           lhs.answer == rhs.answer;
-}
+CORE_TRUST_DLL_PUBLIC bool operator==(const Request& lhs, const Request& rhs);
 
 /**
  * @brief operator << pretty prints answers to the provided output stream.
@@ -89,16 +85,7 @@ inline bool operator==(const Request& lhs, const Request& rhs)
  * @param a The answer to be printed.
  * @return The output stream.
  */
-inline std::ostream& operator<<(std::ostream& out, const Request::Answer& a)
-{
-    switch (a)
-    {
-    case Request::Answer::granted: out << "granted"; break;
-    case Request::Answer::denied: out << "denied"; break;
-    }
-
-    return out;
-}
+CORE_TRUST_DLL_PUBLIC std::ostream& operator<<(std::ostream& out, const Request::Answer& a);
 
 /**
  * @brief operator << pretty prints a request to the provided output stream.
@@ -106,16 +93,7 @@ inline std::ostream& operator<<(std::ostream& out, const Request::Answer& a)
  * @param r The request to be printed.
  * @return The output stream.
  */
-inline std::ostream& operator<<(std::ostream& out, const Request& r)
-{
-    out << "Request("
-        << "from: " << r.from << ", "
-        << "feature: " << r.feature << ", "
-        << "when: " << r.when.time_since_epoch().count() << ", "
-        << "answer: " << r.answer << ")";
-
-    return out;
-}
+CORE_TRUST_DLL_PUBLIC std::ostream& operator<<(std::ostream& out, const Request& r);
 }
 }
 

@@ -67,7 +67,7 @@ struct Codec<core::trust::Request>
     {
         writer.push_stringn(arg.from.c_str(), arg.from.size());
         writer.push_uint64(arg.feature);
-        writer.push_uint64(std::chrono::duration_cast<std::chrono::nanoseconds>(arg.when.time_since_epoch()).count());
+        writer.push_uint64(std::chrono::duration_cast<core::trust::Request::Duration>(arg.when.time_since_epoch()).count());
         Codec<core::trust::Request::Answer>::encode_argument(writer, arg.answer);
     }
 
@@ -75,7 +75,7 @@ struct Codec<core::trust::Request>
     {
         arg.from = reader.pop_string();
         arg.feature = reader.pop_uint64();
-        arg.when = core::trust::Request::Timestamp{std::chrono::nanoseconds{reader.pop_uint64()}};
+        arg.when = core::trust::Request::Timestamp{core::trust::Request::Duration{reader.pop_uint64()}};
         Codec<core::trust::Request::Answer>::decode_argument(reader, arg.answer);
     }
 };

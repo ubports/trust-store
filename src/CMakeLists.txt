@@ -28,6 +28,7 @@ add_library(
   trust-store SHARED
   
   core/trust/expose.cpp
+  core/trust/request.cpp
   core/trust/resolve.cpp
   core/trust/impl/sqlite3/store.cpp
 )

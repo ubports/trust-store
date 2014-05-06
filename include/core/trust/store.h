@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <memory>
+#include <stdexcept>
 
 namespace core
 {

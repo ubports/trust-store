@@ -229,8 +229,8 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
             {
                 std::tuple<std::int64_t, std::int64_t> interval; msg->reader() >> interval;
 
-                auto begin = core::trust::Request::Timestamp{std::chrono::nanoseconds{std::get<0>(interval)}};
-                auto end = core::trust::Request::Timestamp{std::chrono::nanoseconds{std::get<1>(interval)}};
+                auto begin = core::trust::Request::Timestamp{core::trust::Request::Duration{std::get<0>(interval)}};
+                auto end = core::trust::Request::Timestamp{core::trust::Request::Duration{std::get<1>(interval)}};
 
                 query->for_interval(begin, end);
 
@@ -295,13 +295,22 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
 }
 
 std::unique_ptr<core::trust::Token>
-core::trust::expose_store_to_session_with_name(
+core::trust::expose_store_to_bus_with_name(
         const std::shared_ptr<core::trust::Store>& store,
+        const std::shared_ptr<core::dbus::Bus>& bus,
         const std::string& name)
 {
     if (name.empty())
         throw Error::ServiceNameMustNotBeEmpty{};
 
     core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
-    return std::move(std::unique_ptr<core::trust::Token>(new detail::Token{detail::session_bus(), store}));
+    return std::move(std::unique_ptr<core::trust::Token>(new detail::Token{bus, store}));
+}
+
+std::unique_ptr<core::trust::Token>
+core::trust::expose_store_to_session_with_name(
+        const std::shared_ptr<core::trust::Store>& store,
+        const std::string& name)
+{
+    return std::move(core::trust::expose_store_to_bus_with_name(store, detail::session_bus(), name));
 }
