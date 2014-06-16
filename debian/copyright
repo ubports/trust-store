@@ -1,9 +1,9 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: process-cpp
-Source: https://launchpad.net/process-cpp
+Upstream-Name: trust-store
+Source: https://launchpad.net/trust-store
 
 Files: *
-Copyright: 2012-2013 Canonical Ltd.
+Copyright: 2013 Canonical Ltd.
 License: LGPL-3.0
  This package is free software; you can redistribute it and/or
  modify it under the terms of the GNU Lesser General Public
