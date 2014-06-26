@@ -2,6 +2,8 @@
 # -*- makefile -*-
 
 export DPKG_GENSYMBOLS_CHECK_LEVEL=4
+# The home directory of user buildd does not exist on the builders
+export XDG_DATA_HOME=/tmp
 
 %:
 	dh $@ --fail-missing
