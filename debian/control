@@ -6,8 +6,6 @@ Build-Depends: cmake,
                doxygen,
                google-mock,
                gcovr,
-               gcc-4.7,
-               g++-4.7,
                graphviz,
                libboost-system-dev,
                libdbus-cpp-dev,
@@ -16,13 +14,13 @@ Build-Depends: cmake,
                libprocess-cpp-dev,
                libsqlite3-dev,
                pkg-config,
-Standards-Version: 3.9.4
+Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/trust-store
-# If you aren't a member of ~phablet-team but need to upload packaging changes,
-# just go ahead. ~phablet-team will notice and sync up the code again.
-# Vcs-Bzr: https://code.launchpad.net/~phablet-team/content-hub/trunk
-# Vcs-Browser: https://bazaar.launchpad.net/~phablet-team/process-cpp/trunk/files
+# if you don't have have commit access to this branch but would like to upload
+# directly to Ubuntu, don't worry: your changes will be merged back into the
+# upstream branch
+Vcs-Bzr: lp:trust-store
 
 Package: libtrust-store0
 Architecture: any
@@ -31,7 +29,8 @@ Pre-Depends: ${misc:Pre-Depends},
 Depends: ${misc:Depends},
          ${shlibs:Depends},
 Description: C++11 library for persisting trust requests - runtime library
- Provides a common implementation of a trust store to be used by trusted helpers.
+ Provides a common implementation of a trust store to be used by trusted
+ helpers.
  .
  This package includes the trust-store runtime libraries.
 
@@ -39,11 +38,13 @@ Package: libtrust-store-dev
 Section: libdevel
 Architecture: any
 Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends},
 Recommends: libtrust-store-doc,
-Depends: libtrust-store (= ${binary:Version}),
+Depends: libtrust-store0 (= ${binary:Version}),
          ${misc:Depends},
-Description: C++11 library for persisting trust requests - dev headers and libraries
- Provides a common implementation of a trust store to be used by trusted helpers.
+Description: C++11 library for persisting trust requests - dev files
+ Provides a common implementation of a trust store to be used by trusted
+ helpers.
  .
  This package includes all the development headers and libraries for
  trust-store.
@@ -54,7 +55,8 @@ Architecture: all
 Depends: ${misc:Depends},
 Suggests: libtrust-store-dev,
 Description: Documentation files for libtrust-store-dev
- Provides a common implementation of a trust store to be used by trusted helpers.
+ Provides a common implementation of a trust store to be used by trusted
+ helpers.
  .
  This package includes documentation files for developing with and for
  libtrust-store-dev.

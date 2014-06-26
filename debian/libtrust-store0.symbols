@@ -7,7 +7,6 @@ libtrust-store.so.0 libtrust-store0 #MINVER#
  (c++)"core::trust::Store::Query::Error::NoCurrentResult::~NoCurrentResult()@Base" 0replaceme
  (c++)"core::trust::Store::Query::Error::QueryIsInErrorState::~QueryIsInErrorState()@Base" 0replaceme
  (c++)"core::trust::Store::Errors::ErrorResettingStore::~ErrorResettingStore()@Base" 0replaceme
- (c++)"core::trust::Request::~Request()@Base" 0replaceme
  (c++)"core::trust::operator==(core::trust::Request const&, core::trust::Request const&)@Base" 0replaceme
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request::Answer const&)@Base" 0replaceme
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request const&)@Base" 0replaceme
