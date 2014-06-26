@@ -1,5 +1,9 @@
 trust-store (0.0.1-0ubuntu1) UNRELEASED; urgency=low
 
+  [ Thomas Voß ]
   * Initial upload.
+
+  [ Ubuntu daily release ]
+  * debian/*symbols: auto-update new symbols to released version
 
  -- Thomas Voß <thomas.voss@canonical.com>  Wed, 18 Dec 2013 10:55:57 +0000
