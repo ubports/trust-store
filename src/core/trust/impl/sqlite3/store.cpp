@@ -255,7 +255,12 @@ struct Database
     {
         auto result = sqlite3_open(fn.c_str(), &db);
         if (result != SQLITE_OK)
-            throw std::runtime_error(sqlite3_errstr(result));
+        {
+            std::stringstream ss;
+            ss << "Problem opening database file " << fn << ": " << sqlite3_errstr(result);
+            throw std::runtime_error(ss.str());
+        };
+
         sqlite3_extended_result_codes(db, 1);
     }
 
