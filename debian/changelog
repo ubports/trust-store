@@ -1,4 +1,4 @@
-trust-store (0.0.1-0ubuntu1) UNRELEASED; urgency=low
+trust-store (0.0.1+14.10.20140626.1-0ubuntu1) utopic; urgency=low
 
   [ Thomas Voß ]
   * Initial upload.
@@ -6,4 +6,22 @@ trust-store (0.0.1-0ubuntu1) UNRELEASED; urgency=low
   [ Ubuntu daily release ]
   * debian/*symbols: auto-update new symbols to released version
 
- -- Thomas Voß <thomas.voss@canonical.com>  Wed, 18 Dec 2013 10:55:57 +0000
+  [ thomas-voss ]
+  * Initial commit.
+  * Added a packaging setup.
+  * Added missing build-dep on pkg-config.
+  * Added doxygen documentation to public-facing API. Refactored SQLite3
+    access. Adjusted database path to XDG_DATA_HOME/${service-
+    name}/trust.db
+  * Added first iteration of exposing a trust-store via dbus.
+  * Switched to dbus-cpp 1.0.
+  * Extended remote trust store test suite.
+  * Factor session/query handling into its class, including locking.
+  * Switched to cross-process synchronization primitive.
+  * Ensure compilation works with gcc 4.7.
+  * Add symbol versioning map and required build system adjustments.
+  * Add missing build dependencies.
+  * Prepare for landing. Make exception thrown from database more
+    descriptive.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 26 Jun 2014 08:11:52 +0000
