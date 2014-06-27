@@ -7,6 +7,10 @@ Build-Depends: cmake,
                google-mock,
                gcovr,
                graphviz,
+# We rely on C++11 features, and to prevent from ABI breaks
+# in libstdc++ causing us issues, we explicitly select a G++
+# version.
+               g++-4.9,
                libboost-system-dev,
                libdbus-cpp-dev,
                libdbus-1-dev,
@@ -22,7 +26,7 @@ Homepage: https://launchpad.net/trust-store
 # upstream branch
 Vcs-Bzr: lp:trust-store
 
-Package: libtrust-store0
+Package: libtrust-store1
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
@@ -40,7 +44,7 @@ Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
 Recommends: libtrust-store-doc,
-Depends: libtrust-store0 (= ${binary:Version}),
+Depends: libtrust-store1 (= ${binary:Version}),
          ${misc:Depends},
 Description: C++11 library for persisting trust requests - dev files
  Provides a common implementation of a trust store to be used by trusted
