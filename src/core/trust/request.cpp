@@ -18,6 +18,52 @@
 
 #include <core/trust/request.h>
 
+#include <core/trust/agent.h>
+#include <core/trust/store.h>
+
+core::trust::Request::Answer core::trust::process_trust_request(const core::trust::RequestParameters& params)
+{
+    // We verify parameters first:
+    if (not params.agent) throw std::logic_error
+    {
+        "Cannot operate without an agent implementation."
+    };
+
+    if (not params.store) throw std::logic_error
+    {
+        "Cannot operate without a store implementation."
+    };
+
+    // Let's see if the store has an answer for app-id and feature.
+    auto query = params.store->query();
+
+    // Narrow it down to the specific app and the specific feature
+    query->for_application_id(params.application_id);
+    query->for_feature(params.feature);
+
+    query->execute();
+
+    // We have got results and we take the most recent one as the most appropriate.
+    if (query->status() == core::trust::Store::Query::Status::has_more_results)
+    {
+        // And we are returning early.
+        return query->current().answer;
+    }
+
+    // We do not have results available in the store, prompting the user
+    auto answer = params.agent->prompt_user_for_request(params.application_id, params.description);
+
+    params.store->add(core::trust::Request
+    {
+        params.application_id,
+        params.feature,
+        std::chrono::system_clock::now(),
+        answer
+    });
+
+    return answer;
+}
+
 bool core::trust::operator==(const core::trust::Request& lhs, const core::trust::Request& rhs)
 {
     return lhs.from == rhs.from &&

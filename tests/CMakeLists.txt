@@ -1,12 +1,9 @@
-set (OLD_CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-# Don't treat warnings as errors in 3rd_party/{gmock,cucumber-cpp}
-string (REPLACE " -Werror " " " CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
-find_package(Gtest REQUIRED)
-include_directories(
-  ${GMOCK_INCLUDE_DIR}
-  ${GTEST_INCLUDE_DIR}
-)
-set (CMAKE_CXX_FLAGS ${OLD_CMAKE_CXX_FLAGS})
+# Build with system gmock and embedded gtest
+set (GMOCK_INCLUDE_DIR "/usr/include/gmock/include" CACHE PATH "gmock source include directory")
+set (GMOCK_SOURCE_DIR "/usr/src/gmock" CACHE PATH "gmock source directory")
+set (GTEST_INCLUDE_DIR "${GMOCK_SOURCE_DIR}/gtest/include" CACHE PATH "gtest source include directory")
+
+add_subdirectory(${GMOCK_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/gmock")
 
 pkg_check_modules(DBUS dbus-1)
 
@@ -18,7 +15,8 @@ configure_file(
 
 include_directories(
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${GTEST_INCLUDE_DIRS}
+  ${GMOCK_INCLUDE_DIR}
+  ${GTEST_INCLUDE_DIR}
   ${PROCESS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
 )
@@ -33,12 +31,20 @@ add_executable(
   remote_trust_store_test.cpp
 )
 
+add_executable(
+  request_processor_test
+  request_processor_test.cpp
+)
+
 target_link_libraries(
   trust_store_test
 
   trust-store
 
-  ${GTEST_BOTH_LIBRARIES}
+  gmock
+
+  gtest
+  gtest_main
 )
 
 target_link_libraries(
@@ -46,9 +52,27 @@ target_link_libraries(
 
   trust-store
 
-  ${GTEST_BOTH_LIBRARIES}
+  gmock
+
+  gtest
+  gtest_main
+
+  ${PROCESS_CPP_LIBRARIES}
+)
+
+target_link_libraries(
+  request_processor_test
+
+  trust-store
+
+  gmock
+
+  gtest
+  gtest_main
+
   ${PROCESS_CPP_LIBRARIES}
 )
 
 add_test(trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/trust_store_test)
 add_test(remote_trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/remote_trust_store_test)
+add_test(request_processor_test ${CMAKE_CURRENT_BINARY_DIR}/request_processor_test)
