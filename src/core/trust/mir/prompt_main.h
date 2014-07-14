@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,32 +16,34 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef TEST_DATA_H_
-#define TEST_DATA_H_
+#ifndef CORE_TRUST_MIR_PROMPT_MAIN_H_
+#define CORE_TRUST_MIR_PROMPT_MAIN_H_
 
 namespace core
 {
-namespace testing
-{
-const char* session_bus_configuration_file()
-{
-    return "@CMAKE_SOURCE_DIR@/data/session.conf";
-}
-
-const char* system_bus_configuration_file()
-{
-    return "@CMAKE_SOURCE_DIR@/data/system.conf";
-}
-}
 namespace trust
 {
-namespace testing
+namespace mir
 {
-static constexpr const char* trust_prompt_executable_in_build_dir
+namespace cli
 {
-    "@CMAKE_BINARY_DIR@/src/trust-prompt"
+static constexpr const char* option_server_socket
+{
+    "mir_server_socket"
+};
+
+static constexpr const char* option_title
+{
+    "title"
+};
+
+static constexpr const char* option_description
+{
+    "description"
 };
 }
 }
 }
-#endif // TEST_DATA_H_
+}
+
+#endif // CORE_TRUST_MIR_PROMPT_MAIN_H_

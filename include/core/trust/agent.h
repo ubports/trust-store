@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -20,6 +20,7 @@
 #define CORE_TRUST_AGENT_H_
 
 #include <core/trust/request.h>
+#include <core/trust/visibility.h>
 
 namespace core
 {
@@ -28,7 +29,7 @@ namespace trust
 // Forward-declarations.
 struct RequestParameters;
 
-class Agent
+class CORE_TRUST_DLL_PUBLIC Agent
 {
 public:
     /** @cond */
@@ -43,10 +44,11 @@ public:
 
     /**
      * @brief Presents the given request to the user, returning the user-provided answer.
-     * @param request The trust request that a user has to answer.
+     * @param app_pid The process id of the requesting application.
+     * @param app_id The application Id of the requesting application.
      * @param description Extended description of the trust request.
      */
-    virtual Request::Answer prompt_user_for_request(const std::string& app_id, const std::string& description) = 0;
+    virtual Request::Answer prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description) = 0;
 };
 }
 }

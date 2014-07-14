@@ -14,6 +14,10 @@
 #
 # Authored by: Thomas Voss <thomas.voss@canonical.com>
 
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Qml REQUIRED)
+find_package(Qt5Quick REQUIRED)
+
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
@@ -24,22 +28,57 @@ include_directories(
   ${SQLITE3_INCLUDE_DIRS}
 )
 
+# Make sure Qt does not inject evil macros like 'signals' and 'slots'.
+add_definitions(-DQT_NO_KEYWORDS)
+# We need this for building the Qt-based prompt UI
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+
 add_library(
   trust-store SHARED
   
   core/trust/expose.cpp
   core/trust/request.cpp
   core/trust/resolve.cpp
+
+  # The default implementation leverages SQLite3 to persist
+  # requests.
   core/trust/impl/sqlite3/store.cpp
+
+  # An agent-implementation leveraging Mir's trusted prompting support
+  # to prompt the user for trusting an application to access a trusted
+  # system service.
+  core/trust/mir/agent.cpp
 )
+
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/trust/mir/prompt_config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/prompt_config.h @ONLY)
+
+add_executable(
+  trust-prompt
+
+  core/trust/mir/prompt_main.cpp
+)
+
+set_target_properties(
+  trust-prompt
+  PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir
+)
+
+qt5_use_modules(trust-prompt Core Gui Qml Quick)
 
 target_link_libraries(
   trust-store
 
   dbus-cpp
 
+
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}
+  ${MIR_CLIENT_LDFLAGS}
+  ${MIR_COMMON_LDFLAGS}
+  ${PROCESS_CPP_LDFLAGS}
   ${SQLITE3_LIBRARIES}
 )
 
@@ -62,4 +101,9 @@ set_target_properties(
 install(
   TARGETS trust-store
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+  TARGETS trust-prompt
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )

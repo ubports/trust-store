@@ -64,7 +64,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     enum class Answer
     {
         denied, ///< Nope, I do not trust this application.
-        granted ///< Yup, I do trust this application.
+        granted, ///< Yup, I do trust this application.
     };
 
     /** The application id of the application that resulted in the request. */
@@ -107,6 +107,8 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
     std::shared_ptr<Agent> agent;
     /** @brief The trust store to be used for caching purposes. */
     std::shared_ptr<Store> store;
+    /** @brief The process id of the requesting application. */
+    pid_t application_pid;
     /** @brief The id of the requesting application. */
     std::string application_id;
     /** @brief The service-specific feature identifier. */
@@ -118,6 +120,9 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
 /**
  * @brief Processes an incoming trust-request by an application, tries to lookup a previous reply before
  * issueing a prompt request via the given agent to the user. On return, the given trust-store is up-to-date.
+ *
+ * @throws an exception to indicate that no conclusive answer could be resolved from either the store or
+ * the user. In that case, the state of the store instance passed in to the function is not altered.
  *
  * The following code snippet illustrates how to use the function:
  *

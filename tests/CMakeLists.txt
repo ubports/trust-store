@@ -14,6 +14,8 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/test_data.h @ONLY)
 
 include_directories(
+  ${CMAKE_SOURCE_DIR}/src
+
   ${CMAKE_CURRENT_BINARY_DIR}
   ${GMOCK_INCLUDE_DIR}
   ${GTEST_INCLUDE_DIR}
@@ -36,6 +38,11 @@ add_executable(
   request_processor_test.cpp
 )
 
+add_executable(
+  mir_agent_test
+  mir_agent_test.cpp
+)
+
 target_link_libraries(
   trust_store_test
 
@@ -73,6 +80,20 @@ target_link_libraries(
   ${PROCESS_CPP_LIBRARIES}
 )
 
+target_link_libraries(
+  mir_agent_test
+
+  trust-store
+
+  gmock
+
+  gtest
+  gtest_main
+
+  ${PROCESS_CPP_LIBRARIES}
+)
+
 add_test(trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/trust_store_test)
 add_test(remote_trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/remote_trust_store_test)
 add_test(request_processor_test ${CMAKE_CURRENT_BINARY_DIR}/request_processor_test)
+add_test(mir_agent_test ${CMAKE_CURRENT_BINARY_DIR}/mir_agent_test)

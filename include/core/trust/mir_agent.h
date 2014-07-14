@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,32 +16,31 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef TEST_DATA_H_
-#define TEST_DATA_H_
+#ifndef CORE_TRUST_MIR_AGENT_H_
+#define CORE_TRUST_MIR_AGENT_H_
+
+#include <memory>
+
+// Forward declare the MirConnection type.
+struct MirConnection;
 
 namespace core
 {
-namespace testing
-{
-const char* session_bus_configuration_file()
-{
-    return "@CMAKE_SOURCE_DIR@/data/session.conf";
-}
-
-const char* system_bus_configuration_file()
-{
-    return "@CMAKE_SOURCE_DIR@/data/system.conf";
-}
-}
 namespace trust
 {
-namespace testing
+// Forward declare the Agent interface.
+class Agent;
+
+namespace mir
 {
-static constexpr const char* trust_prompt_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-prompt"
-};
+/**
+ * @brief create_agent_for_mir_connection creates a trust::Agent implementation leveraging Mir's trusted prompting API.
+ * @param connection An existing connection to a Mir instance.
+ * @throws std::logic_error if the connection object is NULL.
+ */
+std::shared_ptr<core::trust::Agent> create_agent_for_mir_connection(MirConnection* connection);
 }
 }
 }
-#endif // TEST_DATA_H_
+
+#endif // CORE_TRUST_MIR_AGENT_H_
