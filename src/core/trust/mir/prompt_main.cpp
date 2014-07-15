@@ -84,7 +84,9 @@ int main(int argc, char** argv)
         "description"
     });
 
-    parser.process(argl);
+    // Explicitly calling parse instead of process here to prevent the
+    // application exiting due to unknown command line arguments.
+    parser.parse(argl);
 
     // Let's validate the arguments
     if (!parser.isSet(core::trust::mir::cli::option_title))
