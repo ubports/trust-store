@@ -18,6 +18,8 @@
 
 #include <core/trust/store.h>
 
+#include <core/posix/this_process.h>
+
 #include <sqlite3.h>
 
 #include <cstring>
@@ -32,18 +34,14 @@ namespace core
 {
 std::string home()
 {
-    return std::string{::getenv("HOME")};
+    return core::posix::this_process::env::get_or_throw("HOME");
 }
 
 std::string runtime_persistent_data_dir()
 {
-    char* value = ::getenv("XDG_DATA_HOME");
-    if (!value || value[0] == '0')
-    {
-        return std::string{home() + "/.local/share"};
-    }
-
-    return std::string{value};
+    return core::posix::this_process::env::get(
+                "XDG_DATA_HOME",
+                home() + "/.local/share");
 }
 
 struct Directory
