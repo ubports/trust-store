@@ -41,15 +41,14 @@ std::shared_ptr<dbus::Bus> session_bus()
     };
 }
 
-struct Store :
-        public core::trust::Store,
-        public dbus::Stub<core::trust::dbus::Store>
+struct Store : public core::trust::Store
 {
-    Store(const std::shared_ptr<core::dbus::Bus>& bus)
-        : dbus::Stub<core::trust::dbus::Store>(bus),
-          bus(bus),
-          worker{[this]() { this->bus->run(); }},
-          proxy(access_service()->object_for_path(dbus::types::ObjectPath::root()))
+    Store(const std::shared_ptr<dbus::Service>& service,
+          const std::shared_ptr<core::dbus::Bus>& bus)
+        : bus(bus),
+          worker{[this]() { Store::bus->run(); }},
+          service(service),
+          proxy(service->object_for_path(dbus::types::ObjectPath::root()))
     {
     }
 
@@ -224,7 +223,7 @@ struct Store :
         {
             path,
             proxy,
-            access_service()->object_for_path(path)
+            service->object_for_path(path)
         });
 
         return query;
@@ -232,6 +231,7 @@ struct Store :
 
     std::shared_ptr<core::dbus::Bus> bus;
     std::thread worker;
+    std::shared_ptr<dbus::Service> service;
     std::shared_ptr<dbus::Object> proxy;
 };
 }
@@ -244,8 +244,14 @@ std::shared_ptr<core::trust::Store> core::trust::resolve_store_on_bus_with_name(
     if (name.empty())
         throw Errors::ServiceNameMustNotBeEmpty{};
 
-    core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
-    return std::shared_ptr<core::trust::Store>{new detail::Store(bus)};
+    return std::shared_ptr<core::trust::Store>
+    {
+        new detail::Store
+        {
+            core::dbus::Service::use_service(bus, "com.ubuntu.trust.store." + name),
+            bus
+        }
+    };
 }
 
 std::shared_ptr<core::trust::Store> core::trust::resolve_store_in_session_with_name(

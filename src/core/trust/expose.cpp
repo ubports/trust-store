@@ -69,13 +69,15 @@ private:
     std::map<Key, Value> map;
 };
 
-struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbus::Store>
+struct Token : public core::trust::Token
 {
-    Token(const std::shared_ptr<dbus::Bus>& bus,
+    Token(const std::string& service_name,
+          const std::shared_ptr<dbus::Bus>& bus,
           const std::shared_ptr<core::trust::Store>& store)
-        : dbus::Skeleton<core::trust::dbus::Store>(bus),
-          store(store),
-          object(access_service()->add_object_for_path(dbus::types::ObjectPath::root()))
+        : store(store),
+          bus(bus),
+          service(dbus::Service::add_service(bus, service_name)),
+          object(service->add_object_for_path(dbus::types::ObjectPath::root()))
     {
         object->install_method_handler<core::trust::dbus::Store::Add>([this](const core::dbus::Message::Ptr& msg)
         {
@@ -97,15 +99,18 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
             handle_remove_query(msg);
         });
 
-        worker = std::move(std::thread([this](){access_bus()->run();}));
+        worker = std::move(std::thread([this](){Token::bus->run();}));
     }
 
     ~Token()
     {
         object->uninstall_method_handler<core::trust::dbus::Store::Add>();
         object->uninstall_method_handler<core::trust::dbus::Store::Reset>();
+        object->uninstall_method_handler<core::trust::dbus::Store::AddQuery>();
+        object->uninstall_method_handler<core::trust::dbus::Store::RemoveQuery>();
 
-        access_bus()->stop();
+        bus->stop();
+
         if (worker.joinable())
             worker.join();
     }
@@ -125,12 +130,12 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                         core::trust::dbus::Store::Error::AddingRequest::name(),
                         e.what());
 
-            access_bus()->send(error);
+            bus->send(error);
             return;
         }
 
         auto reply = dbus::Message::make_method_return(msg);
-        access_bus()->send(reply);
+        bus->send(reply);
     }
 
     void handle_reset(const core::dbus::Message::Ptr& msg)
@@ -145,11 +150,11 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                         core::trust::dbus::Store::Error::ResettingStore::name(),
                         e.what());
 
-            access_bus()->send(error);
+            bus->send(error);
         }
 
         auto reply = dbus::Message::make_method_return(msg);
-        access_bus()->send(reply);
+        bus->send(reply);
     }
 
     void handle_add_query(const core::dbus::Message::Ptr& msg)
@@ -160,16 +165,16 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
         {
             core::dbus::types::ObjectPath path{"/queries/" + std::to_string(query_counter++)};
             auto query = store->query();
-            auto object = access_service()->add_object_for_path(path);
-            auto bus = access_bus();
-            object->install_method_handler<core::trust::dbus::Store::Query::All>([bus, query](const core::dbus::Message::Ptr& msg)
+            auto object = service->add_object_for_path(path);
+
+            object->install_method_handler<core::trust::dbus::Store::Query::All>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 query->all();
 
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::Current>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::Current>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 try
                 {
@@ -187,21 +192,21 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                     bus->send(error);
                 }
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::Erase>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::Erase>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 query->erase();
 
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::Execute>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::Execute>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 query->execute();
 
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::ForAnswer>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::ForAnswer>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 core::trust::Request::Answer a; msg->reader() >> a;
                 query->for_answer(a);
@@ -209,7 +214,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::ForApplicationId>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::ForApplicationId>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 std::string app_id; msg->reader() >> app_id;
                 query->for_application_id(app_id);
@@ -217,7 +222,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::ForFeature>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::ForFeature>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 std::uint64_t feature; msg->reader() >> feature;
                 query->for_feature(feature);
@@ -225,7 +230,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::ForInterval>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::ForInterval>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 std::tuple<std::int64_t, std::int64_t> interval; msg->reader() >> interval;
 
@@ -237,14 +242,14 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::Next>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::Next>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 query->next();
 
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
             });
-            object->install_method_handler<core::trust::dbus::Store::Query::Status>([bus, query](const core::dbus::Message::Ptr& msg)
+            object->install_method_handler<core::trust::dbus::Store::Query::Status>([this, query](const core::dbus::Message::Ptr& msg)
             {
                 auto reply = core::dbus::Message::make_method_return(msg);
                 reply->writer() << query->status();
@@ -255,7 +260,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
 
             auto reply = dbus::Message::make_method_return(msg);
             reply->writer() << path;
-            access_bus()->send(reply);
+            bus->send(reply);
         } catch(const std::runtime_error& e)
         {
             auto error = core::dbus::Message::make_error(
@@ -263,7 +268,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                         core::trust::dbus::Store::Error::CreatingQuery::name(),
                         e.what());
 
-            access_bus()->send(error);
+            bus->send(error);
         }
     }
 
@@ -275,17 +280,19 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
             query_store.erase(path);
 
             auto reply = dbus::Message::make_method_return(msg);
-            access_bus()->send(reply);
+            bus->send(reply);
         } catch(...)
         {
         }
 
         auto reply = dbus::Message::make_method_return(msg);
         reply->writer();
-        access_bus()->send(reply);
+        bus->send(reply);
     }
 
     std::shared_ptr<core::trust::Store> store;
+    std::shared_ptr<dbus::Bus> bus;
+    std::shared_ptr<dbus::Service> service;
     std::shared_ptr<dbus::Object> object;
     std::thread worker;
 
@@ -303,8 +310,15 @@ core::trust::expose_store_to_bus_with_name(
     if (name.empty())
         throw Errors::ServiceNameMustNotBeEmpty{};
 
-    core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
-    return std::move(std::unique_ptr<core::trust::Token>(new detail::Token{bus, store}));
+    return std::move(std::unique_ptr<core::trust::Token>
+    {
+        new detail::Token
+        {
+            "com.ubuntu.trust.store." + name,
+            bus,
+            store
+        }
+    });
 }
 
 std::unique_ptr<core::trust::Token>
