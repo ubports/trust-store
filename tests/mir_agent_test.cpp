@@ -411,7 +411,7 @@ TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requir
                 core::posix::StandardStream::empty);
 
     // We pretend to be a trusted helper and connect to mir via its trusted socket.
-    auto mir_connection = mir_connect_sync(trusted_mir_socket().c_str(), pretty_function.c_str());
+    auto mir_connection = mir_connect_sync(mir_socket().c_str(), pretty_function.c_str());
 
     // Based on the mir connection, we create a prompting agent.
     auto mir_agent = core::trust::mir::create_agent_for_mir_connection(mir_connection);
