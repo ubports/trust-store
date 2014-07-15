@@ -52,8 +52,14 @@ add_library(
 )
 
 configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/core/trust/mir/config.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/config.h @ONLY)
+
+configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/core/trust/mir/prompt_config.h.in
   ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/prompt_config.h @ONLY)
+
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/)
 
 add_executable(
   trust-prompt
@@ -72,7 +78,6 @@ target_link_libraries(
   trust-store
 
   dbus-cpp
-
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}

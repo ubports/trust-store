@@ -99,7 +99,7 @@ struct Store :
 
             if (result.is_error())
             {
-                throw core::trust::Store::Query::Error::NoCurrentResult{};
+                throw core::trust::Store::Query::Errors::NoCurrentResult{};
             }
 
             return result.value();
@@ -242,7 +242,7 @@ std::shared_ptr<core::trust::Store> core::trust::resolve_store_on_bus_with_name(
         const std::string& name)
 {
     if (name.empty())
-        throw Error::ServiceNameMustNotBeEmpty{};
+        throw Errors::ServiceNameMustNotBeEmpty{};
 
     core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
     return std::shared_ptr<core::trust::Store>{new detail::Store(bus)};

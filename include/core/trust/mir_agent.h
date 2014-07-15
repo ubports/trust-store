@@ -19,6 +19,8 @@
 #ifndef CORE_TRUST_MIR_AGENT_H_
 #define CORE_TRUST_MIR_AGENT_H_
 
+#include <core/trust/visibility.h>
+
 #include <memory>
 
 // Forward declare the MirConnection type.
@@ -38,7 +40,7 @@ namespace mir
  * @param connection An existing connection to a Mir instance.
  * @throws std::logic_error if the connection object is NULL.
  */
-std::shared_ptr<core::trust::Agent> create_agent_for_mir_connection(MirConnection* connection);
+CORE_TRUST_DLL_PUBLIC std::shared_ptr<core::trust::Agent> create_agent_for_mir_connection(MirConnection* connection);
 }
 }
 }

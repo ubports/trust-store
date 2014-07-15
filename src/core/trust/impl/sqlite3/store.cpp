@@ -592,9 +592,9 @@ struct Store : public core::trust::Store,
         {
             switch(d.status)
             {
-            case Status::error: throw Error::QueryIsInErrorState{};
-            case Status::eor: throw Error::NoCurrentResult{};
-            case Status::armed: throw Error::NoCurrentResult{};
+            case Status::error: throw Errors::QueryIsInErrorState{};
+            case Status::eor: throw Errors::NoCurrentResult{};
+            case Status::armed: throw Errors::NoCurrentResult{};
             default:
             {
                 trust::Request request
@@ -719,7 +719,7 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
 std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
 {
     if (service_name.empty())
-        throw core::trust::Error::ServiceNameMustNotBeEmpty();
+        throw core::trust::Errors::ServiceNameMustNotBeEmpty();
 
     return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
 }

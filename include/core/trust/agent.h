@@ -29,6 +29,7 @@ namespace trust
 // Forward-declarations.
 struct RequestParameters;
 
+/** @brief Abstracts user-prompting functionality. */
 class CORE_TRUST_DLL_PUBLIC Agent
 {
 public:

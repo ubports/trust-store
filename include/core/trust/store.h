@@ -28,6 +28,18 @@
 
 namespace core
 {
+/**
+ * @brief Contains functionality for implementing Ubuntu's trust model.
+ *
+ * Ubuntu's trust model extends upon a strict confinement approach implemented
+ * on top of AppArmor. In this approach, applications are not trusted by default, and
+ * we assume a very negative view of the app world. That is, we assume that all apps
+ * are created with malicious intentions in mind, invading a user's privacy and wasting
+ * resources. For that, we severly limit an application's access to the system and
+ * provide trusted gates out of the confinement. These trusted gates, also called trusted helpers,
+ * ensure that the user is prompted for granting or denying trust to a specific application.
+ *
+ */
 namespace trust
 {
 /**
@@ -36,9 +48,12 @@ namespace trust
 class CORE_TRUST_DLL_PUBLIC Store
 {
 public:
+    /** @brief All Store-specific error/exception types go here. */
     struct Errors
     {
+        /** @cond */
         Errors() = delete;
+        /** @endcond */
 
         /**
          * @brief Thrown if a store implementation could not access the persistence backend.
@@ -70,9 +85,12 @@ public:
     class Query
     {
     public:
-        struct Error
+        /** @brief All Query-specific error/exception types go here. */
+        struct Errors
         {
-            Error() = delete;
+            /** @cond */
+            Errors() = delete;
+            /** @endcond */
             /**
              * @brief Thrown if functionality of a query is accessed although the query is in error state.
              */
@@ -165,9 +183,12 @@ protected:
     Store() = default;
 };
 
-struct Error
+/** @brief All core::trust-specific error/exception types go here. */
+struct Errors
 {
-    Error() = delete;
+    /** @cond */
+    Errors() = delete;
+    /** @endcond */
 
     /**
      * @brief The ServiceNameMustNotBeEmpty is thrown if an empty service name

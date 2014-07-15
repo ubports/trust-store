@@ -60,6 +60,9 @@ public Q_SLOTS:
 
 int main(int argc, char** argv)
 {
+    QStringList argl;
+    for (int i = 0 ; i < argc; i++) if (argv[i]) argl << argv[i];
+
     QCommandLineParser parser;
     parser.setApplicationDescription("Trusted helper prompt");
     parser.addOption(QCommandLineOption
@@ -81,9 +84,6 @@ int main(int argc, char** argv)
         "description"
     });
 
-    QStringList argl;
-    for (int i = 0 ; i < argc; i++) if (argv[i]) argl << argv[i];
-
     parser.process(argl);
 
     // Let's validate the arguments
@@ -91,21 +91,29 @@ int main(int argc, char** argv)
         abort(); // We have to call abort here to make sure that we get signalled.
 
     if (parser.isSet(core::trust::mir::cli::option_server_socket))
-        ::setenv("MIR_SOCKET", qPrintable(parser.value(core::trust::mir::cli::option_server_socket)), 1);
+        ::setenv(core::trust::mir::env::option_mir_socket,
+                 qPrintable(parser.value(core::trust::mir::cli::option_server_socket)), 1);
 
     QGuiApplication::setApplicationName("Trusted Helper Prompt");
     core::trust::mir::Prompt app(argc, argv);
     QQuickView* view = new QQuickView();
     view->setResizeMode(QQuickView::SizeRootObjectToView);
     view->setTitle(QGuiApplication::applicationName());
+
+    // Make some properties known to the root context.
     view->rootContext()->setContextProperty("dialog", &app);
+    // The title of the dialog.
     view->rootContext()->setContextProperty(
                 core::trust::mir::cli::option_title,
                 parser.value(core::trust::mir::cli::option_title));
+    // The description of the dialog.
     if (parser.isSet(core::trust::mir::cli::option_description))
         view->rootContext()->setContextProperty(
                     core::trust::mir::cli::option_description,
                     parser.value(core::trust::mir::cli::option_description));
+
+    // Point the engine to the right directory. Please note that
+    // the respective value changes with the installation state.
     view->engine()->setBaseUrl(QUrl::fromLocalFile(appDirectory()));
 
     view->setSource(QUrl::fromLocalFile("prompt_main.qml"));

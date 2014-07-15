@@ -121,7 +121,7 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
  * @brief Processes an incoming trust-request by an application, tries to lookup a previous reply before
  * issueing a prompt request via the given agent to the user. On return, the given trust-store is up-to-date.
  *
- * @throws an exception to indicate that no conclusive answer could be resolved from either the store or
+ * @throws std::exception To indicate that no conclusive answer could be resolved from either the store or
  * the user. In that case, the state of the store instance passed in to the function is not altered.
  *
  * The following code snippet illustrates how to use the function:

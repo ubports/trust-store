@@ -143,6 +143,9 @@ struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
 // by leveraging Mir's trusted session/prompting support.
 struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
 {
+    // Convenience typedef
+    typedef std::shared_ptr<Agent> Ptr;
+
     // Helper struct for injecting state into on_trust_changed_state_state callbacks.
     // Used in prompt_user_for_request to wait for the trust session to be stopped.
     struct OnTrustSessionStateChangedCallbackContext
@@ -163,7 +166,7 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
 
     // Returns a wait result -> trust::Request::Answer translator that only returns Answer::granted if
     // the prompt provider child process exits cleanly with status success.
-    // Throws std::logic_error if the process did not exit.
+    // Throws std::logic_error if the process did not exit but was signaled.
     static std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator_only_accepting_exit_status_success();
 
     // Creates a new MirAgent instance with the given MirConnectionVirtualTable instance.

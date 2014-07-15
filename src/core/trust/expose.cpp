@@ -177,7 +177,7 @@ struct Token : public core::trust::Token, public dbus::Skeleton<core::trust::dbu
                     auto reply = core::dbus::Message::make_method_return(msg);
                     reply->writer() << request;
                     bus->send(reply);
-                } catch(const core::trust::Store::Query::Error::NoCurrentResult& e)
+                } catch(const core::trust::Store::Query::Errors::NoCurrentResult& e)
                 {
                     auto error = core::dbus::Message::make_error(
                                 msg,
@@ -301,7 +301,7 @@ core::trust::expose_store_to_bus_with_name(
         const std::string& name)
 {
     if (name.empty())
-        throw Error::ServiceNameMustNotBeEmpty{};
+        throw Errors::ServiceNameMustNotBeEmpty{};
 
     core::trust::dbus::Store::mutable_name() = "com.ubuntu.trust.store." + name;
     return std::move(std::unique_ptr<core::trust::Token>(new detail::Token{bus, store}));

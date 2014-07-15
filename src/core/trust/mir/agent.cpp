@@ -110,11 +110,13 @@ core::posix::ChildProcess mir::PromptProviderHelper::exec_prompt_provider_with_a
         "--" + std::string{core::trust::mir::cli::option_description} + "=" + args.description
     };
 
+    // We just copy the environment
     std::map<std::string, std::string> env;
     core::posix::this_process::env::for_each([&env](const std::string& key, const std::string& value)
     {
         env.insert(std::make_pair(key, value));
     });
+
 
     auto result = core::posix::exec(creation_arguments.path_to_helper_executable,
                                     argv,
@@ -235,10 +237,32 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 
 #include <core/trust/mir_agent.h>
 
+#include "config.h"
+
 std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConnection* connection)
 {
-    return std::make_shared<mir::Agent>(
-                std::make_shared<mir::ConnectionVirtualTable>(connection),
-                std::make_shared<mir::PromptProviderHelper>(mir::PromptProviderHelper::CreationArguments{"/bin/false"}),
-                mir::Agent::translator_only_accepting_exit_status_success());
+    return mir::Agent::Ptr
+    {
+        new mir::Agent
+        {
+            mir::ConnectionVirtualTable::Ptr
+            {
+                new mir::ConnectionVirtualTable
+                {
+                    connection
+                }
+            },
+            mir::PromptProviderHelper::Ptr
+            {
+                new mir::PromptProviderHelper
+                {
+                    mir::PromptProviderHelper::CreationArguments
+                    {
+                        core::trust::mir::trust_prompt_executable_in_lib_dir
+                    }
+                }
+            },
+            mir::Agent::translator_only_accepting_exit_status_success()
+        }
+    };
 }

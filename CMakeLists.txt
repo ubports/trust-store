@@ -28,7 +28,7 @@ IF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 ENDIF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 
 find_package(PkgConfig)
-find_package(Boost COMPONENTS system REQUIRED)
+find_package(Boost COMPONENTS program_options system REQUIRED)
 
 pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
 pkg_check_modules(MIR_COMMON mircommon REQUIRED)

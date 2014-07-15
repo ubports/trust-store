@@ -177,6 +177,29 @@ TEST(DefaultProcessStateTranslator, returns_granted_for_process_exiting_successf
     EXPECT_EQ(core::trust::Request::Answer::granted, translator(result));
 }
 
+TEST(DefaultPromptProviderHelper, correctly_passes_arguments_to_prompt_executable)
+{
+    core::trust::mir::PromptProviderHelper::CreationArguments cargs
+    {
+        core::trust::testing::test_prompt_executable_in_build_dir
+    };
+
+    core::trust::mir::PromptProviderHelper::InvocationArguments iargs
+    {
+        42,
+        "does.not.exist.application",
+        "Just an extended description"
+    };
+
+    core::trust::mir::PromptProviderHelper helper{cargs};
+    auto child = helper.exec_prompt_provider_with_arguments(iargs);
+
+    auto result = child.wait_for(core::posix::wait::Flags::untraced);
+
+    EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
+    EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
+}
+
 TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
 {
     using namespace ::testing;
@@ -309,7 +332,10 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
 
 TEST(TrustPrompt, aborts_for_missing_title)
 {
+    // And we pass in an empty argument vector
     std::vector<std::string> argv;
+
+    // We pass in the empty env
     std::map<std::string, std::string> env;
 
     auto child = core::posix::exec(
@@ -324,3 +350,79 @@ TEST(TrustPrompt, aborts_for_missing_title)
     EXPECT_EQ(core::posix::Signal::sig_abrt, result.detail.if_signaled.signal);
 }
 
+/***********************************************************************
+* All tests requiring a running Mir instance go here.                  *
+* They are tagged with _requires_mir and taken out of the              *
+* automatic build and test cycle.                                      *
+***********************************************************************/
+
+#include <core/trust/mir_agent.h>
+
+#include <core/trust/mir/config.h>
+#include <core/trust/mir/prompt_main.h>
+
+namespace
+{
+std::map<std::string, std::string> a_copy_of_the_env()
+{
+    std::map<std::string, std::string> result;
+    core::posix::this_process::env::for_each([&result](const std::string& key, const std::string& value)
+    {
+        result.insert(std::make_pair(key, value)) ;
+    });
+    return result;
+}
+
+std::string mir_socket()
+{
+    // We either take the XDG_RUNTIME_DIR or fall back to /tmp if XDG_RUNTIME_DIR is not set.
+    std::string dir = core::posix::this_process::env::get("XDG_RUNTIME_DIR", "/tmp");
+    return dir + "/mir_socket";
+}
+
+std::string trusted_mir_socket()
+{
+    // We either take the XDG_RUNTIME_DIR or fall back to /tmp if XDG_RUNTIME_DIR is not set.
+    std::string dir = core::posix::this_process::env::get("XDG_RUNTIME_DIR", "/tmp");
+    return dir + "/mir_socket_trusted";
+}
+}
+
+TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requires_mir)
+{
+    std::string pretty_function{__PRETTY_FUNCTION__};
+
+    // We start up an application in a child process and simulate that it is requesting access
+    // to a trusted system service/resource.
+    std::vector<std::string> argv
+    {
+        "--" + std::string{core::trust::mir::cli::option_server_socket} + "=" + mir_socket(),
+        "--" + std::string{core::trust::mir::cli::option_title} + "=" + pretty_function,
+        "--" + std::string{core::trust::mir::cli::option_description} + "=" + pretty_function,
+        // We have to circumvent unity8's authentication mechanism and just provide
+        // the desktop_file_hint as part of the command line.
+        "--desktop_file_hint=/usr/share/applications/webbrowser-app.desktop"
+    };
+
+    core::posix::ChildProcess app = core::posix::exec(
+                core::trust::mir::trust_prompt_executable_in_lib_dir,
+                argv,
+                a_copy_of_the_env(),
+                core::posix::StandardStream::empty);
+
+    // We pretend to be a trusted helper and connect to mir via its trusted socket.
+    auto mir_connection = mir_connect_sync(trusted_mir_socket().c_str(), pretty_function.c_str());
+
+    // Based on the mir connection, we create a prompting agent.
+    auto mir_agent = core::trust::mir::create_agent_for_mir_connection(mir_connection);
+
+    // And issue a prompt request. As a result, the user is presented with a prompting dialog.
+    auto answer = mir_agent->prompt_user_for_request(app.pid(), pretty_function, pretty_function);
+
+    // And we cross-check with the user:
+    std::cout << "You answered the trust prompt with: " << answer << "."
+              << "Is that correct? [y/n]:";
+
+    char y_or_n{'n'}; std::cin >> y_or_n;
+    EXPECT_EQ('y', y_or_n);
+}
