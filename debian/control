@@ -12,11 +12,12 @@ Build-Depends: cmake,
                libdbus-1-dev,
                libgtest-dev,
                libprocess-cpp-dev,
-               libqt5core5a,
-               libqt5qml5,
-               libqt5quick5,
                libsqlite3-dev,
                pkg-config,
+               qt5-default,
+               qtbase5-dev,
+               qtdeclarative5-dev,
+               qtquick1-5-dev,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/trust-store
