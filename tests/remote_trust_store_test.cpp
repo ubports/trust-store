@@ -42,14 +42,6 @@ static const std::string service_name{"does_not_exist"};
 struct RemoteTrustStore : public core::dbus::testing::Fixture
 {
 };
-
-auto session_bus_config_file =
-        core::dbus::testing::Fixture::default_session_bus_config_file() =
-        core::testing::session_bus_configuration_file();
-
-auto system_bus_config_file =
-        core::dbus::testing::Fixture::default_system_bus_config_file() =
-        core::testing::system_bus_configuration_file();
 }
 
 TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_reset)
