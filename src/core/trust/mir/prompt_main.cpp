@@ -53,7 +53,7 @@ public:
 public Q_SLOTS:
     void quit(int code)
     {
-        exit(code);
+        QCoreApplication::exit(code);
     }
 };
 }
@@ -91,8 +91,6 @@ int main(int argc, char** argv)
         core::posix::this_process::env::set_or_throw(
                     core::trust::mir::env::option_mir_socket,
                     vm[core::trust::mir::cli::option_server_socket].as<std::string>());
-
-    QGuiApplication::setApplicationName(title.c_str());
 
     // We already parsed the command line arguments and do not parse them
     // to the application.
