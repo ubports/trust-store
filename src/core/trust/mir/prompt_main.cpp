@@ -41,14 +41,9 @@ namespace trust
 {
 namespace mir
 {
-class Prompt : public QGuiApplication
+class SignalTrap : public QObject
 {
     Q_OBJECT
-
-public:
-    Prompt(int argc, char** argv) : QGuiApplication(argc, argv)
-    {
-    }
 
 public Q_SLOTS:
     void quit(int code)
@@ -94,13 +89,15 @@ int main(int argc, char** argv)
 
     // We already parsed the command line arguments and do not parse them
     // to the application.
-    auto app = new core::trust::mir::Prompt(0, nullptr);
+    QGuiApplication app{argc, argv};
+
+    core::trust::mir::SignalTrap signal_trap;
+
     QQuickView* view = new QQuickView();
     view->setResizeMode(QQuickView::SizeRootObjectToView);
     view->setTitle(QGuiApplication::applicationName());
 
     // Make some properties known to the root context.
-    view->rootContext()->setContextProperty("dialog", app);
     // The title of the dialog.
     view->rootContext()->setContextProperty(
                 core::trust::mir::cli::option_title,
@@ -117,9 +114,13 @@ int main(int argc, char** argv)
     view->setSource(QUrl::fromLocalFile("prompt_main.qml"));
     view->show();
 
-    QObject::connect(view->rootObject(), SIGNAL(quit(int)), app, SLOT(quit(int)));
+    QObject::connect(
+                view->rootObject(),
+                SIGNAL(quit(int)),
+                &signal_trap,
+                SLOT(quit(int)));
 
-    return app->exec();
+    return app.exec();
 }
 
 #include "prompt_main.moc"
