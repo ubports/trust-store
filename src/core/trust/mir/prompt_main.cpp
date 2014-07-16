@@ -1,24 +1,22 @@
 /*
- * Copyright (C) 2012-2013 Canonical, Ltd.
+ * Copyright © 2014 Canonical Ltd.
+ *
+ * This program is free software: you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License version 3,
+ * as published by the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Authors:
  *  Olivier Tilloy <olivier.tilloy@canonical.com>
  *  Nick Dedekind <nick.dedekind@canonical.com>
  *  Thomas Voß <thomas.voss@canonical.com>
- *
- * This file is part of dialer-app.
- *
- * dialer-app is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; version 3.
- *
- * dialer-app is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 // Qt
@@ -42,9 +40,9 @@ namespace mir
 class Prompt : public QGuiApplication
 {
     Q_OBJECT
+
 public:
-    Prompt(int & argc, char ** argv)
-        : QGuiApplication(argc, argv)
+    Prompt(int argc, char** argv) : QGuiApplication(argc, argv)
     {
     }
 
@@ -97,7 +95,9 @@ int main(int argc, char** argv)
                  qPrintable(parser.value(core::trust::mir::cli::option_server_socket)), 1);
 
     QGuiApplication::setApplicationName("Trusted Helper Prompt");
-    core::trust::mir::Prompt app(argc, argv);
+    // We already parsed the command line arguments and do not parse them
+    // to the application.
+    core::trust::mir::Prompt app(0, nullptr);
     QQuickView* view = new QQuickView();
     view->setResizeMode(QQuickView::SizeRootObjectToView);
     view->setTitle(QGuiApplication::applicationName());

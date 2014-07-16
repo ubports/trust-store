@@ -224,6 +224,8 @@ core::trust::Request::Answer mir::Agent::prompt_user_for_request(pid_t app_pid, 
 
     // Ask the helper to fire up the prompt provider.
     cb_context.prompt_provider_process = exec_helper->exec_prompt_provider_with_arguments(args);
+    // And add it to the prompt session.
+    scope.prompt_session->add_prompt_provider_sync(cb_context.prompt_provider_process.pid());
     // And subsequently wait for it to finish.
     auto result = cb_context.prompt_provider_process.wait_for(core::posix::wait::Flags::untraced);
 
