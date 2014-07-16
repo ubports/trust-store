@@ -87,6 +87,22 @@ int main(int argc, char** argv)
                     core::trust::mir::env::option_mir_socket,
                     vm[core::trust::mir::cli::option_server_socket].as<std::string>());
 
+    // We install a custom message handler to silence Qt's chattiness
+    qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&, const QString& msg)
+    {
+        switch (type)
+        {
+        // We only handle critical and fatal messages.
+        case QtCriticalMsg:
+        case QtFatalMsg:
+            std::cerr << qPrintable(msg) << std::endl;
+            break;
+        // And just drop the rest.
+        default:
+            break;
+        }
+    });
+
     // We already parsed the command line arguments and do not parse them
     // to the application.
     QGuiApplication app{argc, argv};
