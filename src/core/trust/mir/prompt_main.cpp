@@ -96,13 +96,13 @@ int main(int argc, char** argv)
 
     // We already parsed the command line arguments and do not parse them
     // to the application.
-    core::trust::mir::Prompt app(0, nullptr);
+    auto app = new core::trust::mir::Prompt(0, nullptr);
     QQuickView* view = new QQuickView();
     view->setResizeMode(QQuickView::SizeRootObjectToView);
     view->setTitle(QGuiApplication::applicationName());
 
     // Make some properties known to the root context.
-    view->rootContext()->setContextProperty("dialog", &app);
+    view->rootContext()->setContextProperty("dialog", app);
     // The title of the dialog.
     view->rootContext()->setContextProperty(
                 core::trust::mir::cli::option_title,
@@ -119,9 +119,9 @@ int main(int argc, char** argv)
     view->setSource(QUrl::fromLocalFile("prompt_main.qml"));
     view->show();
 
-    QObject::connect(view->rootObject(), SIGNAL(quit(int)), &app, SLOT(quit(int)));
+    QObject::connect(view->rootObject(), SIGNAL(quit(int)), app, SLOT(quit(int)));
 
-    return app.exec();
+    return app->exec();
 }
 
 #include "prompt_main.moc"
