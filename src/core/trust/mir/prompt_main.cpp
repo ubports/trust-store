@@ -28,6 +28,10 @@
 #include <QQmlContext>
 #include <QQmlEngine>
 
+#include <boost/program_options.hpp>
+
+#include <core/posix/this_process.h>
+
 #include "prompt_config.h"
 #include "prompt_main.h"
 
@@ -58,52 +62,38 @@ public Q_SLOTS:
 
 int main(int argc, char** argv)
 {
-    QStringList argl;
-    for (int i = 0 ; i < argc; i++)
-    {
-        if (argv[i])
-        {
-            if (::strcmp(argv[i], core::trust::mir::cli::option_server_socket) == 0)
-                ::setenv(core::trust::mir::env::option_mir_socket, argv[i+1], 1);
+    boost::program_options::options_description options;
+    options.add_options()
+            (core::trust::mir::cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
+            (core::trust::mir::cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
+            (core::trust::mir::cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt");
 
-            argl << argv[i];
-        }
-    }
+    auto parsed_options = boost::program_options::command_line_parser{argc, argv}
+            .options(options)
+            .allow_unregistered()
+            .run();
 
-    QCommandLineParser parser;
-    parser.setApplicationDescription("Trusted helper prompt");
-    parser.addOption(QCommandLineOption
-    {
-        core::trust::mir::cli::option_server_socket,
-        "Path to the server socket to connect to.",
-        "socket"
-    });
-    parser.addOption(QCommandLineOption
-    {
-        core::trust::mir::cli::option_title,
-        "The title of the trust prompt.",
-        "title"
-    });
-    parser.addOption(QCommandLineOption
-    {
-        core::trust::mir::cli::option_description,
-        "An extended description for informing the user about implications of granting trust.",
-        "description"
-    });
-
-    // Explicitly calling parse instead of process here to prevent the
-    // application exiting due to unknown command line arguments.
-    parser.parse(argl);
+    boost::program_options::variables_map vm;
+    boost::program_options::store(parsed_options, vm);
+    boost::program_options::notify(vm);
 
     // Let's validate the arguments
-    if (!parser.isSet(core::trust::mir::cli::option_title))
+    if (vm.count(core::trust::mir::cli::option_title) == 0)
         abort(); // We have to call abort here to make sure that we get signalled.
 
-    if (parser.isSet(core::trust::mir::cli::option_server_socket))
-        ::setenv(core::trust::mir::env::option_mir_socket,
-                 qPrintable(parser.value(core::trust::mir::cli::option_server_socket)), 1);
+    std::string title = vm[core::trust::mir::cli::option_title].as<std::string>();
 
-    QGuiApplication::setApplicationName(parser.value(core::trust::mir::cli::option_title));
+    std::string description;
+    if (vm.count(core::trust::mir::cli::option_description) > 0)
+        description = vm[core::trust::mir::cli::option_description].as<std::string>();
+
+    if (vm.count(core::trust::mir::cli::option_server_socket) > 0)
+        core::posix::this_process::env::set_or_throw(
+                    core::trust::mir::env::option_mir_socket,
+                    vm[core::trust::mir::cli::option_server_socket].as<std::string>());
+
+    QGuiApplication::setApplicationName(title.c_str());
+
     // We already parsed the command line arguments and do not parse them
     // to the application.
     core::trust::mir::Prompt app(0, nullptr);
@@ -116,12 +106,11 @@ int main(int argc, char** argv)
     // The title of the dialog.
     view->rootContext()->setContextProperty(
                 core::trust::mir::cli::option_title,
-                parser.value(core::trust::mir::cli::option_title));
+                title.c_str());
     // The description of the dialog.
-    if (parser.isSet(core::trust::mir::cli::option_description))
-        view->rootContext()->setContextProperty(
+    view->rootContext()->setContextProperty(
                     core::trust::mir::cli::option_description,
-                    parser.value(core::trust::mir::cli::option_description));
+                    description.c_str());
 
     // Point the engine to the right directory. Please note that
     // the respective value changes with the installation state.

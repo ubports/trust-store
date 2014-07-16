@@ -87,6 +87,13 @@ target_link_libraries(
   ${SQLITE3_LIBRARIES}
 )
 
+target_link_libraries(
+  trust-prompt
+
+  ${Boost_LIBRARIES}
+  ${PROCESS_CPP_LDFLAGS}
+)
+
 # We compile with all symbols visible by default. For the shipping library, we strip
 # out all symbols that are not in core::dbus::*
 set(symbol_map "${CMAKE_SOURCE_DIR}/symbols.map")
