@@ -19,16 +19,21 @@
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
 
-inline bool isRunningInstalled() {
-    static bool installed = (QCoreApplication::applicationDirPath() ==
-                             QDir(("@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_BINDIR@")).canonicalPath());
+// Returns true if the application is called from its installed location.
+inline bool isRunningInstalled()
+{
+    static bool installed
+    {
+        QCoreApplication::applicationDirPath() ==
+        QDir(("@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@")).canonicalPath()
+    };
+
     return installed;
 }
 
-inline QString appDirectory() {
-    if (isRunningInstalled()) {
-        return QString("@CMAKE_INSTALL_PREFIX@/@APP_DIR@/");
-    } else {
-        return QString("@CMAKE_SOURCE_DIR@/src/core/trust/mir/");
-    }
+inline QString appDirectory()
+{
+    isRunningInstalled() ?
+                QString("@CMAKE_INSTALL_PREFIX@/@APP_DIR@/") :
+                QString("@CMAKE_SOURCE_DIR@/src/core/trust/mir/");
 }
