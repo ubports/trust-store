@@ -94,7 +94,7 @@ int main(int argc, char** argv)
         ::setenv(core::trust::mir::env::option_mir_socket,
                  qPrintable(parser.value(core::trust::mir::cli::option_server_socket)), 1);
 
-    QGuiApplication::setApplicationName("Trusted Helper Prompt");
+    QGuiApplication::setApplicationName(parser.value(core::trust::mir::cli::option_title));
     // We already parsed the command line arguments and do not parse them
     // to the application.
     core::trust::mir::Prompt app(0, nullptr);
