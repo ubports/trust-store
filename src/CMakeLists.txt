@@ -112,3 +112,8 @@ install(
   TARGETS trust-prompt
   RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
+
+install(
+  FILES prompt_main.qml
+  DESTINATION ${CMAKE_INSTALL_DATADIR}/core/trust/mir
+)
