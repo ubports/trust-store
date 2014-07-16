@@ -66,10 +66,6 @@ struct CORE_TRUST_DLL_PUBLIC PromptSessionVirtualTable
     // Returns the fd or throws std::runtime_error.
     virtual int new_fd_for_prompt_provider();
 
-    // Adds a prompt provider process to the prompting session, identified by its PID.
-    // Returns true if addition of the prompt provider succeeded.
-    virtual bool add_prompt_provider_sync(pid_t prompt_provider_pid);
-
     // Finalizes and releases the given prompt session instance.
     virtual void release_sync();
 
