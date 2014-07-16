@@ -236,27 +236,31 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 
 std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConnection* connection)
 {
+    mir::ConnectionVirtualTable::Ptr cvt
+    {
+        new mir::ConnectionVirtualTable
+        {
+            connection
+        }
+    };
+
+    mir::PromptProviderHelper::Ptr pph
+    {
+        new mir::PromptProviderHelper
+        {
+            mir::PromptProviderHelper::CreationArguments
+            {
+                core::trust::mir::trust_prompt_executable_in_lib_dir
+            }
+        }
+    };
+
     return mir::Agent::Ptr
     {
         new mir::Agent
         {
-            mir::ConnectionVirtualTable::Ptr
-            {
-                new mir::ConnectionVirtualTable
-                {
-                    connection
-                }
-            },
-            mir::PromptProviderHelper::Ptr
-            {
-                new mir::PromptProviderHelper
-                {
-                    mir::PromptProviderHelper::CreationArguments
-                    {
-                        core::trust::mir::trust_prompt_executable_in_lib_dir
-                    }
-                }
-            },
+            cvt,
+            pph,
             mir::Agent::translator_only_accepting_exit_status_success()
         }
     };

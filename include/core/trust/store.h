@@ -35,7 +35,7 @@ namespace core
  * on top of AppArmor. In this approach, applications are not trusted by default, and
  * we assume a very negative view of the app world. That is, we assume that all apps
  * are created with malicious intentions in mind, invading a user's privacy and wasting
- * resources. For that, we severly limit an application's access to the system and
+ * resources. For that, we severely limit an application's access to the system and
  * provide trusted gates out of the confinement. These trusted gates, also called trusted helpers,
  * ensure that the user is prompted for granting or denying trust to a specific application.
  *

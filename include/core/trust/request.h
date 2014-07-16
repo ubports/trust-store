@@ -119,7 +119,7 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
 
 /**
  * @brief Processes an incoming trust-request by an application, tries to lookup a previous reply before
- * issueing a prompt request via the given agent to the user. On return, the given trust-store is up-to-date.
+ * issuing a prompt request via the given agent to the user. On return, the given trust-store is up-to-date.
  *
  * @throws std::exception To indicate that no conclusive answer could be resolved from either the store or
  * the user. In that case, the state of the store instance passed in to the function is not altered.
@@ -131,12 +131,13 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
  * {
  *     static constexpr std::uint64_t default_feature = 0;
  *
- *     void on_session_requested(const std::string& app_id)
+ *     void on_session_requested(pid_t app_pid, const std::string& app_id)
  *     {
  *         core::trust::RequestParameters params
  *         {
  *             trust.agent,
  *             trust.store,
+ *             app_pid,
  *             app_id,
  *             default_feature,
  *             "Application " + app_id + " wants to access the example service."
@@ -161,7 +162,7 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
  *             core::trust::mir::make_agent_for_existing_connection(mir_connection)
  *         };
  *
- *         std::shared_ptr<Store> store
+ *         std::shared_ptr<core::trust::Store> store
  *         {
  *             core::trust::create_default_store("my.example.service");
  *         };

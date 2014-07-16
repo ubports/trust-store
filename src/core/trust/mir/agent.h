@@ -98,7 +98,7 @@ struct CORE_TRUST_DLL_PUBLIC ConnectionVirtualTable
     MirConnection* connection;
 };
 
-// Abstracts common functionality required for runninging external helpers.
+// Abstracts common functionality required for running external helpers.
 struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
 {
     // Just a convenience typedef.
