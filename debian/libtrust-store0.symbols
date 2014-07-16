@@ -12,7 +12,7 @@ libtrust-store.so.0 libtrust-store0 #MINVER#
  (c++)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection*)@Base" 0replaceme
  (c++)"core::trust::mir::PromptSessionVirtualTable::release_sync()@Base" 0replaceme
  (c++,arch=amd64)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 0replaceme
- (c++,arch=i376)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 0replaceme
+ (c++,arch=i386)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 0replaceme
  (c++)"core::trust::mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()@Base" 0replaceme
  (c++)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession*)@Base" 0replaceme
  (c++)"core::trust::mir::create_agent_for_mir_connection(MirConnection*)@Base" 0replaceme
