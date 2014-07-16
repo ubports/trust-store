@@ -114,6 +114,6 @@ install(
 )
 
 install(
-  FILES prompt_main.qml
+  FILES core/trust/mir/prompt_main.qml
   DESTINATION ${CMAKE_INSTALL_DATADIR}/core/trust/mir
 )
