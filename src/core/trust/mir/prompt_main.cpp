@@ -59,7 +59,16 @@ public Q_SLOTS:
 int main(int argc, char** argv)
 {
     QStringList argl;
-    for (int i = 0 ; i < argc; i++) if (argv[i]) argl << argv[i];
+    for (int i = 0 ; i < argc; i++)
+    {
+        if (argv[i])
+        {
+            if (::strcmp(argv[i], core::trust::mir::cli::option_server_socket) == 0)
+                ::setenv(core::trust::mir::env::option_mir_socket, argv[i+1], 1);
+
+            argl << argv[i];
+        }
+    }
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Trusted helper prompt");
