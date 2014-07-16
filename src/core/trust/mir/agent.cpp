@@ -100,9 +100,9 @@ core::posix::ChildProcess mir::PromptProviderHelper::exec_prompt_provider_with_a
 
     std::vector<std::string> argv
     {
-        "--" + std::string{core::trust::mir::cli::option_server_socket} + "=fd://" + std::to_string(args.fd),
-        "--" + std::string{core::trust::mir::cli::option_title} + "=" + args.application_id,
-        "--" + std::string{core::trust::mir::cli::option_description} + "=" + args.description
+        "--" + std::string{core::trust::mir::cli::option_server_socket}, "fd://" + std::to_string(args.fd),
+        "--" + std::string{core::trust::mir::cli::option_title}, args.application_id,
+        "--" + std::string{core::trust::mir::cli::option_description}, args.description
     };
 
     // We just copy the environment
