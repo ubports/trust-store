@@ -33,7 +33,7 @@ inline bool isRunningInstalled()
 
 inline QString appDirectory()
 {
-    isRunningInstalled() ?
+    return isRunningInstalled() ?
                 QString("@CMAKE_INSTALL_PREFIX@/@APP_DIR@/") :
                 QString("@CMAKE_SOURCE_DIR@/src/core/trust/mir/");
 }
