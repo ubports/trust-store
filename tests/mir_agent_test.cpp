@@ -429,5 +429,9 @@ TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requir
     char y_or_n{'n'}; std::cin >> y_or_n;
     EXPECT_EQ('y', y_or_n);
 
+    // We are bit rude here, but we have no more use for the app.
+    app.send_signal_or_throw(core::posix::Signal::sig_kill);
+
+    // And wait for the app to complete to avoid zombies.
     app.wait_for(core::posix::wait::Flags::untraced);
 }
