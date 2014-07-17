@@ -18,6 +18,7 @@
 
 // Implementation-specific header
 #include <core/trust/mir/agent.h>
+#include <core/trust/mir/config.h>
 
 #include <core/trust/agent.h>
 #include <core/trust/request.h>
@@ -98,23 +99,9 @@ struct MockTranslator
     MOCK_METHOD1(translate, core::trust::Request::Answer(const core::posix::wait::Result&));
 };
 
-std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> mock_translator_to_functor(const std::shared_ptr<MockTranslator>& ptr)
-{
-    return [ptr](const core::posix::wait::Result& result) { return ptr->translate(result); };
-}
-
 std::shared_ptr<MockPromptSessionVirtualTable> a_mocked_prompt_session_vtable()
 {
     return std::make_shared<testing::NiceMock<MockPromptSessionVirtualTable>>();
-}
-
-std::shared_ptr<core::trust::mir::PromptProviderHelper> a_prompt_provider_calling_bin_false()
-{
-    return std::make_shared<core::trust::mir::PromptProviderHelper>(
-                core::trust::mir::PromptProviderHelper::CreationArguments
-                {
-                    "/bin/false"
-                });
 }
 
 std::shared_ptr<MockPromptProviderHelper> a_mocked_prompt_provider_calling_bin_false()
@@ -123,15 +110,6 @@ std::shared_ptr<MockPromptProviderHelper> a_mocked_prompt_provider_calling_bin_f
                 core::trust::mir::PromptProviderHelper::CreationArguments
                 {
                     "/bin/false"
-                });
-}
-
-std::shared_ptr<core::trust::mir::PromptProviderHelper> a_prompt_provider_calling_bin_true()
-{
-    return std::make_shared<core::trust::mir::PromptProviderHelper>(
-                core::trust::mir::PromptProviderHelper::CreationArguments
-                {
-                    "/bin/true"
                 });
 }
 }
@@ -179,9 +157,11 @@ TEST(DefaultProcessStateTranslator, returns_granted_for_process_exiting_successf
 
 TEST(DefaultPromptProviderHelper, correctly_passes_arguments_to_prompt_executable)
 {
+    core::posix::this_process::env::set_or_throw("CORE_TRUST_MIR_PROMPT_TESTING", "1");
+
     core::trust::mir::PromptProviderHelper::CreationArguments cargs
     {
-        core::trust::testing::test_prompt_executable_in_build_dir
+        core::trust::mir::trust_prompt_executable_in_build_dir
     };
 
     core::trust::mir::PromptProviderHelper::InvocationArguments iargs
@@ -198,6 +178,9 @@ TEST(DefaultPromptProviderHelper, correctly_passes_arguments_to_prompt_executabl
 
     EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
     EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
+
+    // And clean up.
+    core::posix::this_process::env::unset_or_throw("CORE_TRUST_MIR_PROMPT_TESTING");
 }
 
 TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)

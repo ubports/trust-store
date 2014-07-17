@@ -29,11 +29,6 @@ static constexpr const char* trust_prompt_executable_in_build_dir
 {
     "@CMAKE_BINARY_DIR@/src/trust-prompt"
 };
-
-static constexpr const char* test_prompt_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/tests/test_prompt"
-};
 }
 }
 }

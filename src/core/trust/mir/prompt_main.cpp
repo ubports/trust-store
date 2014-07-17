@@ -29,6 +29,7 @@
 #include <QQmlEngine>
 
 #include <boost/program_options.hpp>
+#include <boost/program_options/environment_iterator.hpp>
 
 #include <core/posix/this_process.h>
 
@@ -55,24 +56,71 @@ public Q_SLOTS:
 }
 }
 
+namespace
+{
+namespace testing
+{
+void validate_command_line_arguments(const boost::program_options::variables_map& vm)
+{
+    // We are throwing exceptions here, which immediately calls abort and still gives a
+    // helpful error message on the terminal.
+    if (vm.count(core::trust::mir::cli::option_title) == 0) throw std::logic_error
+    {
+        "Missing option title."
+    };
+
+    if (vm.count(core::trust::mir::cli::option_description) == 0) throw std::logic_error
+    {
+        "Missing option description"
+    };
+
+    if (vm.count(core::trust::mir::cli::option_server_socket) == 0) throw std::logic_error
+    {
+        "Missing option mir_server_socket"
+    };
+
+    std::string mir_server_socket = vm[core::trust::mir::cli::option_server_socket].as<std::string>();
+
+    if (mir_server_socket.find("fd://") != 0) throw std::logic_error
+    {
+        "mir_server_socket does not being with fd://"
+    };
+}
+}
+}
+
+
 int main(int argc, char** argv)
 {
     boost::program_options::options_description options;
     options.add_options()
             (core::trust::mir::cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
             (core::trust::mir::cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
-            (core::trust::mir::cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt");
+            (core::trust::mir::cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt.")
+            (core::trust::mir::cli::option_testing, "Only checks command-line parameters and does not execute any actions.");
 
     auto parsed_options = boost::program_options::command_line_parser{argc, argv}
             .options(options)
             .allow_unregistered()
             .run();
 
+    // Consider the command line.
     boost::program_options::variables_map vm;
     boost::program_options::store(parsed_options, vm);
     boost::program_options::notify(vm);
 
-    // Let's validate the arguments
+    // And the environment for option passing.
+    parsed_options = boost::program_options::parse_environment(options, "CORE_TRUST_MIR_PROMPT_");
+    boost::program_options::store(parsed_options, vm);
+    boost::program_options::notify(vm);
+
+    // We just verify command line arguments in testing and immediately return.
+    if (vm.count(core::trust::mir::cli::option_testing) > 0)
+    {
+        testing::validate_command_line_arguments(vm); return 0;
+    }
+
+    // Let's validate the arguments.
     if (vm.count(core::trust::mir::cli::option_title) == 0)
         abort(); // We have to call abort here to make sure that we get signalled.
 

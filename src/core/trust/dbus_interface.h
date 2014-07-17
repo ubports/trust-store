@@ -65,7 +65,7 @@ struct Store
 {
     static const std::string& name()
     {
-        static std::string s{"com.ubuntu.trust.store"};
+        static const std::string s{"com.ubuntu.trust.store"};
         return s;
     }
 

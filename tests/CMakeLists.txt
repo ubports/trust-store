@@ -43,14 +43,6 @@ add_executable(
   mir_agent_test.cpp
 )
 
-# A standalone executable that validates arguments being passed in.
-add_executable(
-  test_prompt
-  test_prompt.cpp
-)
-
-target_link_libraries(test_prompt ${Boost_LIBRARIES})
-
 target_link_libraries(
   trust_store_test
 

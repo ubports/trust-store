@@ -34,19 +34,28 @@ static constexpr const char* option_mir_socket
 }
 namespace cli
 {
+/** @brief Mir server socket to connect to. */
 static constexpr const char* option_server_socket
 {
     "mir_server_socket"
 };
 
+/** @brief Title of the prompt. */
 static constexpr const char* option_title
 {
     "title"
 };
 
+/** @brief Extended description of the prompt. */
 static constexpr const char* option_description
 {
     "description"
+};
+
+/** @brief Only checks command-line parameters and does not execute any actions. */
+static constexpr const char* option_testing
+{
+    "testing"
 };
 }
 }

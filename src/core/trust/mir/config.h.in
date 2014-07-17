@@ -16,12 +16,20 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
+#ifndef CORE_TRUST_MIR_CONFIG_H_
+#define CORE_TRUST_MIR_CONFIG_H_
+
 namespace core
 {
 namespace trust
 {
 namespace mir
 {
+static constexpr const char* trust_prompt_executable_in_build_dir
+{
+    "@CMAKE_BINARY_DIR@/src/trust-prompt"
+};
+
 static constexpr const char* trust_prompt_executable_in_lib_dir
 {
     "@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@/trust-prompt"
@@ -29,3 +37,5 @@ static constexpr const char* trust_prompt_executable_in_lib_dir
 }
 }
 }
+
+#endif // CORE_TRUST_MIR_CONFIG_H_
