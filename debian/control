@@ -56,8 +56,8 @@ Description: C++11 library for persisting trust requests - dev files
  trust-store.
 
 Package: trust-store-tests
-Section: doc
-Architecture: all
+Section: libdevel
+Architecture: any
 Depends: libtrust-store0 (= ${binary:Version}),
          ${misc:Depends},
 Suggests: libtrust-store-dev,
