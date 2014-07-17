@@ -11,6 +11,8 @@ pkg_check_modules(DBUS dbus-1)
 
 add_definitions(-DCORE_DBUS_ENABLE_GOOGLE_TEST_FIXTURE)
 
+configure_file(test_data.h.in test_data.h @ONLY)
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
 
