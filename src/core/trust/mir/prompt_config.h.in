@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,20 +16,24 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef TEST_DATA_H_
-#define TEST_DATA_H_
+#include <QtCore/QCoreApplication>
+#include <QtCore/QDir>
 
-namespace core
+// Returns true if the application is called from its installed location.
+inline bool isRunningInstalled()
 {
-namespace trust
-{
-namespace testing
-{
-static constexpr const char* trust_prompt_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-prompt"
-};
+    static bool installed
+    {
+        QCoreApplication::applicationDirPath() ==
+        QDir(("@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_LIBDIR@")).canonicalPath()
+    };
+
+    return installed;
 }
+
+inline QString appDirectory()
+{
+    return isRunningInstalled() ?
+                QString("@CMAKE_INSTALL_PREFIX@/@CMAKE_INSTALL_DATADIR@/core/trust/mir/") :
+                QString("@CMAKE_SOURCE_DIR@/src/core/trust/mir/");
 }
-}
-#endif // TEST_DATA_H_

@@ -1,29 +1,62 @@
 libtrust-store.so.0 libtrust-store0 #MINVER#
  (c++)"core::trust::create_default_store(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
+ (c++)"core::trust::process_trust_request(core::trust::RequestParameters const&)@Base" 0replaceme
  (c++)"core::trust::expose_store_to_bus_with_name(std::shared_ptr<core::trust::Store> const&, std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::resolve_store_on_bus_with_name(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::expose_store_to_session_with_name(std::shared_ptr<core::trust::Store> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::resolve_store_in_session_with_name(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
- (c++)"core::trust::Store::Query::Error::NoCurrentResult::~NoCurrentResult()@Base" 0.0.1+14.10.20140626.1
- (c++)"core::trust::Store::Query::Error::QueryIsInErrorState::~QueryIsInErrorState()@Base" 0.0.1+14.10.20140626.1
+ (c++)"core::trust::mir::PromptProviderHelper::InvocationArguments::~InvocationArguments()@Base" 0replaceme
+ (c++)"core::trust::mir::PromptProviderHelper::exec_prompt_provider_with_arguments(core::trust::mir::PromptProviderHelper::InvocationArguments const&)@Base" 0replaceme
+ (c++)"core::trust::mir::PromptProviderHelper::PromptProviderHelper(core::trust::mir::PromptProviderHelper::CreationArguments const&)@Base" 0replaceme
+ (c++)"core::trust::mir::ConnectionVirtualTable::create_prompt_session_sync(int, void (*)(MirPromptSession*, MirPromptSessionState, void*), void*)@Base" 0replaceme
+ (c++)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection*)@Base" 0replaceme
+ (c++)"core::trust::mir::PromptSessionVirtualTable::release_sync()@Base" 0replaceme
+ (c++|arch=amd64 armhf64 ppc64el)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 0replaceme
+ (c++|arch=armhf i386 powerpc)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 0replaceme
+ (c++)"core::trust::mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()@Base" 0replaceme
+ (c++)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession*)@Base" 0replaceme
+ (c++)"core::trust::mir::create_agent_for_mir_connection(MirConnection*)@Base" 0replaceme
+ (c++)"core::trust::mir::Agent::prompt_user_for_request(int, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::mir::Agent::on_trust_session_changed_state(MirPromptSession*, MirPromptSessionState, void*)@Base" 0replaceme
+ (c++)"core::trust::mir::Agent::translator_only_accepting_exit_status_success()@Base" 0replaceme
+ (c++)"core::trust::mir::Agent::Agent(std::shared_ptr<core::trust::mir::ConnectionVirtualTable> const&, std::shared_ptr<core::trust::mir::PromptProviderHelper> const&, std::function<core::trust::Request::Answer (core::posix::wait::Result const&)> const&)@Base" 0replaceme
+ (c++)"core::trust::mir::Agent::~Agent()@Base" 0replaceme
+ (c++)"core::trust::mir::operator==(core::trust::mir::PromptProviderHelper::InvocationArguments const&, core::trust::mir::PromptProviderHelper::InvocationArguments const&)@Base" 0replaceme
+ (c++)"core::trust::Store::Query::Errors::NoCurrentResult::~NoCurrentResult()@Base" 0replaceme
+ (c++)"core::trust::Store::Query::Errors::QueryIsInErrorState::~QueryIsInErrorState()@Base" 0replaceme
  (c++)"core::trust::Store::Errors::ErrorResettingStore::~ErrorResettingStore()@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::operator==(core::trust::Request const&, core::trust::Request const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request::Answer const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request const&)@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo for core::trust::Store::Query::Error::NoCurrentResult@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0.0.1+14.10.20140626.1
+ (c++)"typeinfo for core::trust::mir::PromptProviderHelper@Base" 0replaceme
+ (c++)"typeinfo for core::trust::mir::ConnectionVirtualTable@Base" 0replaceme
+ (c++)"typeinfo for core::trust::mir::PromptSessionVirtualTable@Base" 0replaceme
+ (c++)"typeinfo for core::trust::mir::Agent@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Agent@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0replaceme
  (c++)"typeinfo for core::trust::Store::Query@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo for core::trust::Store@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo for core::trust::Token@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo name for core::trust::Store::Query::Error::NoCurrentResult@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo name for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0.0.1+14.10.20140626.1
+ (c++)"typeinfo name for core::trust::mir::PromptProviderHelper@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::mir::ConnectionVirtualTable@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::mir::PromptSessionVirtualTable@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::mir::Agent@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Agent@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0replaceme
  (c++)"typeinfo name for core::trust::Store::Query@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo name for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo name for core::trust::Store@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo name for core::trust::Token@Base" 0.0.1+14.10.20140626.1
- (c++)"vtable for core::trust::Store::Query::Error::NoCurrentResult@Base" 0.0.1+14.10.20140626.1
- (c++)"vtable for core::trust::Store::Query::Error::QueryIsInErrorState@Base" 0.0.1+14.10.20140626.1
+ (c++)"vtable for core::trust::mir::PromptProviderHelper@Base" 0replaceme
+ (c++)"vtable for core::trust::mir::ConnectionVirtualTable@Base" 0replaceme
+ (c++)"vtable for core::trust::mir::PromptSessionVirtualTable@Base" 0replaceme
+ (c++)"vtable for core::trust::mir::Agent@Base" 0replaceme
+ (c++)"vtable for core::trust::Agent@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0replaceme
+ (c++)"vtable for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0replaceme
  (c++)"vtable for core::trust::Store::Query@Base" 0.0.1+14.10.20140626.1
  (c++)"vtable for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"vtable for core::trust::Store@Base" 0.0.1+14.10.20140626.1

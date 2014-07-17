@@ -7,13 +7,20 @@ Build-Depends: cmake,
                google-mock,
                gcovr,
                graphviz,
+               libboost-program-options-dev,
                libboost-system-dev,
                libdbus-cpp-dev,
                libdbus-1-dev,
                libgtest-dev,
+               libjson-c-dev,
+               libmirclient-dev,
                libprocess-cpp-dev,
                libsqlite3-dev,
                pkg-config,
+               qt5-default,
+               qtbase5-dev,
+               qtdeclarative5-dev,
+               qtquick1-5-dev,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/trust-store
@@ -48,6 +55,18 @@ Description: C++11 library for persisting trust requests - dev files
  .
  This package includes all the development headers and libraries for
  trust-store.
+
+Package: trust-store-tests
+Section: libdevel
+Architecture: any
+Depends: libtrust-store0 (= ${binary:Version}),
+         ${misc:Depends},
+Suggests: libtrust-store-dev,
+Description: Test files for libtrust-store0
+ Provides a common implementation of a trust store to be used by trusted
+ helpers.
+ .
+ This package includes test executables packaged for post-build execution.
 
 Package: libtrust-store-doc
 Section: doc

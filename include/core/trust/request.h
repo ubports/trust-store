@@ -24,6 +24,7 @@
 #include <cstdint>
 
 #include <chrono>
+#include <memory>
 #include <ostream>
 #include <string>
 
@@ -31,6 +32,10 @@ namespace core
 {
 namespace trust
 {
+// Forward declarations
+class Agent;
+class Store;
+
 /**
  * @brief The Request struct encapsulates information about a trust request answered by the user.
  *
@@ -59,7 +64,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     enum class Answer
     {
         denied, ///< Nope, I do not trust this application.
-        granted ///< Yup, I do trust this application.
+        granted, ///< Yup, I do trust this application.
     };
 
     /** The application id of the application that resulted in the request. */
@@ -94,6 +99,78 @@ CORE_TRUST_DLL_PUBLIC std::ostream& operator<<(std::ostream& out, const Request:
  * @return The output stream.
  */
 CORE_TRUST_DLL_PUBLIC std::ostream& operator<<(std::ostream& out, const Request& r);
+
+/** @brief Summarizes all parameters for processing a trust request. */
+struct CORE_TRUST_DLL_PUBLIC RequestParameters
+{
+    /** @brief The Agent implementation to dispatch a request to the user. */
+    std::shared_ptr<Agent> agent;
+    /** @brief The trust store to be used for caching purposes. */
+    std::shared_ptr<Store> store;
+    /** @brief The process id of the requesting application. */
+    pid_t application_pid;
+    /** @brief The id of the requesting application. */
+    std::string application_id;
+    /** @brief The service-specific feature identifier. */
+    std::uint64_t feature;
+    /** @brief An extended description that should be presented to the user on prompting. */
+    std::string description;
+};
+
+/**
+ * @brief Processes an incoming trust-request by an application, tries to lookup a previous reply before
+ * issuing a prompt request via the given agent to the user. On return, the given trust-store is up-to-date.
+ *
+ * @throws std::exception To indicate that no conclusive answer could be resolved from either the store or
+ * the user. In that case, the state of the store instance passed in to the function is not altered.
+ *
+ * The following code snippet illustrates how to use the function:
+ *
+ * @code
+ * struct Service
+ * {
+ *     static constexpr std::uint64_t default_feature = 0;
+ *
+ *     void on_session_requested(pid_t app_pid, const std::string& app_id)
+ *     {
+ *         core::trust::RequestParameters params
+ *         {
+ *             trust.agent,
+ *             trust.store,
+ *             app_pid,
+ *             app_id,
+ *             default_feature,
+ *             "Application " + app_id + " wants to access the example service."
+ *         };
+ *
+ *         switch(process_trust_request(params))
+ *         {
+ *             case core::trust::Request::Answer::granted:
+ *                 // Create session and get back to application with session credentials.
+ *                 break;
+ *             case core::trust::Request::Answer::denied:
+ *                 // Deny session creation and inform application.
+ *                 break;
+ *         }
+ *     }
+ *
+ *     struct
+ *     {
+ *         // We use Mir's trust session support to request the prompting UI.
+ *         std::shared_ptr<core::trust::Agent> agent
+ *         {
+ *             core::trust::mir::make_agent_for_existing_connection(mir_connection)
+ *         };
+ *
+ *         std::shared_ptr<core::trust::Store> store
+ *         {
+ *             core::trust::create_default_store("my.example.service");
+ *         };
+ *     } trust;
+ * };
+ * @endcode
+ */
+CORE_TRUST_DLL_PUBLIC Request::Answer process_trust_request(const RequestParameters& params);
 }
 }
 

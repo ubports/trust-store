@@ -63,15 +63,10 @@ namespace dbus
 {
 struct Store
 {
-    static std::string& mutable_name()
-    {
-        static std::string s;
-        return s;
-    }
-
     static const std::string& name()
     {
-        return mutable_name();
+        static const std::string s{"com.ubuntu.trust.store"};
+        return s;
     }
 
     struct Error
