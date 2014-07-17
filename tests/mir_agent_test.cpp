@@ -410,6 +410,9 @@ TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requir
                 a_copy_of_the_env(),
                 core::posix::StandardStream::empty);
 
+    // We give the app some time to come up.
+    std::this_thread::sleep_for(std::chrono::seconds{5});
+
     // We pretend to be a trusted helper and connect to mir via its trusted socket.
     auto mir_connection = mir_connect_sync(trusted_mir_socket().c_str(), pretty_function.c_str());
 
