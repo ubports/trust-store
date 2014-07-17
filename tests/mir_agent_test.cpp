@@ -23,8 +23,6 @@
 #include <core/trust/request.h>
 #include <core/trust/store.h>
 
-#include "test_data.h"
-
 #include <core/posix/fork.h>
 
 #include <gmock/gmock.h>
