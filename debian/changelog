@@ -4,6 +4,31 @@ trust-store (1.0.0) UNRELEASED; urgency=medium
 
  -- Thomas Voß <thomas.voss@canonical.com>  Fri, 27 Jun 2014 10:46:20 +0200
 
+trust-store (0.0.1+14.10.20140717.8-0ubuntu1) utopic; urgency=low
+
+  [ Ubuntu daily release ]
+  * debian/*symbols: auto-update new symbols to released version
+
+  [ thomas-voss ]
+  * Provide an agent implementation that leverages Mir's trusted
+    prompting API. Introduce a default prompt provider using Qt/QML.
+    Provide a test harness around the core::trust::mir::Agent
+    implementation and the prompt provider. Add a convenience function
+    for processing incoming requests.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 17 Jul 2014 18:45:56 +0000
+
+trust-store (0.0.1+14.10.20140717.1-0ubuntu1) utopic; urgency=low
+
+  [ thomas-voss ]
+  * Remove obsolete data/session.conf and data/system.conf files. Adjust
+    directory creation default mode to 0755. (LP: #1338587)
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 17 Jul 2014 08:52:11 +0000
+
 trust-store (0.0.1+14.10.20140626.1-0ubuntu1) utopic; urgency=low
 
   [ Thomas Voß ]

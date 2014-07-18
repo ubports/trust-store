@@ -18,6 +18,8 @@
 
 #include <core/trust/store.h>
 
+#include <core/posix/this_process.h>
+
 #include <sqlite3.h>
 
 #include <cstring>
@@ -32,28 +34,26 @@ namespace core
 {
 std::string home()
 {
-    return std::string{::getenv("HOME")};
+    return core::posix::this_process::env::get_or_throw("HOME");
 }
 
 std::string runtime_persistent_data_dir()
 {
-    char* value = ::getenv("XDG_DATA_HOME");
-    if (!value || value[0] == '0')
-    {
-        return std::string{home() + "/.local/share"};
-    }
-
-    return std::string{value};
+    return core::posix::this_process::env::get(
+                "XDG_DATA_HOME",
+                home() + "/.local/share");
 }
 
 struct Directory
 {
     Directory(const std::string& name)
     {
+        // Default permissions for directory creation.
+        mode_t default_mode = 0755;
         // This is only a helper and we are consciously ignoring
         // errors. We will fail later on when trying to opening the
         // database, anyway.
-        mkdir(name.c_str(), 0777);
+        mkdir(name.c_str(), default_mode);
     }
 };
 
@@ -592,9 +592,9 @@ struct Store : public core::trust::Store,
         {
             switch(d.status)
             {
-            case Status::error: throw Error::QueryIsInErrorState{};
-            case Status::eor: throw Error::NoCurrentResult{};
-            case Status::armed: throw Error::NoCurrentResult{};
+            case Status::error: throw Errors::QueryIsInErrorState{};
+            case Status::eor: throw Errors::NoCurrentResult{};
+            case Status::armed: throw Errors::NoCurrentResult{};
             default:
             {
                 trust::Request request
@@ -719,7 +719,7 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
 std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
 {
     if (service_name.empty())
-        throw core::trust::Error::ServiceNameMustNotBeEmpty();
+        throw core::trust::Errors::ServiceNameMustNotBeEmpty();
 
     return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
 }
