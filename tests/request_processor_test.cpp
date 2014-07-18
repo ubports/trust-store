@@ -118,11 +118,6 @@ std::shared_ptr<testing::NiceMock<MockStore>> a_mocked_store()
     return std::make_shared<testing::NiceMock<MockStore>>();
 }
 
-std::shared_ptr<core::trust::Store::Query> a_null_query()
-{
-    return std::shared_ptr<core::trust::Store::Query>{};
-}
-
 std::shared_ptr<testing::NiceMock<MockStore::MockQuery>> a_mocked_query()
 {
     return std::make_shared<testing::NiceMock<MockStore::MockQuery>>();
