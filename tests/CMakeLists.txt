@@ -100,5 +100,5 @@ add_test(mir_agent_test ${CMAKE_CURRENT_BINARY_DIR}/mir_agent_test --gtest_filte
 
 install(
   TARGETS trust_store_test remote_trust_store_test request_processor_test mir_agent_test
-  RUNTIME DESTINATION bin/trust-store-tests
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/trust-store-tests
 )
