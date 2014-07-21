@@ -45,11 +45,12 @@ public:
 
     /**
      * @brief Presents the given request to the user, returning the user-provided answer.
+     * @param app_uid The user under which the requesting app is running.
      * @param app_pid The process id of the requesting application.
      * @param app_id The application id of the requesting application.
      * @param description Extended description of the trust request.
      */
-    virtual Request::Answer prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description) = 0;
+    virtual Request::Answer prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description) = 0;
 };
 }
 }

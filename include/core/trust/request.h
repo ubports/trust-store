@@ -107,6 +107,8 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
     std::shared_ptr<Agent> agent;
     /** @brief The trust store to be used for caching purposes. */
     std::shared_ptr<Store> store;
+    /** @brief The user id under which the requesting application runs. */
+    uid_t application_uid;
     /** @brief The process id of the requesting application. */
     pid_t application_pid;
     /** @brief The id of the requesting application. */

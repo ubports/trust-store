@@ -178,7 +178,7 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
     // From core::trust::Agent:
     // Throws a std::logic_error if anything unforeseen happens during execution, thus
     // indicating that no conclusive answer could be obtained from the user.
-    core::trust::Request::Answer prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description) override;
+    core::trust::Request::Answer prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description) override;
 
     // The connection VTable used for creating trusted prompting sessions.
     ConnectionVirtualTable::Ptr connection_vtable;

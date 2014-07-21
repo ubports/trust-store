@@ -20,6 +20,8 @@
 #include <core/trust/request.h>
 #include <core/trust/store.h>
 
+#include "mock_agent.h"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -27,16 +29,6 @@
 
 namespace
 {
-struct MockAgent : public core::trust::Agent
-{
-    /**
-     * @brief Presents the given request to the user, returning the user-provided answer.
-     * @param request The trust request that a user has to answer.
-     * @param description Extended description of the trust request.
-     */
-    MOCK_METHOD3(prompt_user_for_request, core::trust::Request::Answer(pid_t, const std::string&, const std::string&));
-};
-
 struct MockStore : public core::trust::Store
 {
     struct MockQuery : public core::trust::Store::Query
@@ -93,6 +85,11 @@ pid_t the_default_pid_for_testing()
     return 42;
 }
 
+uid_t the_default_uid_for_testing()
+{
+    return 42;
+}
+
 std::uint64_t the_default_feature_for_testing()
 {
     return 0;
@@ -134,6 +131,7 @@ core::trust::RequestParameters default_request_parameters_for_testing()
     {
         a_null_agent(),
         a_null_store(),
+        the_default_uid_for_testing(),
         the_default_pid_for_testing(),
         "this.is.just.for.testing.purposes",
         the_default_feature_for_testing(),
@@ -222,7 +220,7 @@ TEST(RequestProcessing, queries_store_for_cached_results_and_returns_cached_valu
     EXPECT_CALL(*mocked_query, for_feature(params.feature)).Times(1);
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
-    EXPECT_CALL(*mocked_agent, prompt_user_for_request(_, _, _)).Times(0);
+    EXPECT_CALL(*mocked_agent, prompt_user_for_request(_,_, _, _)).Times(0);
 
     params.agent = mocked_agent;
     params.store = mocked_store;
@@ -250,7 +248,7 @@ TEST(RequestProcessing, queries_agent_if_no_cached_results_and_returns_users_ans
     auto mocked_query = a_mocked_query();
     auto mocked_store = a_mocked_store();
 
-    ON_CALL(*mocked_agent, prompt_user_for_request(params.application_pid, params.application_id, params.description))
+    ON_CALL(*mocked_agent, prompt_user_for_request(params.application_uid, params.application_pid, params.application_id, params.description))
             .WillByDefault(
                 Return(
                     answer));
@@ -275,7 +273,7 @@ TEST(RequestProcessing, queries_agent_if_no_cached_results_and_returns_users_ans
     EXPECT_CALL(*mocked_query, for_feature(params.feature)).Times(1);
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
-    EXPECT_CALL(*mocked_agent, prompt_user_for_request(params.application_pid, params.application_id, params.description)).Times(1);
+    EXPECT_CALL(*mocked_agent, prompt_user_for_request(params.application_uid, params.application_pid, params.application_id, params.description)).Times(1);
 
     params.agent = mocked_agent;
     params.store = mocked_store;

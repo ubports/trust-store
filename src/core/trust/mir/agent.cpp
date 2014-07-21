@@ -20,6 +20,10 @@
 
 #include "prompt_main.h"
 
+// For getuid
+#include <unistd.h>
+#include <sys/types.h>
+
 namespace mir = core::trust::mir;
 
 // Invoked whenever a request for creation of pre-authenticated fds succeeds.
@@ -181,8 +185,15 @@ mir::Agent::Agent(
 }
 
 // From core::trust::Agent:
-core::trust::Request::Answer mir::Agent::prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer mir::Agent::prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description)
 {
+    // We assume that the agent implementation runs under the same user id as
+    // the requesting app to prevent from cross-user attacks.
+    if (::getuid() != app_uid) throw std::logic_error
+    {
+        "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
+    };
+
     // We initialize our callback context with an invalid child-process for setup
     // purposes. Later on, once we have acquired a pre-authenticated fd for the
     // prompt provider, we exec the actual provider in a child process and replace the

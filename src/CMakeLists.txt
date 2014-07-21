@@ -20,11 +20,13 @@ find_package(Qt5Quick REQUIRED)
 
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
+pkg_check_modules(LIBAPPARMOR libapparmor REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
 include_directories(
   ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
+  ${LIBAPPARMOR_INCLUDE_DIRS}
   ${SQLITE3_INCLUDE_DIRS}
 )
 
@@ -49,6 +51,13 @@ add_library(
   # to prompt the user for trusting an application to access a trusted
   # system service.
   core/trust/mir/agent.cpp
+
+  # Agent implementations for handling request out of process.
+  core/trust/remote/agent.cpp
+  # An implementation relying on unix sockets, to be used for
+  # inclusion with the android Camera Service.
+  core/trust/remote/unix_domain_socket_agent.h
+  core/trust/remote/unix_domain_socket_agent.cpp
 )
 
 configure_file(
@@ -81,6 +90,7 @@ target_link_libraries(
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}
+  ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
   ${MIR_COMMON_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}
