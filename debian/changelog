@@ -1,8 +1,9 @@
-trust-store (1.0.0) UNRELEASED; urgency=medium
+trust-store (1.0.0+14.10.20140718.2-0ubuntu1) utopic; urgency=medium
 
+  [ Thomas Voß ]
   * Bump major revision and so name to account for toolchain update.
 
- -- Thomas Voß <thomas.voss@canonical.com>  Fri, 27 Jun 2014 10:46:20 +0200
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 18 Jul 2014 15:32:04 +0000
 
 trust-store (0.0.1+14.10.20140717.8-0ubuntu1) utopic; urgency=low
 
