@@ -30,7 +30,7 @@ struct MockAgent : public core::trust::Agent
      * @param request The trust request that a user has to answer.
      * @param description Extended description of the trust request.
      */
-    MOCK_METHOD4(prompt_user_for_request, core::trust::Request::Answer(uid_t, pid_t, const std::string&, const std::string&));
+    MOCK_METHOD4(prompt_user_for_request, core::trust::Request::Answer(core::trust::Uid, core::trust::Pid, const std::string&, const std::string&));
 };
 
 #endif // MOCK_AGENT_H_

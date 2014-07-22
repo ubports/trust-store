@@ -80,14 +80,14 @@ struct MockStore : public core::trust::Store
     MOCK_METHOD0(query, std::shared_ptr<core::trust::Store::Query>());
 };
 
-pid_t the_default_pid_for_testing()
+core::trust::Pid the_default_pid_for_testing()
 {
-    return 42;
+    return core::trust::Pid{42};
 }
 
-uid_t the_default_uid_for_testing()
+core::trust::Uid the_default_uid_for_testing()
 {
-    return 42;
+    return core::trust::Uid{42};
 }
 
 std::uint64_t the_default_feature_for_testing()

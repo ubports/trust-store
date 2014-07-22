@@ -32,6 +32,70 @@ namespace core
 {
 namespace trust
 {
+/** @brief Helper structure for tagging integer types with certain semantics. */
+template<typename Tag, typename Integer>
+struct TaggedInteger
+{
+    /** @brief We bail out if the Integral type is not an integral one. */
+    static_assert(std::is_integral<Integer>::value, "Integer has to be an integral type");
+
+    /** @brief Stores the Tag type. */
+    typedef Tag TagType;
+    /** @brief Stores the Integer type. */
+    typedef Integer IntegerType;
+
+    /** @brief Construct an instance with a default value. */
+    TaggedInteger() : value{}
+    {
+    }
+
+    /** @brief Construct an instance from an existing integer type. */
+    explicit TaggedInteger(Integer value) : value{value}
+    {
+    }
+
+    /** @brief The contained integer value. */
+    Integer value;
+};
+
+/** @brief Returns true iff both tagged integer instances are equal. */
+template<typename Tag, typename Integer>
+inline bool operator==(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
+{
+    return lhs.value == rhs.value;
+}
+
+/** @brief Returns true iff both tagged integer instances are not equal. */
+template<typename Tag, typename Integer>
+inline bool operator!=(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
+{
+    return lhs.value == rhs.value;
+}
+
+/** @brief Returns true iff the left-hand-side integer instance is smaller than the right-hand-side. */
+template<typename Tag, typename Integer>
+inline bool operator<(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
+{
+    return lhs.value < rhs.value;
+}
+
+namespace tag
+{
+// Tags a group id
+struct Gid {};
+// Tags a process id
+struct Pid {};
+// Tags a user id
+struct Uid {};
+}
+
+/** @brief Our internal group id type. */
+typedef TaggedInteger<tag::Gid, gid_t> Gid;
+/** @brief Our internal process id type. */
+typedef TaggedInteger<tag::Pid, pid_t> Pid;
+/** @brief Our internal user id type. */
+typedef TaggedInteger<tag::Uid, uid_t> Uid;
+
 // Forward declarations
 class Agent;
 class Store;
@@ -108,9 +172,9 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
     /** @brief The trust store to be used for caching purposes. */
     std::shared_ptr<Store> store;
     /** @brief The user id under which the requesting application runs. */
-    uid_t application_uid;
+    core::trust::Uid application_uid;
     /** @brief The process id of the requesting application. */
-    pid_t application_pid;
+    core::trust::Pid application_pid;
     /** @brief The id of the requesting application. */
     std::string application_id;
     /** @brief The service-specific feature identifier. */

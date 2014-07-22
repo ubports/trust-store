@@ -47,35 +47,36 @@ namespace remote
 struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
 {
     // Functor abstracting pid -> process start time resolving
-    typedef std::function<std::int64_t(pid_t)> ProcessStartTimeResolver;
+    typedef std::function<std::int64_t(Pid)> ProcessStartTimeResolver;
 
     // Queries the start time of a process by reading /proc/{PID}/stat.
     static ProcessStartTimeResolver proc_stat_start_time_resolver();
 
-    // Our distilled-down request that we share between stub and skeleton
+    // Our distilled-down request that we share between stub and skeleton.
     struct Request
     {
         // Id of the user that the requesting app is running under.
-        std::uint32_t app_uid;
+        Uid app_uid;
         // The process id of the requesting app.
-        std::int32_t app_pid;
+        Pid app_pid;
         // We want to prevent from spoofing and send over the process start time.
         std::int64_t app_start_time;
     };
 
     // Models the sending end of a remote agent, meant to be used by trusted helpers.
-    struct CORE_TRUST_DLL_PUBLIC Stub : public core::trust::remote::Agent::Stub,
+    class CORE_TRUST_DLL_PUBLIC Stub : public core::trust::remote::Agent::Stub,
                                         public std::enable_shared_from_this<Stub>
     {
+    public:
         // Just for convenience
         typedef std::shared_ptr<Stub> Ptr;
 
         // Functor resolving a socket's peer's credentials
         typedef std::function<
             std::tuple<
-                uid_t,  // The user ID of the peer
-                pid_t,  // The process ID of the peer
-                gid_t   // The group ID of the peer
+                Uid,  // The user ID of the peer
+                Pid,  // The process ID of the peer
+                Gid   // The group ID of the peer
             >(int)      // Handle to the socket
         > PeerCredentialsResolver;
 
@@ -99,29 +100,25 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
                 virtual ~Registry() = default;
 
                 // Returns true iff the registry instance contains a session for the given user id.
-                virtual bool has_session_for_uid(std::int32_t uid) const;
+                virtual bool has_session_for_uid(Uid uid) const;
 
                 // Adds the given session for the given uid to the registry.
-                virtual void add_session_for_uid(std::int32_t uid, Session::Ptr session);
+                virtual void add_session_for_uid(Uid uid, Session::Ptr session);
 
                 // Removes the session instance for the given user id.
-                virtual void remove_session_for_uid(std::int32_t uid);
+                virtual void remove_session_for_uid(Uid uid);
 
                 // Queries the session for the given user id.
                 // Throws std::out_of_range if no session is known for the user id.
-                virtual Session::Ptr resolve_session_for_uid(std::int32_t uid);
+                virtual Session::Ptr resolve_session_for_uid(Uid uid);
 
             private:
                 mutable std::mutex guard;
-                std::map<std::int32_t, Session::Ptr> sessions;
+                std::map<core::trust::Uid, Session::Ptr> sessions;
             };
 
             // Creates a new session.
             Session(boost::asio::io_service& io_service);
-
-            // Sends out a request to the remote agent, waiting for at most timeout
-            // milliseconds for the send operation to complete
-            core::trust::Request::Answer send_request_and_wait_for(const Request& request, const std::chrono::milliseconds& timeout);
 
             // The socket we are operating on.
             boost::asio::local::stream_protocol::socket socket;
@@ -148,6 +145,25 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
         // The returned instance is waiting for incoming connections.
         static Ptr create_stub_for_configuration(const Configuration& config);
 
+        // Frees all resources and cancels any outstanding async operation
+        // on the endpoint.
+        virtual ~Stub();
+
+        // From core::trust::remote::Agent::Stub.
+        core::trust::Request::Answer send(
+                // The user id under which the requesting application runs.
+                Uid app_uid,
+                // The process id of the requesting application.
+                Pid app_pid,
+                // The app id of the requesting application.
+                const std::string& app_id,
+                // An extended description describing the trust request
+                const std::string& description);
+
+        // For testing purposes
+        bool has_session_for_uid(Uid uid) const;
+
+    private:
         // Creates a new instance with the given configuration.
         // Throws in case of errors.
         Stub(Configuration configuration);
@@ -156,25 +172,12 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
         // for incoming connections.
         void start_accept();
 
-        virtual ~Stub();
-
-        // From core::trust::remote::Agent::Stub.
-        core::trust::Request::Answer send(
-                // The user id under which the requesting application runs.
-                uid_t app_uid,
-                // The process id of the requesting application.
-                pid_t app_pid,
-                // The app id of the requesting application.
-                const std::string& app_id,
-                // An extended description describing the trust request
-                const std::string& description);
-
         // Called in case of an incoming connection.
         void on_new_session(const boost::system::error_code& ec, const Session::Ptr& session);
 
         // Interprets the given error code, carrying out maintenance on the Session::Registry
         // before rethrowing as a std::system_error.
-        void handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, uid_t uid);
+        void handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, Uid uid);
 
         // The io dispatcher that this instance is associated with.
         boost::asio::io_service& io_service;
@@ -192,10 +195,16 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
     };
 
     // Models the receiving end of a remote agent, meant to be used by the trust store daemon.
-    struct CORE_TRUST_DLL_PUBLIC Skeleton : public core::trust::remote::Agent::Skeleton
+    class CORE_TRUST_DLL_PUBLIC Skeleton
+            : public core::trust::remote::Agent::Skeleton,
+              public std::enable_shared_from_this<Skeleton>
     {
+    public:
+        // Just for convenience
+        typedef std::shared_ptr<Skeleton> Ptr;
+
         // Functor abstracting pid -> app name resolving
-        typedef std::function<std::string(pid_t)> AppIdResolver;
+        typedef std::function<std::string(Pid)> AppIdResolver;
 
         // Queries the app armor confinement profile to resolve the application id.
         static AppIdResolver aa_get_task_con_app_id_resolver();
@@ -217,6 +226,8 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
             // an app id.
             std::string description_format;
         };
+
+        Ptr create_skeleton_for_configuration(const Configuration& configuration);
 
         // Constructs a new Skeleton instance, installing impl for handling actual requests.
         Skeleton(const Configuration& configuration);

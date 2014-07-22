@@ -24,6 +24,8 @@
 
 #include <core/trust/visibility.h>
 
+#include <type_traits>
+
 namespace core
 {
 namespace trust
@@ -42,14 +44,14 @@ struct Agent
         virtual ~Stub() = default;
 
         // From core::trust::Agent
-        virtual Request::Answer prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description);
+        virtual Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description);
 
         // Sends out the request to the receiving end, either returning an answer
         // or throwing an exception if no conclusive answer could be obtained from
         // the user.
         virtual core::trust::Request::Answer send(
-                uid_t uid, // The user id under which the requesting application runs.
-                pid_t pid, // The process id of the requesting application.
+                Uid uid, // The user id under which the requesting application runs.
+                Pid pid, // The process id of the requesting application.
                 const std::string& app_id, // The app id of the requesting application.
                 const std::string& description // An extended description describing the trust request
         ) = 0;
@@ -64,7 +66,7 @@ struct Agent
         virtual ~Skeleton() = default;
 
         // From core::trust::Agent, dispatches to the actual implementation.
-        virtual core::trust::Request::Answer prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description);
+        virtual core::trust::Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description);
 
         // The actual agent implementation that we are dispatching to.
         std::shared_ptr<core::trust::Agent> impl;

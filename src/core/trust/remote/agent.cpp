@@ -18,9 +18,10 @@
 
 #include "core/trust/remote/agent.h"
 
+namespace trust = core::trust;
 namespace remote = core::trust::remote;
 
-core::trust::Request::Answer remote::Agent::Stub::prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer remote::Agent::Stub::prompt_user_for_request(trust::Uid app_uid, trust::Pid app_pid, const std::string& app_id, const std::string& description)
 {
     return send(app_uid, app_pid, app_id, description);
 }
@@ -29,7 +30,7 @@ remote::Agent::Skeleton::Skeleton(const std::shared_ptr<core::trust::Agent>& imp
 {
 }
 
-core::trust::Request::Answer remote::Agent::Skeleton::prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer remote::Agent::Skeleton::prompt_user_for_request(trust::Uid app_uid, trust::Pid app_pid, const std::string& app_id, const std::string& description)
 {
     return impl->prompt_user_for_request(app_uid, app_pid, app_id, description);
 }

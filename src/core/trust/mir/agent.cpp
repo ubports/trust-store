@@ -77,7 +77,7 @@ mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
 
 mir::PromptSessionVirtualTable::Ptr mir::ConnectionVirtualTable::create_prompt_session_sync(
         // The process id of the requesting app/service
-        pid_t app_pid,
+        core::trust::Pid app_pid,
         // Callback handling prompt session state changes.
         mir_prompt_session_state_change_callback cb,
         // Callback context
@@ -87,7 +87,7 @@ mir::PromptSessionVirtualTable::Ptr mir::ConnectionVirtualTable::create_prompt_s
     {
         new PromptSessionVirtualTable
         {
-            mir_connection_create_prompt_session_sync(connection, app_pid, cb, context)
+            mir_connection_create_prompt_session_sync(connection, app_pid.value, cb, context)
         }
     };
 }
@@ -185,11 +185,11 @@ mir::Agent::Agent(
 }
 
 // From core::trust::Agent:
-core::trust::Request::Answer mir::Agent::prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer mir::Agent::prompt_user_for_request(core::trust::Uid app_uid, core::trust::Pid app_pid, const std::string& app_id, const std::string& description)
 {
     // We assume that the agent implementation runs under the same user id as
     // the requesting app to prevent from cross-user attacks.
-    if (::getuid() != app_uid) throw std::logic_error
+    if (core::trust::Uid{::getuid()} != app_uid) throw std::logic_error
     {
         "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
     };

@@ -227,7 +227,11 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     };
 
     EXPECT_EQ(core::trust::Request::Answer::denied, // /bin/false exits with failure.
-              agent.prompt_user_for_request(::getuid(), app_pid, app_id, app_description));
+              agent.prompt_user_for_request(
+                  core::trust::Uid{::getuid()},
+                  core::trust::Pid{app_pid},
+                  app_id,
+                  app_description));
 }
 
 TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
@@ -305,7 +309,11 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
     // The spinning prompt provider should get signalled if the prompting session is stopped.
     // If that does not happen, the prompt provider returns success and we would have a result
     // granted.
-    EXPECT_THROW(agent.prompt_user_for_request(::getuid(), app_pid, app_id, app_description),
+    EXPECT_THROW(agent.prompt_user_for_request(
+                     core::trust::Uid{::getuid()},
+                     core::trust::Pid{app_pid},
+                     app_id,
+                     app_description),
                  std::logic_error);
 
     // And some clean up.
@@ -403,7 +411,11 @@ TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requir
     auto mir_agent = core::trust::mir::create_agent_for_mir_connection(mir_connection);
 
     // And issue a prompt request. As a result, the user is presented with a prompting dialog.
-    auto answer = mir_agent->prompt_user_for_request(::getuid(), app.pid(), "embedded prompt", "embedded prompt");
+    auto answer = mir_agent->prompt_user_for_request(
+                core::trust::Uid{::getuid()},
+                core::trust::Pid{app.pid()},
+                "embedded prompt",
+                "embedded prompt");
 
     // And we cross-check with the user:
     std::cout << "You answered the trust prompt with: " << answer << "."

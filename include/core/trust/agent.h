@@ -50,7 +50,7 @@ public:
      * @param app_id The application id of the requesting application.
      * @param description Extended description of the trust request.
      */
-    virtual Request::Answer prompt_user_for_request(uid_t app_uid, pid_t app_pid, const std::string& app_id, const std::string& description) = 0;
+    virtual Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description) = 0;
 };
 }
 }

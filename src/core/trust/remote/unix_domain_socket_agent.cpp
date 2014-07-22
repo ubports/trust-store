@@ -31,14 +31,15 @@
 #include <functional>
 #include <mutex>
 
+namespace trust = core::trust;
 namespace remote = core::trust::remote;
 
 // Queries the start time of a process by reading /proc/{PID}/stat.
 remote::UnixDomainSocketAgent::ProcessStartTimeResolver remote::UnixDomainSocketAgent::proc_stat_start_time_resolver()
 {
-    return [](pid_t pid)
+    return [](trust::Pid pid)
     {
-        core::posix::Process process{pid};
+        core::posix::Process process{pid.value};
         core::posix::linux::proc::process::Stat stat;
         process >> stat;
 
@@ -61,29 +62,37 @@ remote::UnixDomainSocketAgent::Stub::PeerCredentialsResolver remote::UnixDomainS
             errno, std::system_category()
         };
 
-        return std::make_tuple(peer_credentials.uid, peer_credentials.pid, peer_credentials.gid);
+        return std::make_tuple(
+                    core::trust::Uid{peer_credentials.uid},
+                    core::trust::Pid{peer_credentials.pid},
+                    core::trust::Gid{peer_credentials.gid});
     };
 }
 
-bool remote::UnixDomainSocketAgent::Stub::Session::Registry::has_session_for_uid(std::int32_t uid) const
+bool remote::UnixDomainSocketAgent::Stub::Session::Registry::has_session_for_uid(core::trust::Uid uid) const
 {
     std::lock_guard<std::mutex> lg(guard);
     return sessions.count(uid) > 0;
 }
 
-void remote::UnixDomainSocketAgent::Stub::Session::Registry::add_session_for_uid(std::int32_t uid, Session::Ptr session)
+void remote::UnixDomainSocketAgent::Stub::Session::Registry::add_session_for_uid(core::trust::Uid uid, Session::Ptr session)
 {
+    if (not session) throw std::logic_error
+    {
+        "Cannot add null session to registry."
+    };
+
     std::lock_guard<std::mutex> lg(guard);
     sessions[uid] = session;
 }
 
-void remote::UnixDomainSocketAgent::Stub::Session::Registry::remove_session_for_uid(std::int32_t uid)
+void remote::UnixDomainSocketAgent::Stub::Session::Registry::remove_session_for_uid(core::trust::Uid uid)
 {
     std::lock_guard<std::mutex> lg(guard);
     sessions.erase(uid);
 }
 
-remote::UnixDomainSocketAgent::Stub::Session::Ptr remote::UnixDomainSocketAgent::Stub::Session::Registry::resolve_session_for_uid(std::int32_t uid)
+remote::UnixDomainSocketAgent::Stub::Session::Ptr remote::UnixDomainSocketAgent::Stub::Session::Registry::resolve_session_for_uid(core::trust::Uid uid)
 {
     std::lock_guard<std::mutex> lg(guard);
     return sessions.at(uid);
@@ -96,10 +105,16 @@ remote::UnixDomainSocketAgent::Stub::Session::Session(boost::asio::io_service& i
 
 remote::UnixDomainSocketAgent::Stub::Ptr remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(const Configuration& config)
 {
-    auto result = std::make_shared<remote::UnixDomainSocketAgent::Stub>(config);
-    result->start_accept();
+    remote::UnixDomainSocketAgent::Stub::Ptr stub
+    {
+        new remote::UnixDomainSocketAgent::Stub
+        {
+            config
+        }
+    };
 
-    return result;
+    stub->start_accept();
+    return stub;
 }
 
 // Creates a new instance with the given configuration.
@@ -136,9 +151,9 @@ remote::UnixDomainSocketAgent::Stub::~Stub()
 
 core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
         // The user id under which the requesting application runs.
-        uid_t app_uid,
+        trust::Uid app_uid,
         // The process id of the requesting application.
-        pid_t app_pid,
+        trust::Pid app_pid,
         // The app id of the requesting application.
         const std::string& app_id,
         // An extended description describing the trust request
@@ -153,7 +168,7 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
     // This call will throw if there is no session known for the uid.
     Session::Ptr session = session_registry->resolve_session_for_uid(app_uid);
 
-    core::trust::remote::UnixDomainSocketAgent::Request request
+    remote::UnixDomainSocketAgent::Request request
     {
         app_uid,
         app_pid,
@@ -217,7 +232,7 @@ void remote::UnixDomainSocketAgent::Stub::on_new_session(
     start_accept();
 }
 
-void remote::UnixDomainSocketAgent::Stub::handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, uid_t uid)
+void remote::UnixDomainSocketAgent::Stub::handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, trust::Uid uid)
 {
     switch (ec.value())
     {
@@ -238,9 +253,14 @@ void remote::UnixDomainSocketAgent::Stub::handle_error_from_socket_operation_for
     throw std::system_error{ec.value(), std::system_category()};
 }
 
+bool remote::UnixDomainSocketAgent::Stub::has_session_for_uid(trust::Uid uid) const
+{
+    return session_registry->has_session_for_uid(uid);
+}
+
 remote::UnixDomainSocketAgent::Skeleton::AppIdResolver remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver()
 {
-    return [](pid_t pid)
+    return [](trust::Pid pid)
     {
         static const int app_armor_error{-1};
 
@@ -257,7 +277,7 @@ remote::UnixDomainSocketAgent::Skeleton::AppIdResolver remote::UnixDomainSocketA
         } scope;
 
         // Reach out to apparmor
-        auto rc = aa_gettaskcon(pid, &scope.con, &scope.mode);
+        auto rc = aa_gettaskcon(pid.value, &scope.con, &scope.mode);
 
         // From man aa_gettaskcon:
         // On success size of data placed in the buffer is returned, this includes the mode if
@@ -275,6 +295,21 @@ remote::UnixDomainSocketAgent::Skeleton::AppIdResolver remote::UnixDomainSocketA
             scope.con ? scope.con : ""
         };
     };
+}
+
+remote::UnixDomainSocketAgent::Skeleton::Ptr remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(
+    const remote::UnixDomainSocketAgent::Skeleton::Configuration& configuration)
+{
+    remote::UnixDomainSocketAgent::Skeleton::Ptr skeleton
+    {
+        new remote::UnixDomainSocketAgent::Skeleton
+        {
+            configuration
+        }
+    };
+
+    skeleton->start_read();
+    return skeleton;
 }
 
 remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configuration)

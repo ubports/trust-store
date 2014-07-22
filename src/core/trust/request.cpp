@@ -52,8 +52,8 @@ core::trust::Request::Answer core::trust::process_trust_request(const core::trus
 
     // We do not have results available in the store, prompting the user
     auto answer = params.agent->prompt_user_for_request(
-                params.application_uid,
-                params.application_pid,
+                core::trust::Uid{params.application_uid},
+                core::trust::Pid{params.application_pid},
                 params.application_id,
                 params.description);
 

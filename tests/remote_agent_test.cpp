@@ -37,16 +37,27 @@ struct MockRemoteAgentStub : public core::trust::remote::Agent::Stub
     // Sends out the request to the receiving end, either returning an answer
     // or throwing an exception if no conclusive answer could be obtained from
     // the user.
-    MOCK_METHOD4(send, core::trust::Request::Answer(uid_t, pid_t, const std::string&, const std::string&));
+    MOCK_METHOD4(send, core::trust::Request::Answer(core::trust::Uid, core::trust::Pid, const std::string&, const std::string&));
 };
+
+::testing::AssertionResult ProcessExitedSuccessfully(const core::posix::wait::Result& result)
+{
+    if (core::posix::wait::Result::Status::exited != result.status)
+        return ::testing::AssertionFailure();
+
+    if (core::posix::exit::Status::success != result.detail.if_exited.status)
+        return ::testing::AssertionFailure();
+
+    return ::testing::AssertionSuccess();
+}
 }
 
 TEST(RemoteAgentStub, calls_send_for_handling_requests_and_returns_answer)
 {
     using namespace ::testing;
 
-    uid_t app_uid{21};
-    pid_t app_pid{42};
+    core::trust::Uid app_uid{21};
+    core::trust::Pid app_pid{42};
     std::string app_id{"does.not.exist"};
     std::string description{"some meaningless description"};
 
@@ -63,8 +74,8 @@ TEST(RemoteAgentSkeleton, calls_out_to_implementation)
 {
     using namespace ::testing;
 
-    uid_t app_uid{21};
-    pid_t app_pid{42};
+    core::trust::Uid app_uid{21};
+    core::trust::Pid app_pid{42};
     std::string app_id{"does.not.exist"};
     std::string description{"some meaningless description"};
 
@@ -85,6 +96,83 @@ TEST(RemoteAgentSkeleton, calls_out_to_implementation)
     EXPECT_EQ(core::trust::Request::Answer::granted,
               skeleton.prompt_user_for_request(app_uid, app_pid, app_id, description));
 }
+
+TEST(RemoteAgentStubSessionRegistry, adding_and_removing_of_a_valid_session_works)
+{
+    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+
+    boost::asio::io_service io_service;
+
+    Session::Ptr session
+    {
+        new Session
+        {
+            io_service
+        }
+    };
+
+    Session::Registry::Ptr registry
+    {
+        new Session::Registry{}
+    };
+
+    core::trust::Uid uid{::getuid()};
+
+    EXPECT_NO_THROW(registry->add_session_for_uid(uid, session););
+    EXPECT_TRUE(registry->has_session_for_uid(uid));
+    EXPECT_NE(nullptr, registry->resolve_session_for_uid(uid));
+    EXPECT_NO_THROW(registry->remove_session_for_uid(uid););
+    EXPECT_FALSE(registry->has_session_for_uid(uid));
+    EXPECT_THROW(registry->resolve_session_for_uid(uid), std::out_of_range);
+}
+
+TEST(RemoteAgentStubSessionRegistry, adding_a_null_session_throws)
+{
+    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+
+    Session::Ptr session;
+
+    Session::Registry::Ptr registry
+    {
+        new Session::Registry{}
+    };
+
+    core::trust::Uid uid{::getuid()};
+
+    EXPECT_THROW(registry->add_session_for_uid(uid, session), std::logic_error);
+    EXPECT_FALSE(registry->has_session_for_uid(uid));
+    EXPECT_THROW(registry->resolve_session_for_uid(uid), std::out_of_range);
+}
+
+TEST(RemoteAgentStubSessionRegistry, resolving_a_non_existing_session_throws)
+{
+    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+
+    Session::Registry::Ptr registry
+    {
+        new Session::Registry{}
+    };
+
+    core::trust::Uid uid{::getuid()};
+
+    EXPECT_THROW(registry->resolve_session_for_uid(uid), std::out_of_range);
+}
+
+TEST(RemoteAgentStubSessionRegistry, removing_a_non_existing_session_does_not_throw)
+{
+    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+
+    Session::Registry::Ptr registry
+    {
+        new Session::Registry{}
+    };
+
+    core::trust::Uid uid{::getuid()};
+
+    EXPECT_FALSE(registry->has_session_for_uid(uid));
+    EXPECT_NO_THROW(registry->remove_session_for_uid(uid));
+}
+
 
 namespace
 {
@@ -149,6 +237,8 @@ struct UnixDomainSocketRemoteAgent : public ::testing::Test
         };
     }
 
+
+
     boost::asio::io_service io_service;
     boost::asio::io_service::work keep_alive;
 
@@ -161,13 +251,13 @@ struct MockProcessStartTimeResolver
 
     core::trust::remote::UnixDomainSocketAgent::ProcessStartTimeResolver to_functional()
     {
-        return [this](pid_t pid)
+        return [this](core::trust::Pid pid)
         {
             return resolve_process_start_time(pid);
         };
     }
 
-    MOCK_METHOD1(resolve_process_start_time, std::int64_t(pid_t));
+    MOCK_METHOD1(resolve_process_start_time, std::int64_t(core::trust::Pid));
 };
 
 }
@@ -186,12 +276,12 @@ TEST_F(UnixDomainSocketRemoteAgent, accepts_connections_on_endpoint)
     EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
     EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
 
-    EXPECT_TRUE(stub->session_registry->has_session_for_uid(::getuid()));
+    EXPECT_TRUE(stub->has_session_for_uid(core::trust::Uid{::getuid()}));
 }
 
 TEST_F(UnixDomainSocketRemoteAgent, queries_peer_credentials_for_incoming_connection)
 {
-    static const uid_t uid{42};
+    static const core::trust::Uid uid{42};
     bool peer_credentials_queried{false};
 
     auto config = the_default_stub_configuration();
@@ -199,7 +289,7 @@ TEST_F(UnixDomainSocketRemoteAgent, queries_peer_credentials_for_incoming_connec
     config.peer_credentials_resolver = [&peer_credentials_queried](int)
     {
         peer_credentials_queried = true;
-        return std::make_tuple(uid, 42, 42);
+        return std::make_tuple(uid, core::trust::Pid{42}, core::trust::Gid{42});
     };
 
     auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
@@ -214,7 +304,7 @@ TEST_F(UnixDomainSocketRemoteAgent, queries_peer_credentials_for_incoming_connec
     EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
 
     EXPECT_TRUE(peer_credentials_queried);
-    EXPECT_TRUE(stub->session_registry->has_session_for_uid(uid));
+    EXPECT_TRUE(stub->has_session_for_uid(uid));
 }
 
 TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_for_request)
@@ -288,7 +378,12 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
             .Times(2)
             .WillRepeatedly(Return(42));
 
-    EXPECT_EQ(core::trust::Request::Answer::denied, stub->prompt_user_for_request(getuid(), 42, "", ""));
+    EXPECT_EQ(core::trust::Request::Answer::denied,
+              stub->prompt_user_for_request(
+                  core::trust::Uid{::getuid()},
+                  core::trust::Pid{42},
+                  "",
+                  ""));
 
     child.send_signal_or_throw(core::posix::Signal::sig_term);
     auto result = child.wait_for(core::posix::wait::Flags::untraced);
@@ -297,3 +392,139 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
     EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
 }
 
+/**************************************
+  Full blown acceptance tests go here.
+**************************************/
+
+#include <ctime>
+
+namespace
+{
+static constexpr const char* endpoint_for_acceptance_testing
+{
+    "/tmp/endpoint.for.acceptance.testing"
+};
+
+// Our rng used in acceptance testing, seeded with the current time since
+// the epoch in seconds.
+static std::default_random_engine rng
+{
+    static_cast<std::default_random_engine::result_type>(std::time(nullptr))
+};
+
+// Our dice
+static std::uniform_int_distribution<int> dice(1,6);
+}
+TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
+{
+    using namespace ::testing;
+
+    std::remove(endpoint_for_acceptance_testing);
+
+    core::testing::CrossProcessSync
+            stub_ready,         // signals stub     --| I'm ready |--> skeleton
+            skeleton_ready;     // signals skeleton --| I'm ready |--> stub
+
+    auto app = core::posix::fork([]()
+    {
+        while(true) std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    // We sample an answer by throwing a dice.
+    const core::trust::Request::Answer answer
+    {
+        dice(rng) <= 3 ?
+                    core::trust::Request::Answer::denied :
+                    core::trust::Request::Answer::granted
+    };
+
+    const core::trust::Uid app_uid{::getuid()};
+    const core::trust::Pid app_pid{app.pid()};
+
+    auto stub = core::posix::fork([app_uid, app_pid, answer, &stub_ready, &skeleton_ready]()
+    {
+        boost::asio::io_service io_service;
+        boost::asio::io_service::work keep_alive{io_service};
+
+        std::thread worker{[&io_service]() { io_service.run(); }};
+
+        core::trust::remote::UnixDomainSocketAgent::Stub::Configuration config
+        {
+            io_service,
+            boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
+            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
+            core::trust::remote::UnixDomainSocketAgent::Stub::get_sock_opt_credentials_resolver(),
+            std::make_shared<core::trust::remote::UnixDomainSocketAgent::Stub::Session::Registry>()
+        };
+
+        auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
+
+        stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+        skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
+        for (unsigned int i = 0; i < 100; i++)
+        {
+            EXPECT_EQ(answer, stub->prompt_user_for_request(app_uid, app_pid, "", ""));
+        }
+
+        io_service.stop();
+
+        if (worker.joinable())
+            worker.join();
+
+        return Test::HasFailure() ?
+                    core::posix::exit::Status::failure :
+                    core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    auto skeleton = core::posix::fork([answer, &stub_ready, &skeleton_ready]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        boost::asio::io_service io_service;
+        boost::asio::io_service::work keep_alive{io_service};
+
+        std::thread worker{[&io_service]() { io_service.run(); }};
+
+        // We have to rely on a MockAgent to break the dependency on a running Mir instance.
+        auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
+
+        ON_CALL(*mock_agent, prompt_user_for_request(_, _, _, _))
+                .WillByDefault(Return(answer));
+
+        core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+        {
+            mock_agent,
+            io_service,
+            boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
+            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
+            core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+            "Just a test for %1%."
+        };
+
+        stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+        core::trust::remote::UnixDomainSocketAgent::Skeleton skeleton{config};
+        skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+
+        trap->run();
+
+        io_service.stop();
+
+        if (worker.joinable())
+            worker.join();
+
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+    skeleton.send_signal_or_throw(core::posix::Signal::sig_term);
+    EXPECT_TRUE(ProcessExitedSuccessfully(skeleton.wait_for(core::posix::wait::Flags::untraced)));
+
+    app.send_signal_or_throw(core::posix::Signal::sig_kill);
+}
