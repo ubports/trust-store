@@ -1,4 +1,4 @@
-libtrust-store.so.0 libtrust-store0 #MINVER#
+libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"core::trust::create_default_store(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::process_trust_request(core::trust::RequestParameters const&)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::expose_store_to_bus_with_name(std::shared_ptr<core::trust::Store> const&, std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
