@@ -37,7 +37,7 @@ struct MockRemoteAgentStub : public core::trust::remote::Agent::Stub
     // Sends out the request to the receiving end, either returning an answer
     // or throwing an exception if no conclusive answer could be obtained from
     // the user.
-    MOCK_METHOD4(send, core::trust::Request::Answer(core::trust::Uid, core::trust::Pid, const std::string&, const std::string&));
+    MOCK_METHOD1(send, core::trust::Request::Answer(const core::trust::Agent::RequestParameters&));
 };
 
 ::testing::AssertionResult ProcessExitedSuccessfully(const core::posix::wait::Result& result)
@@ -56,28 +56,36 @@ TEST(RemoteAgentStub, calls_send_for_handling_requests_and_returns_answer)
 {
     using namespace ::testing;
 
-    core::trust::Uid app_uid{21};
-    core::trust::Pid app_pid{42};
-    std::string app_id{"does.not.exist"};
-    std::string description{"some meaningless description"};
+    core::trust::Agent::RequestParameters parameters
+    {
+        core::trust::Uid{21},
+        core::trust::Pid{42},
+        std::string{"does.not.exist"},
+        core::trust::Feature{},
+        std::string{"some meaningless description"}
+    };
 
     MockRemoteAgentStub stub;
-    EXPECT_CALL(stub, send(app_uid, app_pid, app_id, description))
+    EXPECT_CALL(stub, send(parameters))
             .Times(1)
             .WillOnce(Return(core::trust::Request::Answer::granted));
 
     EXPECT_EQ(core::trust::Request::Answer::granted,
-              stub.prompt_user_for_request(app_uid, app_pid, app_id, description));
+              stub.authenticate_request_with_parameters(parameters));
 }
 
 TEST(RemoteAgentSkeleton, calls_out_to_implementation)
 {
     using namespace ::testing;
 
-    core::trust::Uid app_uid{21};
-    core::trust::Pid app_pid{42};
-    std::string app_id{"does.not.exist"};
-    std::string description{"some meaningless description"};
+    core::trust::Agent::RequestParameters parameters
+    {
+        core::trust::Uid{21},
+        core::trust::Pid{42},
+        std::string{"does.not.exist"},
+        core::trust::Feature{},
+        std::string{"some meaningless description"}
+    };
 
     std::shared_ptr<MockAgent> mock_agent
     {
@@ -89,12 +97,12 @@ TEST(RemoteAgentSkeleton, calls_out_to_implementation)
         mock_agent
     };
 
-    EXPECT_CALL(*mock_agent, prompt_user_for_request(app_uid, app_pid, app_id, description))
+    EXPECT_CALL(*mock_agent, authenticate_request_with_parameters(parameters))
             .Times(1)
             .WillOnce(Return(core::trust::Request::Answer::granted));
 
     EXPECT_EQ(core::trust::Request::Answer::granted,
-              skeleton.prompt_user_for_request(app_uid, app_pid, app_id, description));
+              skeleton.authenticate_request_with_parameters(parameters));
 }
 
 TEST(RemoteAgentStubSessionRegistry, adding_and_removing_of_a_valid_session_works)
@@ -271,11 +279,7 @@ TEST_F(UnixDomainSocketRemoteAgent, accepts_connections_on_endpoint)
                 UnixDomainSocketRemoteAgent::a_raw_peer_immediately_exiting(),
                 core::posix::StandardStream::empty);
 
-    auto result = child.wait_for(core::posix::wait::Flags::untraced);
-
-    EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
-    EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
-
+    EXPECT_TRUE(ProcessExitedSuccessfully(child.wait_for(core::posix::wait::Flags::untraced)));
     EXPECT_TRUE(stub->has_session_for_uid(core::trust::Uid{::getuid()}));
 }
 
@@ -298,10 +302,7 @@ TEST_F(UnixDomainSocketRemoteAgent, queries_peer_credentials_for_incoming_connec
                 UnixDomainSocketRemoteAgent::a_raw_peer_immediately_exiting(),
                 core::posix::StandardStream::empty);
 
-    auto result = child.wait_for(core::posix::wait::Flags::untraced);
-
-    EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
-    EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
+    EXPECT_TRUE(ProcessExitedSuccessfully(child.wait_for(core::posix::wait::Flags::untraced)));
 
     EXPECT_TRUE(peer_credentials_queried);
     EXPECT_TRUE(stub->has_session_for_uid(uid));
@@ -342,7 +343,7 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
 
         auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
 
-        EXPECT_CALL(*mock_agent, prompt_user_for_request(_, _, _, _))
+        EXPECT_CALL(*mock_agent, authenticate_request_with_parameters(_))
                 .Times(1)
                 .WillRepeatedly(Return(core::trust::Request::Answer::denied));
 
@@ -379,17 +380,18 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
             .WillRepeatedly(Return(42));
 
     EXPECT_EQ(core::trust::Request::Answer::denied,
-              stub->prompt_user_for_request(
-                  core::trust::Uid{::getuid()},
-                  core::trust::Pid{42},
-                  "",
-                  ""));
+              stub->authenticate_request_with_parameters(
+                  core::trust::Agent::RequestParameters
+                  {
+                      core::trust::Uid{::getuid()},
+                      core::trust::Pid{42},
+                      "",
+                      core::trust::Feature{},
+                      ""
+                  }));
 
     child.send_signal_or_throw(core::posix::Signal::sig_term);
-    auto result = child.wait_for(core::posix::wait::Flags::untraced);
-
-    EXPECT_EQ(core::posix::wait::Result::Status::exited, result.status);
-    EXPECT_EQ(core::posix::exit::Status::success, result.detail.if_exited.status);
+    EXPECT_TRUE(ProcessExitedSuccessfully(child.wait_for(core::posix::wait::Flags::untraced)));
 }
 
 /**************************************
@@ -465,7 +467,15 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
 
         for (unsigned int i = 0; i < 100; i++)
         {
-            EXPECT_EQ(answer, stub->prompt_user_for_request(app_uid, app_pid, "", ""));
+            EXPECT_EQ(answer, stub->authenticate_request_with_parameters(
+                          core::trust::Agent::RequestParameters
+                          {
+                              app_uid,
+                              app_pid,
+                              "",
+                              core::trust::Feature{},
+                              ""
+                          }));
         }
 
         io_service.stop();
@@ -495,7 +505,7 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
         // We have to rely on a MockAgent to break the dependency on a running Mir instance.
         auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
 
-        ON_CALL(*mock_agent, prompt_user_for_request(_, _, _, _))
+        ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
                 .WillByDefault(Return(answer));
 
         core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config

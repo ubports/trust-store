@@ -512,11 +512,11 @@ struct Store : public core::trust::Store,
             >(id);
         }
 
-        void for_feature(std::uint64_t feature)
+        void for_feature(core::trust::Feature feature)
         {
             d.select_statement.bind_int64<
                 Statements::Select::Parameter::Feature::index
-            >(feature);
+            >(feature.value);
         }
 
         void for_interval(const Request::Timestamp& begin, const Request::Timestamp& end)
@@ -600,7 +600,10 @@ struct Store : public core::trust::Store,
                 trust::Request request
                 {
                     d.select_statement.column_text<Store::Table::Column::ApplicationId::index>(),
-                    static_cast<unsigned int>(d.select_statement.column_int<Store::Table::Column::Feature::index>()),
+                    trust::Feature
+                    {
+                        static_cast<trust::Feature::IntegerType>(d.select_statement.column_int<Store::Table::Column::Feature::index>())
+                    },
                     std::chrono::system_clock::time_point
                     {
                         std::chrono::system_clock::duration
@@ -705,7 +708,7 @@ void sqlite::Store::add(const trust::Request& request)
 
     insert_statement.reset();
     insert_statement.bind_text<sqlite::Store::Table::Column::ApplicationId::index>(request.from);
-    insert_statement.bind_int<sqlite::Store::Table::Column::Feature::index>(request.feature);
+    insert_statement.bind_int<sqlite::Store::Table::Column::Feature::index>(request.feature.value);
     insert_statement.bind_int64<sqlite::Store::Table::Column::Timestamp::index>(request.when.time_since_epoch().count());
     insert_statement.bind_int<sqlite::Store::Table::Column::Answer::index>(static_cast<int>(request.answer));
     insert_statement.step();

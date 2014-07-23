@@ -64,7 +64,7 @@ struct MockConnectionVirtualTable : public core::trust::mir::ConnectionVirtualTa
     MOCK_METHOD3(create_prompt_session_sync,
                  core::trust::mir::PromptSessionVirtualTable::Ptr(
                      // The process id of the requesting app/service
-                     pid_t app_pid,
+                     core::trust::Pid app_pid,
                      // Callback handling prompt session state changes.
                      mir_prompt_session_state_change_callback,
                      // Callback context
@@ -98,6 +98,11 @@ struct MockTranslator
 {
     MOCK_METHOD1(translate, core::trust::Request::Answer(const core::posix::wait::Result&));
 };
+
+std::shared_ptr<MockConnectionVirtualTable> a_mocked_connection_vtable()
+{
+    return std::make_shared<testing::NiceMock<MockConnectionVirtualTable>>();
+}
 
 std::shared_ptr<MockPromptSessionVirtualTable> a_mocked_prompt_session_vtable()
 {
@@ -187,8 +192,9 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
 {
     using namespace ::testing;
 
-    const pid_t app_pid {21};
+    const core::trust::Pid app_pid {21};
     const std::string app_id {"does.not.exist.application"};
+    const core::trust::Feature feature{42};
     const std::string app_description {"This is just an extended description"};
     const int pre_authenticated_fd {42};
 
@@ -199,7 +205,7 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
         app_description
     };
 
-    auto connection_vtable = std::make_shared<MockConnectionVirtualTable>();
+    auto connection_vtable = a_mocked_connection_vtable();
     auto prompt_session_vtable = a_mocked_prompt_session_vtable();
 
     auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
@@ -215,6 +221,7 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
 
     EXPECT_CALL(*connection_vtable, create_prompt_session_sync(app_pid, _, _)).Times(1);
     EXPECT_CALL(*prompt_session_vtable, new_fd_for_prompt_provider()).Times(1);
+
     EXPECT_CALL(*prompt_provider_exec_helper,
                 exec_prompt_provider_with_arguments(
                     reference_invocation_args)).Times(1);
@@ -227,19 +234,24 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     };
 
     EXPECT_EQ(core::trust::Request::Answer::denied, // /bin/false exits with failure.
-              agent.prompt_user_for_request(
-                  core::trust::Uid{::getuid()},
-                  core::trust::Pid{app_pid},
-                  app_id,
-                  app_description));
+              agent.authenticate_request_with_parameters(
+                  core::trust::Agent::RequestParameters
+                  {
+                     core::trust::Uid{::getuid()},
+                     app_pid,
+                     app_id,
+                     feature,
+                     app_description
+                  }));
 }
 
 TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
 {
     using namespace ::testing;
 
-    const pid_t app_pid {21};
+    const core::trust::Pid app_pid {21};
     const std::string app_id {"does.not.exist.application"};
+    const core::trust::Feature feature{42};
     const std::string app_description {"This is just an extended description"};
     const int pre_authenticated_fd {42};
 
@@ -309,11 +321,15 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
     // The spinning prompt provider should get signalled if the prompting session is stopped.
     // If that does not happen, the prompt provider returns success and we would have a result
     // granted.
-    EXPECT_THROW(agent.prompt_user_for_request(
-                     core::trust::Uid{::getuid()},
-                     core::trust::Pid{app_pid},
-                     app_id,
-                     app_description),
+    EXPECT_THROW(agent.authenticate_request_with_parameters(
+                     core::trust::Agent::RequestParameters
+                     {
+                         core::trust::Uid{::getuid()},
+                         core::trust::Pid{app_pid},
+                         app_id,
+                         feature,
+                         app_description
+                     }),
                  std::logic_error);
 
     // And some clean up.
@@ -411,11 +427,15 @@ TEST(MirAgent, default_agent_works_correctly_against_running_mir_instance_requir
     auto mir_agent = core::trust::mir::create_agent_for_mir_connection(mir_connection);
 
     // And issue a prompt request. As a result, the user is presented with a prompting dialog.
-    auto answer = mir_agent->prompt_user_for_request(
-                core::trust::Uid{::getuid()},
-                core::trust::Pid{app.pid()},
-                "embedded prompt",
-                "embedded prompt");
+    auto answer = mir_agent->authenticate_request_with_parameters(
+                core::trust::Agent::RequestParameters
+                {
+                    core::trust::Uid{::getuid()},
+                    core::trust::Pid{app.pid()},
+                    "embedded prompt",
+                    core::trust::Feature{},
+                    "embedded prompt"
+                });
 
     // And we cross-check with the user:
     std::cout << "You answered the trust prompt with: " << answer << "."

@@ -39,6 +39,7 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 add_library(
   trust-store SHARED
   
+  core/trust/agent.cpp
   core/trust/expose.cpp
   core/trust/request.cpp
   core/trust/resolve.cpp
@@ -46,6 +47,9 @@ add_library(
   # The default implementation leverages SQLite3 to persist
   # requests.
   core/trust/impl/sqlite3/store.cpp
+
+  # An agent-implementation using a store instance to cache user replies.
+  core/trust/cached_agent.cpp
 
   # An agent-implementation leveraging Mir's trusted prompting support
   # to prompt the user for trusting an application to access a trusted
@@ -58,6 +62,12 @@ add_library(
   # inclusion with the android Camera Service.
   core/trust/remote/unix_domain_socket_agent.h
   core/trust/remote/unix_domain_socket_agent.cpp
+)
+
+add_executable(
+  trust-stored
+
+  core/trust/daemon.cpp
 )
 
 configure_file(
@@ -98,6 +108,15 @@ target_link_libraries(
 )
 
 target_link_libraries(
+  trust-stored
+
+  trust-store
+
+  ${MIR_CLIENT_LDFLAGS}
+  ${MIR_COMMON_LDFLAGS}
+)
+
+target_link_libraries(
   trust-prompt
 
   ${Boost_LIBRARIES}
@@ -123,6 +142,11 @@ set_target_properties(
 install(
   TARGETS trust-store
   LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+  TARGETS trust-stored
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
 install(

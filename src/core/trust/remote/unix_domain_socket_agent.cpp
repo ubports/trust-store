@@ -25,6 +25,7 @@
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 #include <boost/format.hpp>
 
 #include <fstream>
@@ -150,28 +151,19 @@ remote::UnixDomainSocketAgent::Stub::~Stub()
 }
 
 core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
-        // The user id under which the requesting application runs.
-        trust::Uid app_uid,
-        // The process id of the requesting application.
-        trust::Pid app_pid,
-        // The app id of the requesting application.
-        const std::string& app_id,
-        // An extended description describing the trust request
-        const std::string& description)
+        const core::trust::Agent::RequestParameters& parameters)
 {
-    (void) app_id;
-    (void) description;
-
     // We consider the process start time to prevent from spoofing.
-    auto start_time_before_query = start_time_resolver(app_pid);
+    auto start_time_before_query = start_time_resolver(parameters.application_pid);
 
     // This call will throw if there is no session known for the uid.
-    Session::Ptr session = session_registry->resolve_session_for_uid(app_uid);
+    Session::Ptr session = session_registry->resolve_session_for_uid(parameters.application_uid);
 
     remote::UnixDomainSocketAgent::Request request
     {
-        app_uid,
-        app_pid,
+        parameters.application_uid,
+        parameters.application_pid,
+        parameters.feature,
         start_time_before_query
     };
 
@@ -183,7 +175,7 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
                 ec);
 
     if (ec)
-        handle_error_from_socket_operation_for_uid(ec, app_uid);
+        handle_error_from_socket_operation_for_uid(ec, parameters.application_uid);
 
     core::trust::Request::Answer answer
     {
@@ -196,10 +188,10 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
                 ec);
 
     if (ec)
-        handle_error_from_socket_operation_for_uid(ec, app_uid);
+        handle_error_from_socket_operation_for_uid(ec, parameters.application_uid);
 
     // And finally, we check on the process start time.
-    auto start_time_after_query = start_time_resolver(app_pid);
+    auto start_time_after_query = start_time_resolver(parameters.application_pid);
 
     // We consider the process start time to prevent from spoofing. That is,
     // if the process start times differ here, we would authenticate a different process and
@@ -320,7 +312,17 @@ remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configura
       endpoint{configuration.endpoint},
       socket{configuration.io_service}
 {
-    socket.connect(configuration.endpoint);
+    try
+    {
+        socket.connect(configuration.endpoint);
+    } catch(const boost::exception& e)
+    {
+        throw std::runtime_error
+        {
+            "Could not connect to endpoint: " + endpoint.path()
+        };
+    }
+
     start_read();
 }
 
@@ -368,5 +370,13 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Skeleton::process_in
 
     // And reach out to the user.
     // TODO(tvoss): How to handle exceptions here?
-    return prompt_user_for_request(request.app_uid, request.app_pid, app_id, description);
+
+    return authenticate_request_with_parameters(core::trust::Agent::RequestParameters
+    {
+        request.app_uid,
+        request.app_pid,
+        app_id,
+        request.feature,
+        description
+    });
 }

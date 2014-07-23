@@ -21,16 +21,16 @@
 namespace trust = core::trust;
 namespace remote = core::trust::remote;
 
-core::trust::Request::Answer remote::Agent::Stub::prompt_user_for_request(trust::Uid app_uid, trust::Pid app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer remote::Agent::Stub::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
-    return send(app_uid, app_pid, app_id, description);
+    return send(parameters);
 }
 
 remote::Agent::Skeleton::Skeleton(const std::shared_ptr<core::trust::Agent>& impl) : impl{impl}
 {
 }
 
-core::trust::Request::Answer remote::Agent::Skeleton::prompt_user_for_request(trust::Uid app_uid, trust::Pid app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer remote::Agent::Skeleton::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
-    return impl->prompt_user_for_request(app_uid, app_pid, app_id, description);
+    return impl->authenticate_request_with_parameters(parameters);
 }

@@ -44,7 +44,7 @@ TEST(TrustStoreRequest, is_printed_correctly)
     core::trust::Request r
     {
         "this.does.not.exist.app",
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::time_point(std::chrono::seconds{0}),
         core::trust::Request::Answer::granted
     };
@@ -89,16 +89,16 @@ TEST(TrustStore, added_requests_are_found_by_query)
     core::trust::Request r1
     {
         "this.does.not.exist.app",
-        base_feature,
-                std::chrono::system_clock::now(),
-                core::trust::Request::Answer::granted
+        core::trust::Feature{base_feature},
+        std::chrono::system_clock::now(),
+        core::trust::Request::Answer::granted
     };
 
     core::trust::Request r2 = r1;
-    r2.feature = base_feature + 1;
+    r2.feature.value = base_feature + 1;
 
     core::trust::Request r3 = r2;
-    r2.feature = base_feature + 2;
+    r2.feature.value = base_feature + 2;
 
     store->add(r1);
     store->add(r2);
@@ -128,7 +128,7 @@ TEST(TrustStore, limiting_query_to_app_id_returns_correct_results)
     core::trust::Request r1
     {
         app1,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -136,7 +136,7 @@ TEST(TrustStore, limiting_query_to_app_id_returns_correct_results)
     core::trust::Request r2
     {
         app2,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -162,7 +162,7 @@ TEST(TrustStore, limiting_query_to_feature_returns_correct_results)
     core::trust::Request r1
     {
         app1,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -170,7 +170,7 @@ TEST(TrustStore, limiting_query_to_feature_returns_correct_results)
     core::trust::Request r2
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -196,7 +196,7 @@ TEST(TrustStore, limiting_query_to_answer_returns_correct_results)
     core::trust::Request r1
     {
         app1,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -204,7 +204,7 @@ TEST(TrustStore, limiting_query_to_answer_returns_correct_results)
     core::trust::Request r2
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::denied
     };
@@ -230,7 +230,7 @@ TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
     core::trust::Request r1
     {
         app1,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::time_point(std::chrono::seconds{0}),
         core::trust::Request::Answer::granted
     };
@@ -238,7 +238,7 @@ TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
     core::trust::Request r2
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::time_point(std::chrono::seconds{500}),
         core::trust::Request::Answer::granted
     };
@@ -246,7 +246,7 @@ TEST(TrustStore, limiting_query_to_time_interval_returns_correct_result)
     core::trust::Request r3
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::granted
     };
@@ -277,7 +277,7 @@ TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_resu
     core::trust::Request r1
     {
         app1,
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::time_point(std::chrono::seconds{0}),
         core::trust::Request::Answer::granted
     };
@@ -285,7 +285,7 @@ TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_resu
     core::trust::Request r2
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::time_point(std::chrono::seconds{500}),
         core::trust::Request::Answer::granted
     };
@@ -293,7 +293,7 @@ TEST(TrustStore, limiting_query_to_time_interval_and_answer_returns_correct_resu
     core::trust::Request r3
     {
         app1,
-        1,
+        core::trust::Feature{1},
         std::chrono::system_clock::now(),
         core::trust::Request::Answer::denied
     };
@@ -327,14 +327,14 @@ TEST(TrustStore, added_requests_are_found_by_query_multi_threaded)
         core::trust::Request r
         {
             "this.does.not.exist.app",
-            base_feature,
-                    std::chrono::system_clock::now(),
-                    core::trust::Request::Answer::granted
+            core::trust::Feature{base_feature},
+            std::chrono::system_clock::now(),
+            core::trust::Request::Answer::granted
         };
 
         for (unsigned int i = 0; i < 100; i++)
         {
-            r.feature = base + i;
+            r.feature.value = base + i;
             store->add(r);
         }
     };
@@ -371,14 +371,14 @@ TEST(TrustStore, erasing_requests_empties_store)
         core::trust::Request r
         {
             "this.does.not.exist.app",
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
 
         for (unsigned int i = 0; i < 100; i++)
         {
-            r.feature = i;
+            r.feature.value = i;
             store->add(r);
         }
 

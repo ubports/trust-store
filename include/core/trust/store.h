@@ -20,6 +20,7 @@
 #define CORE_TRUST_STORE_H_
 
 #include <core/trust/request.h>
+#include <core/trust/tagged_integer.h>
 #include <core/trust/visibility.h>
 
 #include <functional>
@@ -131,7 +132,7 @@ public:
         virtual void for_application_id(const std::string& id) = 0;
 
         /** @brief Limit the query to a service-specific feature. */
-        virtual void for_feature(std::uint64_t feature) = 0;
+        virtual void for_feature(Feature feature) = 0;
 
         /** @brief Limit the query to the specified time interval. */
         virtual void for_interval(const Request::Timestamp& begin, const Request::Timestamp& end) = 0;

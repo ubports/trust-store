@@ -19,6 +19,7 @@
 #ifndef CORE_TRUST_REQUEST_H_
 #define CORE_TRUST_REQUEST_H_
 
+#include <core/trust/tagged_integer.h>
 #include <core/trust/visibility.h>
 
 #include <cstdint>
@@ -32,70 +33,6 @@ namespace core
 {
 namespace trust
 {
-/** @brief Helper structure for tagging integer types with certain semantics. */
-template<typename Tag, typename Integer>
-struct TaggedInteger
-{
-    /** @brief We bail out if the Integral type is not an integral one. */
-    static_assert(std::is_integral<Integer>::value, "Integer has to be an integral type");
-
-    /** @brief Stores the Tag type. */
-    typedef Tag TagType;
-    /** @brief Stores the Integer type. */
-    typedef Integer IntegerType;
-
-    /** @brief Construct an instance with a default value. */
-    TaggedInteger() : value{}
-    {
-    }
-
-    /** @brief Construct an instance from an existing integer type. */
-    explicit TaggedInteger(Integer value) : value{value}
-    {
-    }
-
-    /** @brief The contained integer value. */
-    Integer value;
-};
-
-/** @brief Returns true iff both tagged integer instances are equal. */
-template<typename Tag, typename Integer>
-inline bool operator==(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
-{
-    return lhs.value == rhs.value;
-}
-
-/** @brief Returns true iff both tagged integer instances are not equal. */
-template<typename Tag, typename Integer>
-inline bool operator!=(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
-{
-    return lhs.value == rhs.value;
-}
-
-/** @brief Returns true iff the left-hand-side integer instance is smaller than the right-hand-side. */
-template<typename Tag, typename Integer>
-inline bool operator<(const TaggedInteger<Tag, Integer>& lhs, const TaggedInteger<Tag, Integer>& rhs)
-{
-    return lhs.value < rhs.value;
-}
-
-namespace tag
-{
-// Tags a group id
-struct Gid {};
-// Tags a process id
-struct Pid {};
-// Tags a user id
-struct Uid {};
-}
-
-/** @brief Our internal group id type. */
-typedef TaggedInteger<tag::Gid, gid_t> Gid;
-/** @brief Our internal process id type. */
-typedef TaggedInteger<tag::Pid, pid_t> Pid;
-/** @brief Our internal user id type. */
-typedef TaggedInteger<tag::Uid, uid_t> Uid;
-
 // Forward declarations
 class Agent;
 class Store;
@@ -134,7 +71,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     /** The application id of the application that resulted in the request. */
     std::string from;
     /** An application-specific feature identifier. */
-    std::uint64_t feature;
+    Feature feature;
     /** When the request happened in wallclock time. */
     Timestamp when;
     /** The user's answer. */
@@ -178,7 +115,7 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
     /** @brief The id of the requesting application. */
     std::string application_id;
     /** @brief The service-specific feature identifier. */
-    std::uint64_t feature;
+    Feature feature;
     /** @brief An extended description that should be presented to the user on prompting. */
     std::string description;
 };

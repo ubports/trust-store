@@ -59,6 +59,8 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
         Uid app_uid;
         // The process id of the requesting app.
         Pid app_pid;
+        // The service-specific feature.
+        Feature feature;
         // We want to prevent from spoofing and send over the process start time.
         std::int64_t app_start_time;
     };
@@ -150,15 +152,7 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
         virtual ~Stub();
 
         // From core::trust::remote::Agent::Stub.
-        core::trust::Request::Answer send(
-                // The user id under which the requesting application runs.
-                Uid app_uid,
-                // The process id of the requesting application.
-                Pid app_pid,
-                // The app id of the requesting application.
-                const std::string& app_id,
-                // An extended description describing the trust request
-                const std::string& description);
+        core::trust::Request::Answer send(const core::trust::Agent::RequestParameters& parameters) override;
 
         // For testing purposes
         bool has_session_for_uid(Uid uid) const;

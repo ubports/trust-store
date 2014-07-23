@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,21 +16,16 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef MOCK_AGENT_H_
-#define MOCK_AGENT_H_
+#include <core/trust/cached_agent.h>
 
-#include <core/trust/agent.h>
-
-#include <gmock/gmock.h>
-
-struct MockAgent : public core::trust::Agent
+core::trust::CachedAgent::CachedAgent(const core::trust::CachedAgent::Configuration& configuration)
+    : configuration(configuration)
 {
-    /**
-     * @brief Presents the given request to the user, returning the user-provided answer.
-     * @param request The trust request that a user has to answer.
-     * @param description Extended description of the trust request.
-     */
-    MOCK_METHOD1(authenticate_request_with_parameters, core::trust::Request::Answer(const core::trust::Agent::RequestParameters&));
-};
+}
 
-#endif // MOCK_AGENT_H_
+// From core::trust::Agent
+core::trust::Request::Answer core::trust::CachedAgent::authenticate_request_with_parameters(
+        const core::trust::Agent::RequestParameters&)
+{
+    return core::trust::Request::Answer::denied;
+}

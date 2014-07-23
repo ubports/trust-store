@@ -185,11 +185,11 @@ mir::Agent::Agent(
 }
 
 // From core::trust::Agent:
-core::trust::Request::Answer mir::Agent::prompt_user_for_request(core::trust::Uid app_uid, core::trust::Pid app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
     // We assume that the agent implementation runs under the same user id as
     // the requesting app to prevent from cross-user attacks.
-    if (core::trust::Uid{::getuid()} != app_uid) throw std::logic_error
+    if (core::trust::Uid{::getuid()} != parameters.application_uid) throw std::logic_error
     {
         "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
     };
@@ -212,7 +212,7 @@ core::trust::Request::Answer mir::Agent::prompt_user_for_request(core::trust::Ui
     {
         // We setup the prompt session and wire up to our own internal callback helper.
         connection_vtable->create_prompt_session_sync(
-                    app_pid,
+                    parameters.application_pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context)
     };
@@ -224,8 +224,8 @@ core::trust::Request::Answer mir::Agent::prompt_user_for_request(core::trust::Ui
     mir::PromptProviderHelper::InvocationArguments args
     {
         fd,
-        app_id,
-        description
+        parameters.application_id,
+        parameters.description
     };
 
     // Ask the helper to fire up the prompt provider.

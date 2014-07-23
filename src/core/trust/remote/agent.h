@@ -44,17 +44,12 @@ struct Agent
         virtual ~Stub() = default;
 
         // From core::trust::Agent
-        virtual Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description);
+        virtual Request::Answer authenticate_request_with_parameters(const RequestParameters& request);
 
         // Sends out the request to the receiving end, either returning an answer
         // or throwing an exception if no conclusive answer could be obtained from
         // the user.
-        virtual core::trust::Request::Answer send(
-                Uid uid, // The user id under which the requesting application runs.
-                Pid pid, // The process id of the requesting application.
-                const std::string& app_id, // The app id of the requesting application.
-                const std::string& description // An extended description describing the trust request
-        ) = 0;
+        virtual core::trust::Request::Answer send(const RequestParameters& parameters) = 0;
     };
 
     // Models the receiving end of a remote agent, meant to be used by the trust store daemon.
@@ -66,7 +61,7 @@ struct Agent
         virtual ~Skeleton() = default;
 
         // From core::trust::Agent, dispatches to the actual implementation.
-        virtual core::trust::Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description);
+        virtual core::trust::Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters);
 
         // The actual agent implementation that we are dispatching to.
         std::shared_ptr<core::trust::Agent> impl;

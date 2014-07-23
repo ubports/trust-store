@@ -20,15 +20,15 @@
 #define CORE_TRUST_AGENT_H_
 
 #include <core/trust/request.h>
+#include <core/trust/tagged_integer.h>
 #include <core/trust/visibility.h>
+
+#include <cstdint>
 
 namespace core
 {
 namespace trust
 {
-// Forward-declarations.
-struct RequestParameters;
-
 /** @brief Abstracts user-prompting functionality. */
 class CORE_TRUST_DLL_PUBLIC Agent
 {
@@ -43,15 +43,30 @@ public:
     Agent& operator=(Agent&&) = delete;
     /** @endcond */
 
+    /** @brief Summarizes all parameters for processing a trust request. */
+    struct RequestParameters
+    {
+        /** @brief The user id under which the requesting application runs. */
+        core::trust::Uid application_uid;
+        /** @brief The process id of the requesting application. */
+        core::trust::Pid application_pid;
+        /** @brief The id of the requesting application. */
+        std::string application_id;
+        /** @brief The service-specific feature identifier. */
+        Feature feature;
+        /** @brief An extended description that should be presented to the user on prompting. */
+        std::string description;
+    };
+
     /**
-     * @brief Presents the given request to the user, returning the user-provided answer.
-     * @param app_uid The user under which the requesting app is running.
-     * @param app_pid The process id of the requesting application.
-     * @param app_id The application id of the requesting application.
-     * @param description Extended description of the trust request.
+     * @brief Authenticates the given request and returns the user's answer.
+     * @param parameters [in] Describe the request.
      */
-    virtual Request::Answer prompt_user_for_request(Uid app_uid, Pid app_pid, const std::string& app_id, const std::string& description) = 0;
+    virtual Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) = 0;
 };
+
+/** @brief Returns true iff lhs and rhs are equal. */
+CORE_TRUST_DLL_PUBLIC bool operator==(const Agent::RequestParameters& lhs, const Agent::RequestParameters& rhs);
 }
 }
 

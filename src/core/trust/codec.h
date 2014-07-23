@@ -61,12 +61,26 @@ struct Codec<core::trust::Store::Query::Status>
 };
 
 template<>
+struct Codec<core::trust::Feature>
+{
+    inline static void encode_argument(core::dbus::Message::Writer& writer, const core::trust::Feature& arg)
+    {
+        writer.push_uint64(arg.value);
+    }
+
+    inline static void decode_argument(core::dbus::Message::Reader& reader, core::trust::Feature& arg)
+    {
+        arg.value = reader.pop_uint64();
+    }
+};
+
+template<>
 struct Codec<core::trust::Request>
 {
     inline static void encode_argument(core::dbus::Message::Writer& writer, const core::trust::Request& arg)
     {
         writer.push_stringn(arg.from.c_str(), arg.from.size());
-        writer.push_uint64(arg.feature);
+        writer.push_uint64(arg.feature.value);
         writer.push_uint64(std::chrono::duration_cast<core::trust::Request::Duration>(arg.when.time_since_epoch()).count());
         Codec<core::trust::Request::Answer>::encode_argument(writer, arg.answer);
     }
@@ -74,7 +88,7 @@ struct Codec<core::trust::Request>
     inline static void decode_argument(core::dbus::Message::Reader& reader, core::trust::Request& arg)
     {
         arg.from = reader.pop_string();
-        arg.feature = reader.pop_uint64();
+        arg.feature.value = reader.pop_uint64();
         arg.when = core::trust::Request::Timestamp{core::trust::Request::Duration{reader.pop_uint64()}};
         Codec<core::trust::Request::Answer>::decode_argument(reader, arg.answer);
     }
