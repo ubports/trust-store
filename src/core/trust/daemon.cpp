@@ -112,7 +112,7 @@ const std::map<std::string, core::trust::Daemon::RemoteAgentFactory>& core::trus
                             "Application %1% is trying to access " + service_name + "."
                 };
 
-                return std::make_shared<core::trust::remote::UnixDomainSocketAgent::Skeleton>(config);
+                return core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
             }
         }
     };

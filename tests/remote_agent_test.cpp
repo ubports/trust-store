@@ -357,7 +357,7 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
             "Just a test for %1%."
         };
 
-        core::trust::remote::UnixDomainSocketAgent::Skeleton skeleton{config};
+        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
 
         cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
@@ -519,7 +519,7 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
-        core::trust::remote::UnixDomainSocketAgent::Skeleton skeleton{config};
+        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
         skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
 
         trap->run();

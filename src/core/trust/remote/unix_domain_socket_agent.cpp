@@ -322,18 +322,18 @@ remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configura
             "Could not connect to endpoint: " + endpoint.path()
         };
     }
-
-    start_read();
 }
 
 void remote::UnixDomainSocketAgent::Skeleton::start_read()
 {
+    Ptr sp{shared_from_this()};
+
     boost::asio::async_read(
                 socket,
                 boost::asio::buffer(&request, sizeof(request)),
-                [this](const boost::system::error_code& ec, std::size_t size)
+                [sp](const boost::system::error_code& ec, std::size_t size)
                 {
-                    on_read_finished(ec, size);
+                    sp->on_read_finished(ec, size);
                 });
 }
 

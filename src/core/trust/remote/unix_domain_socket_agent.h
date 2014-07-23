@@ -221,12 +221,13 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
             std::string description_format;
         };
 
-        Ptr create_skeleton_for_configuration(const Configuration& configuration);
-
-        // Constructs a new Skeleton instance, installing impl for handling actual requests.
-        Skeleton(const Configuration& configuration);
+        static Ptr create_skeleton_for_configuration(const Configuration& configuration);
 
         virtual ~Skeleton() = default;
+
+    private:
+        // Constructs a new Skeleton instance, installing impl for handling actual requests.
+        Skeleton(const Configuration& configuration);
 
         // Called to initiate an async read operation.
         void start_read();
