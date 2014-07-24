@@ -687,6 +687,9 @@ TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
                 }
             }
         });
+
+        // This is obviously super ugly, but we would like to avoid implementing
+        // a full blown reactor pattern.
         acceptor.detach();
 
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
