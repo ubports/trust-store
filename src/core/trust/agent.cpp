@@ -20,6 +20,6 @@
 
 bool core::trust::operator==(const core::trust::Agent::RequestParameters& lhs, const core::trust::Agent::RequestParameters& rhs)
 {
-    return std::tie(lhs.application_id, lhs.application_pid, lhs.application_uid, lhs.description, lhs.feature) ==
-           std::tie(rhs.application_id, rhs.application_pid, rhs.application_uid, rhs.description, rhs.feature);
+    return std::tie(lhs.application.id, lhs.application.pid, lhs.application.uid, lhs.description, lhs.feature) ==
+           std::tie(rhs.application.id, rhs.application.pid, rhs.application.uid, rhs.description, rhs.feature);
 }

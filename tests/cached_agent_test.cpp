@@ -16,17 +16,10 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#include <core/trust/agent.h>
-#include <core/trust/request.h>
-#include <core/trust/store.h>
+#include <core/trust/cached_agent.h>
 
 #include "mock_agent.h"
 #include "mock_store.h"
-
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
-
-#include <random>
 
 namespace
 {
@@ -75,12 +68,10 @@ std::shared_ptr<testing::NiceMock<MockStore::MockQuery>> a_mocked_query()
     return std::make_shared<testing::NiceMock<MockStore::MockQuery>>();
 }
 
-core::trust::RequestParameters default_request_parameters_for_testing()
+core::trust::Agent::RequestParameters default_request_parameters_for_testing()
 {
-    return core::trust::RequestParameters
+    return core::trust::Agent::RequestParameters
     {
-        a_null_agent(),
-        a_null_store(),
         the_default_uid_for_testing(),
         the_default_pid_for_testing(),
         "this.is.just.for.testing.purposes",
@@ -110,25 +101,31 @@ core::trust::Request::Answer throw_a_dice()
 
 }
 
-TEST(RequestProcessing, throws_for_missing_agent_implementation)
+TEST(CachedAgent, ctor_throws_for_missing_agent_implementation)
 {
-    auto params = default_request_parameters_for_testing();
+    core::trust::CachedAgent::Configuration configuration
+    {
+        a_null_agent(),
+        a_mocked_store()
+    };
 
-    params.store = a_mocked_store();
-
-    EXPECT_THROW(core::trust::process_trust_request(params), std::logic_error);
+    EXPECT_THROW(core::trust::CachedAgent agent{configuration},
+                 std::logic_error);
 }
 
-TEST(RequestProcessing, throws_for_missing_store_implementation)
+TEST(RequestProcessing, ctor_throws_for_missing_store_implementation)
 {
-    auto params = default_request_parameters_for_testing();
+    core::trust::CachedAgent::Configuration configuration
+    {
+        a_mocked_agent(),
+        a_null_store()
+    };
 
-    params.agent = a_mocked_agent();
-
-    EXPECT_THROW(core::trust::process_trust_request(params), std::logic_error);
+    EXPECT_THROW(core::trust::CachedAgent agent{configuration},
+                 std::logic_error);
 }
 
-TEST(RequestProcessing, queries_store_for_cached_results_and_returns_cached_value)
+TEST(CachedAgent, queries_store_for_cached_results_and_returns_cached_value)
 {
     using namespace ::testing;
 
@@ -138,7 +135,7 @@ TEST(RequestProcessing, queries_store_for_cached_results_and_returns_cached_valu
 
     core::trust::Request request
     {
-        params.application_id,
+        params.application.id,
         params.feature,
         std::chrono::system_clock::now(),
         answer
@@ -166,19 +163,28 @@ TEST(RequestProcessing, queries_store_for_cached_results_and_returns_cached_valu
     EXPECT_CALL(*mocked_store, query()).Times(1);
     // We expect the processor to limit the query to the respective application id
     // and to the respective feature.
-    EXPECT_CALL(*mocked_query, for_application_id(params.application_id)).Times(1);
+    EXPECT_CALL(*mocked_query, for_application_id(params.application.id)).Times(1);
     EXPECT_CALL(*mocked_query, for_feature(params.feature)).Times(1);
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(_)).Times(0);
 
-    params.agent = mocked_agent;
-    params.store = mocked_store;
+    core::trust::CachedAgent::Configuration configuration
+    {
+        mocked_agent,
+        mocked_store
+    };
 
-    EXPECT_EQ(answer, core::trust::process_trust_request(params));
+    core::trust::CachedAgent agent
+    {
+        configuration
+    };
+
+    EXPECT_EQ(answer, agent.authenticate_request_with_parameters(params));
 }
 
-TEST(RequestProcessing, queries_agent_if_no_cached_results_and_returns_users_answer)
+
+TEST(CachedAgent, queries_agent_if_no_cached_results_and_returns_users_answer)
 {
     using namespace ::testing;
 
@@ -188,16 +194,16 @@ TEST(RequestProcessing, queries_agent_if_no_cached_results_and_returns_users_ans
 
     core::trust::Agent::RequestParameters agent_params
     {
-        params.application_uid,
-        params.application_pid,
-        params.application_id,
+        params.application.uid,
+        params.application.pid,
+        params.application.id,
         params.feature,
         params.description
     };
 
     core::trust::Request request
     {
-        params.application_id,
+        params.application.id,
         params.feature,
         std::chrono::system_clock::now(),
         answer
@@ -228,17 +234,22 @@ TEST(RequestProcessing, queries_agent_if_no_cached_results_and_returns_users_ans
     EXPECT_CALL(*mocked_store, query()).Times(1);
     // We expect the processor to limit the query to the respective application id
     // and to the respective feature.
-    EXPECT_CALL(*mocked_query, for_application_id(params.application_id)).Times(1);
+    EXPECT_CALL(*mocked_query, for_application_id(params.application.id)).Times(1);
     EXPECT_CALL(*mocked_query, for_feature(params.feature)).Times(1);
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(agent_params)).Times(1);
 
-    params.agent = mocked_agent;
-    params.store = mocked_store;
+    core::trust::CachedAgent::Configuration configuration
+    {
+        mocked_agent,
+        mocked_store
+    };
 
-    EXPECT_EQ(answer, core::trust::process_trust_request(params));
+    core::trust::CachedAgent agent
+    {
+        configuration
+    };
+
+    EXPECT_EQ(answer, agent.authenticate_request_with_parameters(params));
 }
-
-
-

@@ -223,7 +223,7 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
 
         static Ptr create_skeleton_for_configuration(const Configuration& configuration);
 
-        virtual ~Skeleton() = default;
+        virtual ~Skeleton();
 
     private:
         // Constructs a new Skeleton instance, installing impl for handling actual requests.

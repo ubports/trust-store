@@ -62,7 +62,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     static constexpr const unsigned int default_feature = 0;
 
     /** @brief Enumerates the possible answers given by a user. */
-    enum class Answer
+    enum class Answer : std::int32_t
     {
         denied, ///< Nope, I do not trust this application.
         granted, ///< Yup, I do trust this application.

@@ -46,12 +46,16 @@ public:
     /** @brief Summarizes all parameters for processing a trust request. */
     struct RequestParameters
     {
-        /** @brief The user id under which the requesting application runs. */
-        core::trust::Uid application_uid;
-        /** @brief The process id of the requesting application. */
-        core::trust::Pid application_pid;
-        /** @brief The id of the requesting application. */
-        std::string application_id;
+        /** @brief All application-specific parameters go here. */
+        struct
+        {
+            /** @brief The user id under which the requesting application runs. */
+            core::trust::Uid uid;
+            /** @brief The process id of the requesting application. */
+            core::trust::Pid pid;
+            /** @brief The id of the requesting application. */
+            std::string id;
+        } application;
         /** @brief The service-specific feature identifier. */
         Feature feature;
         /** @brief An extended description that should be presented to the user on prompting. */

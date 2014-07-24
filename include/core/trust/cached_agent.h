@@ -25,26 +25,37 @@ namespace core
 {
 namespace trust
 {
-class CachedAgent : public core::trust::Agent
+/** @brief An agent implementation that uses a trust store instance to cache results. */
+class CORE_TRUST_DLL_PUBLIC CachedAgent : public core::trust::Agent
 {
 public:
-    // All creation-time parameters go here
+    /** @brief To safe some typing. */
+    typedef std::shared_ptr<CachedAgent> Ptr;
+
+    /** @brief Creation time parameters. */
     struct Configuration
     {
-        // The actual agent implementation for prompting the user.
+        /** @brief The actual agent implementation for prompting the user. */
         std::shared_ptr<Agent> agent;
-        // The store caching user answers to trust prompts.
+        /** @brief The store caching user answers to trust prompts. */
         std::shared_ptr<Store> store;
     };
 
+    /**
+     * @brief CachedAgent creates a new agent instance.
+     * @param configuration Specificies the actual agent and the store.
+     * @throws std::logic_error if either the agent or the store are null.
+     */
     CachedAgent(const Configuration& configuration);
+    /** @cond */
     virtual ~CachedAgent() = default;
+    /** @endcond */
 
-    // From core::trust::Agent
+    /** @brief From core::trust::Agent. */
     Request::Answer authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters) override;
 
 private:
-    // We just store a copy of the configuration parameters.
+    /** @brief We just store a copy of the configuration parameters */
     Configuration configuration;
 };
 }

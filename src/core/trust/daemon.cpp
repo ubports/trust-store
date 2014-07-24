@@ -18,6 +18,7 @@
 
 #include <core/trust/daemon.h>
 
+#include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
 #include <core/trust/store.h>
 
@@ -93,7 +94,7 @@ const std::map<std::string, core::trust::Daemon::RemoteAgentFactory>& core::trus
     {
         {
             "UnixDomainSocketRemoteAgent",
-            [](const std::string& service_name, const std::shared_ptr<Store>&, const std::shared_ptr<Agent>& agent, const Dictionary& dict)
+            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const Dictionary& dict)
             {
                 if (dict.count("endpoint") == 0) throw std::runtime_error
                 {
@@ -184,15 +185,22 @@ core::trust::Daemon::Configuration core::trust::Daemon::Configuration::parse_fro
             .at(vm[Parameters::RemoteAgent::name]
             .as<std::string>());
 
-    auto store = core::trust::create_default_store(service_name);
+    auto local_store = core::trust::create_default_store(service_name);
     auto local_agent = local_agent_factory(service_name, dict);
 
-    auto remote_agent = remote_agent_factory(service_name, store, local_agent, dict);
+    auto cached_agent = std::make_shared<core::trust::CachedAgent>(
+        core::trust::CachedAgent::Configuration
+        {
+            local_agent,
+            local_store
+        });
+
+    auto remote_agent = remote_agent_factory(service_name, cached_agent, dict);
 
     return core::trust::Daemon::Configuration
     {
         service_name,
-        {store, local_agent},
+        {local_store, local_agent},
         {remote_agent}
     };
 }
@@ -233,14 +241,16 @@ core::posix::exit::Status core::trust::Daemon::main(const core::trust::Daemon::C
 }
 
 int main(int argc, char** argv)
-{
+{    
+    core::trust::Daemon::Configuration configuration;
+
     try
     {
-        auto configuration = core::trust::Daemon::Configuration::parse_from_command_line(argc, argv);
+        configuration = core::trust::Daemon::Configuration::parse_from_command_line(argc, argv);
     } catch(const boost::exception& e)
     {
         std::cerr << "Error during initialization and startup: " << boost::diagnostic_information(e) << std::endl;
     }
 
-
+    return static_cast<int>(core::trust::Daemon::main(configuration));
 }

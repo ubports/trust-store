@@ -58,7 +58,6 @@ struct Daemon
     typedef std::function<
         std::shared_ptr<core::trust::remote::Agent::Skeleton>(
             const std::string&,             // The name of the service.
-            const std::shared_ptr<Store>&,  // The local store implementation.
             const std::shared_ptr<Agent>&,  // The local agent implementation.
             const Dictionary&               // Dictionary containing Agent-specific configuration options.
         )

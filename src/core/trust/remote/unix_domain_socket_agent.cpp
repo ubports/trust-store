@@ -154,15 +154,15 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
         const core::trust::Agent::RequestParameters& parameters)
 {
     // We consider the process start time to prevent from spoofing.
-    auto start_time_before_query = start_time_resolver(parameters.application_pid);
+    auto start_time_before_query = start_time_resolver(parameters.application.pid);
 
     // This call will throw if there is no session known for the uid.
-    Session::Ptr session = session_registry->resolve_session_for_uid(parameters.application_uid);
+    Session::Ptr session = session_registry->resolve_session_for_uid(parameters.application.uid);
 
     remote::UnixDomainSocketAgent::Request request
     {
-        parameters.application_uid,
-        parameters.application_pid,
+        parameters.application.uid,
+        parameters.application.pid,
         parameters.feature,
         start_time_before_query
     };
@@ -175,7 +175,7 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
                 ec);
 
     if (ec)
-        handle_error_from_socket_operation_for_uid(ec, parameters.application_uid);
+        handle_error_from_socket_operation_for_uid(ec, parameters.application.uid);
 
     core::trust::Request::Answer answer
     {
@@ -188,10 +188,10 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
                 ec);
 
     if (ec)
-        handle_error_from_socket_operation_for_uid(ec, parameters.application_uid);
+        handle_error_from_socket_operation_for_uid(ec, parameters.application.uid);
 
     // And finally, we check on the process start time.
-    auto start_time_after_query = start_time_resolver(parameters.application_pid);
+    auto start_time_after_query = start_time_resolver(parameters.application.pid);
 
     // We consider the process start time to prevent from spoofing. That is,
     // if the process start times differ here, we would authenticate a different process and
@@ -278,7 +278,7 @@ remote::UnixDomainSocketAgent::Skeleton::AppIdResolver remote::UnixDomainSocketA
         if (rc == app_armor_error) throw std::system_error
         {
             errno,
-                    std::system_category()
+            std::system_category()
         };
 
         // Safely construct the string
@@ -322,6 +322,11 @@ remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configura
             "Could not connect to endpoint: " + endpoint.path()
         };
     }
+}
+
+remote::UnixDomainSocketAgent::Skeleton::~Skeleton()
+{
+    socket.cancel();
 }
 
 void remote::UnixDomainSocketAgent::Skeleton::start_read()

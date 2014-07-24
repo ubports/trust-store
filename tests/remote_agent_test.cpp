@@ -417,6 +417,7 @@ static std::default_random_engine rng
 // Our dice
 static std::uniform_int_distribution<int> dice(1,6);
 }
+
 TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
 {
     using namespace ::testing;
@@ -538,3 +539,236 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
 
     app.send_signal_or_throw(core::posix::Signal::sig_kill);
 }
+
+// A test case using a standalone service that is not using our header files.
+// The test-case here is equivalent to the code that we are wiring up in the
+// Android camera service.
+
+#include <sys/socket.h>
+#include <sys/un.h>
+
+namespace
+{
+// We declare another struct for testing purposes.
+struct Request
+{
+    uid_t uid; pid_t pid; ::uint64_t feature; ::int64_t start_time;
+};
+}
+
+TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
+{
+    using namespace ::testing;
+
+    std::remove(endpoint_for_acceptance_testing);
+
+    core::testing::CrossProcessSync
+            stub_ready,         // signals stub     --| I'm ready |--> skeleton
+            skeleton_ready;     // signals skeleton --| I'm ready |--> stub
+
+    auto app = core::posix::fork([]()
+    {
+        while(true) std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    // We sample an answer by throwing a dice.
+    const core::trust::Request::Answer answer
+    {
+        dice(rng) <= 3 ?
+                    core::trust::Request::Answer::denied :
+                    core::trust::Request::Answer::granted
+    };
+
+    const core::trust::Uid app_uid{::getuid()};
+    const core::trust::Pid app_pid{app.pid()};
+
+    auto start_time_helper = core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver();
+    auto app_start_time = start_time_helper(core::trust::Pid{app.pid()});
+
+    auto stub = core::posix::fork([app_uid, app_pid, app_start_time, answer, &stub_ready, &skeleton_ready]()
+    {
+        // Stores all known connections indexed by user id
+        std::map<uid_t, int> known_connections_by_user_id;
+
+        static const int socket_error_code{-1};
+
+        // We create a unix domain socket
+        int socket_fd = ::socket(PF_UNIX, SOCK_STREAM, 0);
+
+        if (socket_fd == socket_error_code)
+        {
+            ::perror("Could not create unix stream socket");
+            return core::posix::exit::Status::failure;
+        }
+
+        // Prepare for binding to endpoint in file system.
+        // Consciously ignoring errors here.
+        ::unlink(endpoint_for_acceptance_testing);
+
+        // Setup address
+        sockaddr_un address;
+        ::memset(&address, 0, sizeof(sockaddr_un));
+
+        address.sun_family = AF_UNIX;
+        ::snprintf(address.sun_path, 108, endpoint_for_acceptance_testing);
+
+        // And bind to the endpoint in the filesystem.
+        static const int bind_error_code{-1};
+        int rc = ::bind(socket_fd, reinterpret_cast<sockaddr*>(&address), sizeof(sockaddr_un));
+
+        if (rc == bind_error_code)
+        {
+            ::perror("Could not bind to endpoint");
+            return core::posix::exit::Status::failure;
+        }
+
+        // Start listening for incoming connections.
+        static const int listen_error_code{-1};
+        static const int back_log_size{5};
+
+        rc = ::listen(socket_fd, back_log_size);
+
+        if (rc == listen_error_code)
+        {
+            ::perror("Could not start listening for incoming connections");
+            return core::posix::exit::Status::failure;
+        }
+
+        // Spawn a thread for accepting connections.
+        std::thread acceptor([socket_fd, &known_connections_by_user_id]()
+        {
+            bool keep_on_running{true};
+            // Error code when accepting connections.
+            static const int accept_error_code{-1};
+
+            // Error code when querying socket options.
+            static const int get_sock_opt_error = -1;
+            // Some state we preserve across loop iterations.
+            sockaddr_un address;
+            socklen_t address_length = sizeof(sockaddr_un);
+
+            ucred peer_credentials { 0, 0, 0 };
+            socklen_t len = sizeof(peer_credentials);
+
+            while(keep_on_running)
+            {
+                address_length = sizeof(sockaddr_un);
+                int connection_fd = ::accept(socket_fd, reinterpret_cast<sockaddr*>(&address), &address_length);
+
+                if (connection_fd == accept_error_code)
+                {
+                    switch (errno)
+                    {
+                    case EINTR:
+                    case EAGAIN:
+                        keep_on_running = true;
+                        break;
+                    default:
+                        keep_on_running = false;
+                        break;
+                    }
+                } else
+                {
+                    // We query the peer credentials
+                    len = sizeof(ucred);
+                    auto rc = ::getsockopt(connection_fd, SOL_SOCKET, SO_PEERCRED, &peer_credentials, &len);
+
+                    if (rc == get_sock_opt_error)
+                    {
+                        ::perror("Could not query peer credentials");
+                    } else
+                    {
+                        known_connections_by_user_id.insert(
+                                    std::make_pair(
+                                        peer_credentials.uid,
+                                        connection_fd));
+                    }
+                }
+            }
+        });
+        acceptor.detach();
+
+        stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+        skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
+        Request request
+        {
+            app_uid.value,
+            app_pid.value,
+            0,
+            app_start_time
+        };
+
+        for (unsigned int i = 0; i < 100; i++)
+        {
+            std::int32_t answer_from_socket;
+
+            int socket = known_connections_by_user_id.at(::getuid());
+
+            EXPECT_NE(-1, ::write(socket, &request, sizeof(Request)));
+            EXPECT_NE(-1, ::read(socket, &answer_from_socket, sizeof(std::int32_t)));
+
+            EXPECT_EQ(static_cast<std::int32_t>(answer), answer_from_socket);
+        }
+
+        ::close(socket_fd);
+
+        return Test::HasFailure() ?
+                    core::posix::exit::Status::failure :
+                    core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    auto skeleton = core::posix::fork([answer, &stub_ready, &skeleton_ready]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        boost::asio::io_service io_service;
+        boost::asio::io_service::work keep_alive{io_service};
+
+        std::thread worker{[&io_service]() { io_service.run(); }};
+
+        // We have to rely on a MockAgent to break the dependency on a running Mir instance.
+        auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
+
+        ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
+                .WillByDefault(Return(answer));
+
+        core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+        {
+            mock_agent,
+            io_service,
+            boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
+            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
+            core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+            "Just a test for %1%."
+        };
+
+        stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
+        skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+
+        trap->run();
+
+        io_service.stop();
+
+        if (worker.joinable())
+            worker.join();
+
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+    skeleton.send_signal_or_throw(core::posix::Signal::sig_term);
+    EXPECT_TRUE(ProcessExitedSuccessfully(skeleton.wait_for(core::posix::wait::Flags::untraced)));
+
+    app.send_signal_or_throw(core::posix::Signal::sig_kill);
+}
+
