@@ -34,9 +34,9 @@ pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
 pkg_check_modules(MIR_COMMON mircommon REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
-set(TRUST_STORE_VERSION_MAJOR 0)
+set(TRUST_STORE_VERSION_MAJOR 1)
 set(TRUST_STORE_VERSION_MINOR 0)
-set(TRUST_STORE_VERSION_PATCH 1)
+set(TRUST_STORE_VERSION_PATCH 0)
 
 include(CTest)
 

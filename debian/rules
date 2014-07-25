@@ -2,8 +2,19 @@
 # -*- makefile -*-
 
 export DPKG_GENSYMBOLS_CHECK_LEVEL=4
+
+include /usr/share/dpkg/default.mk
+
+# Explicitly selecting a G{CC,++}-version here to avoid accidental
+# ABI breaks introduced by toolchain updates.
+export CC=$(DEB_HOST_GNU_TYPE)-gcc-4.9
+export CXX=$(DEB_HOST_GNU_TYPE)-g++-4.9
+
 # The home directory of user buildd does not exist on the builders
 export XDG_DATA_HOME=/tmp
 
 %:
 	dh $@ --fail-missing
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX)
