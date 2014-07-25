@@ -62,12 +62,14 @@ struct CORE_TRUST_DLL_PUBLIC UnixDomainSocketAgent
         // The service-specific feature.
         Feature feature;
         // We want to prevent from spoofing and send over the process start time.
+        // In seconds since the epoch.
         std::int64_t app_start_time;
     };
 
     // Models the sending end of a remote agent, meant to be used by trusted helpers.
-    class CORE_TRUST_DLL_PUBLIC Stub : public core::trust::remote::Agent::Stub,
-                                        public std::enable_shared_from_this<Stub>
+    class CORE_TRUST_DLL_PUBLIC Stub
+            : public core::trust::remote::Agent::Stub,
+            public std::enable_shared_from_this<Stub>
     {
     public:
         // Just for convenience

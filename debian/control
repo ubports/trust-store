@@ -11,6 +11,7 @@ Build-Depends: cmake,
 # in libstdc++ causing us issues, we explicitly select a G++
 # version.
                g++-4.9,
+               libapparmor-dev,
                libboost-program-options-dev,
                libboost-system-dev,
                libdbus-cpp-dev (>= 4.0.0),
