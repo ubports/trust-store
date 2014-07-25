@@ -90,6 +90,21 @@ namespace
 
         return dict;
     }
+
+    struct DummyAgent : public core::trust::Agent
+    {
+        DummyAgent(core::trust::Request::Answer canned_answer)
+            : canned_answer{canned_answer}
+        {
+        }
+
+        core::trust::Request::Answer authenticate_request_with_parameters(const RequestParameters&) override
+        {
+            return canned_answer;
+        }
+
+        core::trust::Request::Answer canned_answer;
+    };
 }
 
 const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& core::trust::Daemon::Skeleton::known_local_agent_factories()
@@ -117,6 +132,18 @@ const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& c
             [](const std::string& service_name, const Dictionary&)
             {
                 return std::make_shared<core::trust::TerminalAgent>(service_name);
+            }
+        },
+        {
+            "TheAlwaysDenyingLocalAgent",
+            [](const std::string&, const Dictionary&)
+            {
+                auto agent = std::shared_ptr<core::trust::Agent>
+                {
+                    new DummyAgent{core::trust::Request::Answer::denied}
+                };
+
+                return agent;
             }
         }
     };
@@ -156,7 +183,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
 }
 
 // Parses the configuration from the given command line.
-core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Configuration::from_command_line(int argc, char** argv)
+core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Configuration::from_command_line(int argc, const char** argv)
 {
     Options::variables_map vm;
     Dictionary dict;
@@ -283,7 +310,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>&  cor
     return lut;
 }
 
-core::trust::Daemon::Stub::Configuration core::trust::Daemon::Stub::Configuration::from_command_line(int argc, char** argv)
+core::trust::Daemon::Stub::Configuration core::trust::Daemon::Stub::Configuration::from_command_line(int argc, const char** argv)
 {
     Options::variables_map vm;
     Dictionary dict;
@@ -347,7 +374,7 @@ struct Shell : public std::enable_shared_from_this<Shell>
     {
         std::cout << "This is the super simple, interactive shell of the trust::store Damon" << std::endl;
         std::cout << "The following commands are known:" << std::endl;
-        std::cout << "  query pid uid feature Issues a query with the given parameters." << std::endl;
+        std::cout << "  Enter a line like 'pid uid feature' to issue a query with the given parameters." << std::endl;
 
         start_read();
     }

@@ -126,7 +126,7 @@ struct Daemon
         struct Configuration
         {
             // Parses the configuration from the given command line.
-            static Configuration from_command_line(int argc, char** argv);
+            static Configuration from_command_line(int argc, const char** argv);
 
             // The name of the service that the daemon should serve for.
             std::string service_name;
@@ -186,7 +186,7 @@ struct Daemon
         struct Configuration
         {
             // Parses the configuration from the given command line.
-            static Configuration from_command_line(int argc, char** argv);
+            static Configuration from_command_line(int argc, const char** argv);
 
             // The name of the service that the daemon should serve for.
             std::string service_name;

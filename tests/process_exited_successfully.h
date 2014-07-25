@@ -1,5 +1,5 @@
 /*
- * Copyright © 2014 Canonical Ltd.
+ * Copyright © 2013 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,22 +16,17 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#include <core/trust/daemon.h>
+#include <core/posix/wait.h>
 
-#include <boost/exception/all.hpp>
+#include <gtest/gtest.h>
 
-int main(int argc, const char** argv)
+::testing::AssertionResult ProcessExitedSuccessfully(const core::posix::wait::Result& result)
 {
-    core::trust::Daemon::Skeleton::Configuration configuration;
+    if (core::posix::wait::Result::Status::exited != result.status)
+        return ::testing::AssertionFailure();
 
-    try
-    {
-        configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(argc, argv);
-    } catch(const boost::exception& e)
-    {
-        std::cerr << "Error during initialization and startup: " << boost::diagnostic_information(e) << std::endl;
-        return EXIT_FAILURE;
-    }
+    if (core::posix::exit::Status::success != result.detail.if_exited.status)
+        return ::testing::AssertionFailure();
 
-    return static_cast<int>(core::trust::Daemon::Skeleton::main(configuration));
+    return ::testing::AssertionSuccess();
 }

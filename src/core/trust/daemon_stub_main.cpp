@@ -20,7 +20,7 @@
 
 #include <boost/exception/all.hpp>
 
-int main(int argc, char** argv)
+int main(int argc, const char** argv)
 {
     core::trust::Daemon::Stub::Configuration configuration;
 

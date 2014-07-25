@@ -64,17 +64,22 @@ add_library(
   core/trust/remote/unix_domain_socket_agent.cpp
 )
 
+# Just a helper to avoid recompilation of the daemon
+add_library(
+  trust-stored
+
+  core/trust/daemon.cpp
+)
+
 add_executable(
   trust-stored-skeleton
 
-  core/trust/daemon.cpp
   core/trust/daemon_skeleton_main.cpp
 )
 
 add_executable(
   trust-stored-stub
 
-  core/trust/daemon.cpp
   core/trust/daemon_stub_main.cpp
 )
 
@@ -116,7 +121,7 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  trust-stored-skeleton
+  trust-stored
 
   trust-store
 
@@ -125,9 +130,15 @@ target_link_libraries(
 )
 
 target_link_libraries(
+  trust-stored-skeleton
+
+  trust-stored
+)
+
+target_link_libraries(
   trust-stored-stub
 
-  trust-store
+  trust-stored
 )
 
 target_link_libraries(

@@ -21,6 +21,7 @@
 #include <core/trust/remote/unix_domain_socket_agent.h>
 
 #include "mock_agent.h"
+#include "process_exited_successfully.h"
 
 #include <core/posix/fork.h>
 #include <core/testing/cross_process_sync.h>
@@ -40,16 +41,6 @@ struct MockRemoteAgentStub : public core::trust::remote::Agent::Stub
     MOCK_METHOD1(send, core::trust::Request::Answer(const core::trust::Agent::RequestParameters&));
 };
 
-::testing::AssertionResult ProcessExitedSuccessfully(const core::posix::wait::Result& result)
-{
-    if (core::posix::wait::Result::Status::exited != result.status)
-        return ::testing::AssertionFailure();
-
-    if (core::posix::exit::Status::success != result.detail.if_exited.status)
-        return ::testing::AssertionFailure();
-
-    return ::testing::AssertionSuccess();
-}
 }
 
 TEST(RemoteAgentStub, calls_send_for_handling_requests_and_returns_answer)
