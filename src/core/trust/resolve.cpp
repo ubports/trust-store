@@ -24,6 +24,8 @@
 #include "codec.h"
 #include "dbus_interface.h"
 
+#include <core/dbus/asio/executor.h>
+
 #include <core/dbus/service.h>
 #include <core/dbus/stub.h>
 
@@ -35,10 +37,14 @@ namespace detail
 {
 std::shared_ptr<dbus::Bus> session_bus()
 {
-    return std::shared_ptr<dbus::Bus>
+    std::shared_ptr<dbus::Bus> bus
     {
         new dbus::Bus(dbus::WellKnownBus::session)
     };
+
+    bus->install_executor(dbus::asio::make_executor(bus));
+
+    return bus;
 }
 
 struct Store : public core::trust::Store
