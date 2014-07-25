@@ -30,6 +30,7 @@ int main(int argc, char** argv)
     } catch(const boost::exception& e)
     {
         std::cerr << "Error during initialization and startup: " << boost::diagnostic_information(e) << std::endl;
+        return EXIT_FAILURE;
     }
 
     return static_cast<int>(core::trust::Daemon::Skeleton::main(configuration));
