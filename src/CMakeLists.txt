@@ -65,9 +65,17 @@ add_library(
 )
 
 add_executable(
-  trust-stored
+  trust-stored-skeleton
 
   core/trust/daemon.cpp
+  core/trust/daemon_skeleton_main.cpp
+)
+
+add_executable(
+  trust-stored-stub
+
+  core/trust/daemon.cpp
+  core/trust/daemon_stub_main.cpp
 )
 
 configure_file(
@@ -108,12 +116,18 @@ target_link_libraries(
 )
 
 target_link_libraries(
-  trust-stored
+  trust-stored-skeleton
 
   trust-store
 
   ${MIR_CLIENT_LDFLAGS}
   ${MIR_COMMON_LDFLAGS}
+)
+
+target_link_libraries(
+  trust-stored-stub
+
+  trust-store
 )
 
 target_link_libraries(
@@ -145,7 +159,12 @@ install(
 )
 
 install(
-  TARGETS trust-stored
+  TARGETS trust-stored-skeleton
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+install(
+  TARGETS trust-stored-stub
   RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
