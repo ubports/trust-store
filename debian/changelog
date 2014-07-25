@@ -1,3 +1,12 @@
+trust-store (1.0.0+14.10.20140725-0ubuntu1) utopic; urgency=low
+
+  [ thomas-voss ]
+  * Install test executables to CMAKE_INSTALL_LIBDIR instead of
+    CMAKE_INSTALL_BINDIR. (LP: #1343533)
+  * Install executor on internal session bus connection. (LP: #1347739)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 25 Jul 2014 09:22:46 +0000
+
 trust-store (1.0.0+14.10.20140718.2-0ubuntu2) utopic; urgency=medium
 
   * Fix trust-store-tests dependency.
