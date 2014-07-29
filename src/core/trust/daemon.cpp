@@ -25,8 +25,16 @@
 #include <core/trust/mir_agent.h>
 #include <mirclient/mir_toolkit/mir_client_library.h>
 
+#include <core/trust/remote/agent.h>
+#include <core/trust/remote/dbus.h>
+#include <core/trust/remote/helpers.h>
+#include <core/trust/remote/posix.h>
+
 #include <core/trust/terminal_agent.h>
 
+#include <core/dbus/asio/executor.h>
+
+#include <boost/asio.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 #include <boost/program_options.hpp>
 
@@ -40,7 +48,7 @@ namespace
     {
         // Do not execute in parallel, serialize
         // accesses.
-        static constexpr std::size_t concurrency_hint{1};
+        static constexpr std::size_t concurrency_hint{2};
 
         // Our evil singleton pattern. Not bad though, we control the
         // entire executable and rely on automatic cleanup of static
@@ -51,16 +59,49 @@ namespace
             return runtime;
         }
 
+        ~Runtime()
+        {
+            io_service.stop();
+
+            if (worker1.joinable())
+                worker1.join();
+
+            if (worker2.joinable())
+                worker2.join();
+        }
+
+        // We trap sig term to ensure a clean shutdown.
+        std::shared_ptr<core::posix::SignalTrap> signal_trap
+        {
+            core::posix::trap_signals_for_all_subsequent_threads(
+            {
+                core::posix::Signal::sig_term,
+                core::posix::Signal::sig_int
+            })
+        };
+
         // Our io_service instance exposed to remote agents.
         boost::asio::io_service io_service
         {
             concurrency_hint
         };
+
         // We keep the io_service alive and introduce some artifical
         // work.
         boost::asio::io_service::work keep_alive
         {
             io_service
+        };
+
+        // We immediate execute the io_service instance
+        std::thread worker1
+        {
+            std::thread{[this]() { io_service.run(); }}
+        };
+
+        std::thread worker2
+        {
+            std::thread{[this]() { io_service.run(); }}
         };
     };
 
@@ -163,19 +204,65 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                     "Missing endpoint specification for UnixDomainSocketRemoteAgent."
                 };
 
-                core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+                core::trust::remote::posix::Skeleton::Configuration config
                 {
                     agent,
                     Runtime::instance().io_service,
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
-                    core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-                    core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+                    core::trust::remote::helpers::proc_stat_start_time_resolver(),
+                    core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
                     dict.count("description-pattern") > 0 ?
                             dict.at("description-pattern") :
                             "Application %1% is trying to access " + service_name + "."
                 };
 
-                return core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
+                return core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
+            }
+        },
+        {
+            std::string{Daemon::RemoteAgents::DBusRemoteAgent::name},
+            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const Dictionary& dict)
+            {
+                if (dict.count("bus") == 0) throw std::runtime_error
+                {
+                    "Missing bus specifier, please choose from {system, session}."
+                };
+
+                std::string bus_name = dict.at("bus");
+
+                core::dbus::Bus::Ptr bus;
+
+                if (bus_name == "system")
+                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
+                else if (bus_name == "session")
+                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
+
+                if (not bus) throw std::runtime_error
+                {
+                    "Could not create bus for name: " + bus_name
+                };
+
+                bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+
+                std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+                auto service = core::dbus::Service::use_service(bus, dbus_service_name);
+                auto object = service->object_for_path(
+                            core::dbus::types::ObjectPath
+                            {
+                                core::trust::remote::dbus::default_agent_registry_path
+                            });
+
+                core::trust::remote::dbus::Agent::Skeleton::Configuration config
+                {
+                    agent,
+                    object,
+                    service,
+                    bus,
+                    core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
+                };
+
+                return std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
             }
         }
     };
@@ -248,14 +335,9 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
 // Executes the daemon with the given configuration.
 core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust::Daemon::Skeleton::Configuration& configuration)
 {
-    auto trap = core::posix::trap_signals_for_all_subsequent_threads(
+    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
     {
-        core::posix::Signal::sig_term
-    });
-
-    trap->signal_raised().connect([trap](core::posix::Signal)
-    {
-        trap->stop();
+        Runtime::instance().signal_trap->stop();
     });
 
     // Expose the local store to the bus, keeping it exposed for the
@@ -264,18 +346,7 @@ core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust:
                 configuration.local.store,
                 configuration.service_name);
 
-    // And start executing the io_service.
-    std::thread worker
-    {
-        []() { Runtime::instance().io_service.run(); }
-    };
-
-    trap->run();
-
-    Runtime::instance().io_service.stop();
-
-    if (worker.joinable())
-        worker.join();
+    Runtime::instance().signal_trap->run();
 
     return core::posix::exit::Status::success;
 }
@@ -293,16 +364,59 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>&  cor
                     "Missing endpoint specification for UnixDomainSocketRemoteAgent."
                 };
 
-                core::trust::remote::UnixDomainSocketAgent::Stub::Configuration config
+                core::trust::remote::posix::Stub::Configuration config
                 {
                     Runtime::instance().io_service,
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
-                    core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-                    core::trust::remote::UnixDomainSocketAgent::Stub::get_sock_opt_credentials_resolver(),
-                    std::make_shared<core::trust::remote::UnixDomainSocketAgent::Stub::Session::Registry>()
+                    core::trust::remote::helpers::proc_stat_start_time_resolver(),
+                    core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
+                    std::make_shared<core::trust::remote::posix::Stub::Session::Registry>()
                 };
 
-                return core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
+                return core::trust::remote::posix::Stub::create_stub_for_configuration(config);
+            }
+        },
+        {
+            std::string{Daemon::RemoteAgents::DBusRemoteAgent::name},
+            [](const std::string& service_name, const Dictionary& dict)
+            {
+                if (dict.count("bus") == 0) throw std::runtime_error
+                {
+                    "Missing bus specifier, please choose from {system, session}."
+                };
+
+                std::string bus_name = dict.at("bus");
+
+                core::dbus::Bus::Ptr bus;
+
+                if (bus_name == "system")
+                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
+                else if (bus_name == "session")
+                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
+
+                if (not bus) throw std::runtime_error
+                {
+                    "Could not create bus for name: " + bus_name
+                };
+
+                bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+
+                std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+                auto service = core::dbus::Service::add_service(bus, dbus_service_name);
+                auto object = service->add_object_for_path(
+                            core::dbus::types::ObjectPath
+                            {
+                                core::trust::remote::dbus::default_agent_registry_path
+                            });
+
+                core::trust::remote::dbus::Agent::Stub::Configuration config
+                {
+                    object,
+                    bus
+                };
+
+                return std::make_shared<core::trust::remote::dbus::Agent::Stub>(config);
             }
         }
     };
@@ -365,7 +479,8 @@ struct Shell : public std::enable_shared_from_this<Shell>
 {
     Shell(const std::shared_ptr<core::trust::Agent>& agent)
         : agent{agent},
-          stdin{Runtime::instance().io_service, STDIN_FILENO}
+          stdin{Runtime::instance().io_service, STDIN_FILENO},
+          app_id_resolver{core::trust::remote::helpers::aa_get_task_con_app_id_resolver()}
     {
     }
 
@@ -419,6 +534,9 @@ struct Shell : public std::enable_shared_from_this<Shell>
         std::istream ss{&buffer};
         ss >> params.application.pid.value >> params.application.uid.value >> params.feature.value;
 
+        // We fixup the parameters.
+        params.application.id = app_id_resolver(params.application.pid);
+
         std::cout << agent->authenticate_request_with_parameters(params) << std::endl;
 
         buffer.consume(buffer.size());
@@ -432,6 +550,9 @@ struct Shell : public std::enable_shared_from_this<Shell>
     boost::asio::posix::stream_descriptor stdin;
     // The buffer we read in.
     boost::asio::streambuf buffer;
+    // We use some helpers to fixup the quite limited requests we parse from the
+    // command line
+    core::trust::remote::helpers::AppIdResolver app_id_resolver;
 };
 }
 
@@ -441,37 +562,18 @@ core::posix::exit::Status core::trust::Daemon::Stub::main(const core::trust::Dae
     // We setup our minimal shell here.
     auto shell = std::make_shared<Shell>(configuration.remote.agent);
 
-    // We gracefully shutdown for SIG_TERM and SIG_INT.
-    auto trap = core::posix::trap_signals_for_all_subsequent_threads(
+    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
     {
-        core::posix::Signal::sig_term,
-        core::posix::Signal::sig_int
+        Runtime::instance().signal_trap->stop();
     });
-
-    trap->signal_raised().connect([trap](core::posix::Signal)
-    {
-        trap->stop();
-    });
-
-    // And start executing the io_service.
-    std::thread worker
-    {
-        []() { Runtime::instance().io_service.run(); }
-    };
 
     // We start up our shell
     shell->start();
 
     // Wait until signal arrives.
-    trap->run();
-
-    Runtime::instance().io_service.stop();
+    Runtime::instance().signal_trap->run();
 
     shell->stop();
-
-    // Join all threads.
-    if (worker.joinable())
-        worker.join();
 
     return core::posix::exit::Status::success;
 }

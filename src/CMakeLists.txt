@@ -44,6 +44,12 @@ add_library(
   core/trust/request.cpp
   core/trust/resolve.cpp
 
+  # All dbus-specific headers go here
+  core/trust/dbus/agent.h
+  core/trust/dbus/agent_registry.h
+  core/trust/dbus/codec.h
+  core/trust/dbus/interface.h
+
   # The default implementation leverages SQLite3 to persist
   # requests.
   core/trust/impl/sqlite3/store.cpp
@@ -57,11 +63,17 @@ add_library(
   core/trust/mir/agent.cpp
 
   # Agent implementations for handling request out of process.
+  core/trust/remote/agent.h
   core/trust/remote/agent.cpp
+  core/trust/remote/helpers.h
+  core/trust/remote/helpers.cpp
+  # An implementation relying on dbus
+  core/trust/remote/dbus.h
+  core/trust/remote/dbus.cpp
   # An implementation relying on unix sockets, to be used for
   # inclusion with the android Camera Service.
-  core/trust/remote/unix_domain_socket_agent.h
-  core/trust/remote/unix_domain_socket_agent.cpp
+  core/trust/remote/posix.h
+  core/trust/remote/posix.cpp
 )
 
 # Just a helper to avoid recompilation of the daemon

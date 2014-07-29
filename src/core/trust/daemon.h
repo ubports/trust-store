@@ -23,7 +23,6 @@
 #include <core/trust/store.h>
 
 #include <core/trust/remote/agent.h>
-#include <core/trust/remote/unix_domain_socket_agent.h>
 
 #include <core/posix/exit.h>
 
@@ -71,6 +70,9 @@ struct Daemon
         // connections from its skeletons. For incoming requests, the stub selects the
         // handling skeleton based on the user id associated with the request.
         struct UnixDomainSocketRemoteAgent { static constexpr const char* name { "UnixDomainSocketRemoteAgent" }; };
+
+        // A remote agent implementation leveraging dbus.
+        struct DBusRemoteAgent { static constexpr const char* name { "DBusRemoteAgent" }; };
     };
 
     struct Skeleton

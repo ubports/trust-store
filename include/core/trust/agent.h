@@ -43,6 +43,24 @@ public:
     Agent& operator=(Agent&&) = delete;
     /** @endcond */
 
+    /** @brief Abstracts functionality for storing agent instances and associating them with a user id. */
+    struct Registry
+    {
+        /** @brief Convenience typedef for a shared ptr. */
+        typedef std::shared_ptr<Registry> Ptr;
+
+        /** @cond */
+        Registry() = default;
+        virtual ~Registry() = default;
+        /** @endcond */
+
+        /** @brief Registers an agent for the given uid. */
+        virtual void register_agent_for_user(const core::trust::Uid& uid, const std::shared_ptr<core::trust::Agent>& agent) = 0;
+
+        /** @brief Removes the agent for the given uid from the registry */
+        virtual void unregister_agent_for_user(const core::trust::Uid& uid) = 0;
+    };
+
     /** @brief Summarizes all parameters for processing a trust request. */
     struct RequestParameters
     {

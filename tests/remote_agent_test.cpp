@@ -18,13 +18,17 @@
 
 // Implementation-specific header
 #include <core/trust/remote/agent.h>
-#include <core/trust/remote/unix_domain_socket_agent.h>
+#include <core/trust/remote/dbus.h>
+#include <core/trust/remote/posix.h>
 
 #include "mock_agent.h"
 #include "process_exited_successfully.h"
 
 #include <core/posix/fork.h>
 #include <core/testing/cross_process_sync.h>
+
+#include <core/dbus/asio/executor.h>
+#include <core/dbus/fixture.h>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -98,7 +102,7 @@ TEST(RemoteAgentSkeleton, calls_out_to_implementation)
 
 TEST(RemoteAgentStubSessionRegistry, adding_and_removing_of_a_valid_session_works)
 {
-    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+    using Session = core::trust::remote::posix::Stub::Session;
 
     boost::asio::io_service io_service;
 
@@ -127,7 +131,7 @@ TEST(RemoteAgentStubSessionRegistry, adding_and_removing_of_a_valid_session_work
 
 TEST(RemoteAgentStubSessionRegistry, adding_a_null_session_throws)
 {
-    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+    using Session = core::trust::remote::posix::Stub::Session;
 
     Session::Ptr session;
 
@@ -145,7 +149,7 @@ TEST(RemoteAgentStubSessionRegistry, adding_a_null_session_throws)
 
 TEST(RemoteAgentStubSessionRegistry, resolving_a_non_existing_session_throws)
 {
-    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+    using Session = core::trust::remote::posix::Stub::Session;
 
     Session::Registry::Ptr registry
     {
@@ -159,7 +163,7 @@ TEST(RemoteAgentStubSessionRegistry, resolving_a_non_existing_session_throws)
 
 TEST(RemoteAgentStubSessionRegistry, removing_a_non_existing_session_does_not_throw)
 {
-    using Session = core::trust::remote::UnixDomainSocketAgent::Stub::Session;
+    using Session = core::trust::remote::posix::Stub::Session;
 
     Session::Registry::Ptr registry
     {
@@ -198,15 +202,15 @@ struct UnixDomainSocketRemoteAgent : public ::testing::Test
     }
 
     // Returns the default stub setup for testing
-    core::trust::remote::UnixDomainSocketAgent::Stub::Configuration the_default_stub_configuration()
+    core::trust::remote::posix::Stub::Configuration the_default_stub_configuration()
     {
-        return core::trust::remote::UnixDomainSocketAgent::Stub::Configuration
+        return core::trust::remote::posix::Stub::Configuration
         {
             io_service,
             boost::asio::local::stream_protocol::endpoint{UnixDomainSocketRemoteAgent::endpoint_for_testing},
-            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-            core::trust::remote::UnixDomainSocketAgent::Stub::get_sock_opt_credentials_resolver(),
-            std::make_shared<core::trust::remote::UnixDomainSocketAgent::Stub::Session::Registry>()
+            core::trust::remote::helpers::proc_stat_start_time_resolver(),
+            core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
+            std::make_shared<core::trust::remote::posix::Stub::Session::Registry>()
         };
     }
 
@@ -248,7 +252,7 @@ struct MockProcessStartTimeResolver
 {
     virtual ~MockProcessStartTimeResolver() = default;
 
-    core::trust::remote::UnixDomainSocketAgent::ProcessStartTimeResolver to_functional()
+    core::trust::remote::helpers::ProcessStartTimeResolver to_functional()
     {
         return [this](core::trust::Pid pid)
         {
@@ -263,7 +267,7 @@ struct MockProcessStartTimeResolver
 
 TEST_F(UnixDomainSocketRemoteAgent, accepts_connections_on_endpoint)
 {
-    auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(
+    auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(
                 the_default_stub_configuration());
 
     core::posix::ChildProcess child = core::posix::fork(
@@ -287,7 +291,7 @@ TEST_F(UnixDomainSocketRemoteAgent, queries_peer_credentials_for_incoming_connec
         return std::make_tuple(uid, core::trust::Pid{42}, core::trust::Gid{42});
     };
 
-    auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
+    auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(config);
 
     core::posix::ChildProcess child = core::posix::fork(
                 UnixDomainSocketRemoteAgent::a_raw_peer_immediately_exiting(),
@@ -311,7 +315,7 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
     auto config = the_default_stub_configuration();
     config.start_time_resolver = process_start_time_resolver.to_functional();
 
-    auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
+    auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(config);
 
     core::posix::ChildProcess child = core::posix::fork([&cps]()
     {
@@ -338,17 +342,17 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
                 .Times(1)
                 .WillRepeatedly(Return(core::trust::Request::Answer::denied));
 
-        core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+        core::trust::remote::posix::Skeleton::Configuration config
         {
             mock_agent,
             io_service,
             boost::asio::local::stream_protocol::endpoint{UnixDomainSocketRemoteAgent::endpoint_for_testing},
             process_start_time_resolver.to_functional(),
-            core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+            core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
             "Just a test for %1%."
         };
 
-        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
+        auto skeleton = core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
 
         cps.try_signal_ready_for(std::chrono::milliseconds{500});
 
@@ -443,16 +447,16 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
 
         std::thread worker{[&io_service]() { io_service.run(); }};
 
-        core::trust::remote::UnixDomainSocketAgent::Stub::Configuration config
+        core::trust::remote::posix::Stub::Configuration config
         {
             io_service,
             boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
-            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-            core::trust::remote::UnixDomainSocketAgent::Stub::get_sock_opt_credentials_resolver(),
-            std::make_shared<core::trust::remote::UnixDomainSocketAgent::Stub::Session::Registry>()
+            core::trust::remote::helpers::proc_stat_start_time_resolver(),
+            core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
+            std::make_shared<core::trust::remote::posix::Stub::Session::Registry>()
         };
 
-        auto stub = core::trust::remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(config);
+        auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(config);
 
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
         skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
@@ -500,18 +504,18 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
         ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
                 .WillByDefault(Return(answer));
 
-        core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+        core::trust::remote::posix::Skeleton::Configuration config
         {
             mock_agent,
             io_service,
             boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
-            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-            core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+            core::trust::remote::helpers::proc_stat_start_time_resolver(),
+            core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
             "Just a test for %1%."
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
-        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
+        auto skeleton = core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
         skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
 
         trap->run();
@@ -574,7 +578,7 @@ TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
     const core::trust::Uid app_uid{::getuid()};
     const core::trust::Pid app_pid{app.pid()};
 
-    auto start_time_helper = core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver();
+    auto start_time_helper = core::trust::remote::helpers::proc_stat_start_time_resolver();
     auto app_start_time = start_time_helper(core::trust::Pid{app.pid()});
 
     auto stub = core::posix::fork([app_uid, app_pid, app_start_time, answer, &stub_ready, &skeleton_ready]()
@@ -735,18 +739,18 @@ TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
         ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
                 .WillByDefault(Return(answer));
 
-        core::trust::remote::UnixDomainSocketAgent::Skeleton::Configuration config
+        core::trust::remote::posix::Skeleton::Configuration config
         {
             mock_agent,
             io_service,
             boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
-            core::trust::remote::UnixDomainSocketAgent::proc_stat_start_time_resolver(),
-            core::trust::remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver(),
+            core::trust::remote::helpers::proc_stat_start_time_resolver(),
+            core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
             "Just a test for %1%."
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
-        auto skeleton = core::trust::remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(config);
+        auto skeleton = core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
         skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
 
         trap->run();
@@ -766,3 +770,153 @@ TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
     app.send_signal_or_throw(core::posix::Signal::sig_kill);
 }
 
+namespace
+{
+struct DBus : public core::dbus::testing::Fixture
+{
+};
+
+std::string service_name
+{
+    "JustForTestingPurposes"
+};
+}
+// A test-case using the remote dbus agent implementation.
+TEST_F(DBus, a_service_can_query_a_remote_agent)
+{
+    using namespace ::testing;
+
+    core::testing::CrossProcessSync
+            stub_ready,         // signals stub     --| I'm ready |--> skeleton
+            skeleton_ready;     // signals skeleton --| I'm ready |--> stub
+
+    auto app = core::posix::fork([]()
+    {
+        while(true) std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    // We sample an answer by throwing a dice.
+    const core::trust::Request::Answer answer
+    {
+        dice(rng) <= 3 ?
+                    core::trust::Request::Answer::denied :
+                    core::trust::Request::Answer::granted
+    };
+
+    const core::trust::Uid app_uid{::getuid()};
+    const core::trust::Pid app_pid{app.pid()};
+
+    auto stub = core::posix::fork([this, app_uid, app_pid, answer, &stub_ready, &skeleton_ready]()
+    {
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        std::thread worker{[bus]() { bus->run(); }};
+
+        std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+        std::cout << dbus_service_name << std::endl;
+
+        auto service = core::dbus::Service::add_service(bus, dbus_service_name);
+        auto object = service->add_object_for_path(core::dbus::types::ObjectPath
+        {
+            core::trust::remote::dbus::default_agent_registry_path
+        });
+
+        core::trust::remote::dbus::Agent::Stub::Configuration config
+        {
+            object,
+            bus
+        };
+
+        std::cout << "here" << std::endl;
+
+        try
+        {
+            auto stub = std::make_shared<core::trust::remote::dbus::Agent::Stub>(config);
+            std::cout << "here 2" << std::endl;
+        } catch(const std::exception& e)
+        {
+            std::cout << e.what() << std::endl;
+        } catch(...)
+        {
+            std::cout << "Error instantiating stub" << std::endl;
+        }
+
+        std::cout << "Instantiated stub" << std::endl;
+
+        stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+        skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
+        bus->stop();
+
+        if (worker.joinable())
+            worker.join();
+
+        return Test::HasFailure() ?
+                    core::posix::exit::Status::failure :
+                    core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    auto skeleton = core::posix::fork([this, answer, &stub_ready, &skeleton_ready]()
+    {
+        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
+
+        trap->signal_raised().connect([trap](core::posix::Signal)
+        {
+            trap->stop();
+        });
+
+        auto bus = session_bus();
+        bus->install_executor(core::dbus::asio::make_executor(bus));
+
+        std::thread worker{[bus]() { bus->run(); }};
+
+        // We have to rely on a MockAgent to break the dependency on a running Mir instance.
+        auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
+
+        ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
+                .WillByDefault(Return(answer));
+
+        std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+        std::cout << "here in the skeleton: " << dbus_service_name << std::endl;
+
+        stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
+        auto service = core::dbus::Service::use_service(bus, dbus_service_name);
+        auto object = service->object_for_path(core::dbus::types::ObjectPath
+        {
+            core::trust::remote::dbus::default_agent_registry_path
+        });
+
+        core::trust::remote::dbus::Agent::Skeleton::Configuration config
+        {
+            mock_agent,
+            object,
+            service,
+            bus,
+            core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
+        };
+
+        auto skeleton = std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
+
+        skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
+
+        trap->run();
+
+        bus->stop();
+
+        if (worker.joinable())
+            worker.join();
+
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+    EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+    skeleton.send_signal_or_throw(core::posix::Signal::sig_term);
+    EXPECT_TRUE(ProcessExitedSuccessfully(skeleton.wait_for(core::posix::wait::Flags::untraced)));
+
+    app.send_signal_or_throw(core::posix::Signal::sig_kill);
+}

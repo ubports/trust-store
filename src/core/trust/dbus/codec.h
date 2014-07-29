@@ -19,6 +19,7 @@
 #ifndef CORE_TRUST_CODEC_H_
 #define CORE_TRUST_CODEC_H_
 
+#include <core/trust/agent.h>
 #include <core/trust/request.h>
 #include <core/trust/store.h>
 
@@ -31,7 +32,6 @@ namespace core
 {
 namespace dbus
 {
-// Defines encoding and decoding of a trust request into a dbus message.
 template<>
 struct Codec<core::trust::Request::Answer>
 {
@@ -60,15 +60,15 @@ struct Codec<core::trust::Store::Query::Status>
     }
 };
 
-template<>
-struct Codec<core::trust::Feature>
+template<typename Tag, typename Integer>
+struct Codec<core::trust::TaggedInteger<Tag, Integer>>
 {
-    inline static void encode_argument(core::dbus::Message::Writer& writer, const core::trust::Feature& arg)
+    inline static void encode_argument(core::dbus::Message::Writer& writer, const core::trust::TaggedInteger<Tag, Integer>& arg)
     {
         writer.push_uint64(arg.value);
     }
 
-    inline static void decode_argument(core::dbus::Message::Reader& reader, core::trust::Feature& arg)
+    inline static void decode_argument(core::dbus::Message::Reader& reader, core::trust::TaggedInteger<Tag, Integer>& arg)
     {
         arg.value = reader.pop_uint64();
     }
@@ -91,6 +91,28 @@ struct Codec<core::trust::Request>
         arg.feature.value = reader.pop_uint64();
         arg.when = core::trust::Request::Timestamp{core::trust::Request::Duration{reader.pop_uint64()}};
         Codec<core::trust::Request::Answer>::decode_argument(reader, arg.answer);
+    }
+};
+
+template<>
+struct Codec<core::trust::Agent::RequestParameters>
+{
+    inline static void encode_argument(core::dbus::Message::Writer& writer, const core::trust::Agent::RequestParameters& arg)
+    {
+        Codec<core::trust::Uid>::encode_argument(writer, arg.application.uid);
+        Codec<core::trust::Pid>::encode_argument(writer, arg.application.pid);
+        Codec<std::string>::encode_argument(writer, arg.application.id);
+        Codec<core::trust::Feature>::encode_argument(writer, arg.feature);
+        Codec<std::string>::encode_argument(writer, arg.description);
+    }
+
+    inline static void decode_argument(core::dbus::Message::Reader& reader, core::trust::Agent::RequestParameters& arg)
+    {
+        Codec<core::trust::Uid>::decode_argument(reader, arg.application.uid);
+        Codec<core::trust::Pid>::decode_argument(reader, arg.application.pid);
+        Codec<std::string>::decode_argument(reader, arg.application.id);
+        Codec<core::trust::Feature>::decode_argument(reader, arg.feature);
+        Codec<std::string>::decode_argument(reader, arg.description);
     }
 };
 }

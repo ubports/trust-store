@@ -16,12 +16,10 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#include <core/trust/remote/unix_domain_socket_agent.h>
+#include <core/trust/remote/posix.h>
 
 #include <core/posix/process.h>
 #include <core/posix/linux/proc/process/stat.h>
-
-#include <sys/apparmor.h>
 
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -35,20 +33,7 @@
 namespace trust = core::trust;
 namespace remote = core::trust::remote;
 
-// Queries the start time of a process by reading /proc/{PID}/stat.
-remote::UnixDomainSocketAgent::ProcessStartTimeResolver remote::UnixDomainSocketAgent::proc_stat_start_time_resolver()
-{
-    return [](trust::Pid pid)
-    {
-        core::posix::Process process{pid.value};
-        core::posix::linux::proc::process::Stat stat;
-        process >> stat;
-
-        return stat.start_time;
-    };
-}
-
-remote::UnixDomainSocketAgent::Stub::PeerCredentialsResolver remote::UnixDomainSocketAgent::Stub::get_sock_opt_credentials_resolver()
+remote::posix::Stub::PeerCredentialsResolver remote::posix::Stub::get_sock_opt_credentials_resolver()
 {
     return [](int socket)
     {
@@ -70,13 +55,13 @@ remote::UnixDomainSocketAgent::Stub::PeerCredentialsResolver remote::UnixDomainS
     };
 }
 
-bool remote::UnixDomainSocketAgent::Stub::Session::Registry::has_session_for_uid(core::trust::Uid uid) const
+bool remote::posix::Stub::Session::Registry::has_session_for_uid(core::trust::Uid uid) const
 {
     std::lock_guard<std::mutex> lg(guard);
     return sessions.count(uid) > 0;
 }
 
-void remote::UnixDomainSocketAgent::Stub::Session::Registry::add_session_for_uid(core::trust::Uid uid, Session::Ptr session)
+void remote::posix::Stub::Session::Registry::add_session_for_uid(core::trust::Uid uid, Session::Ptr session)
 {
     if (not session) throw std::logic_error
     {
@@ -87,28 +72,28 @@ void remote::UnixDomainSocketAgent::Stub::Session::Registry::add_session_for_uid
     sessions[uid] = session;
 }
 
-void remote::UnixDomainSocketAgent::Stub::Session::Registry::remove_session_for_uid(core::trust::Uid uid)
+void remote::posix::Stub::Session::Registry::remove_session_for_uid(core::trust::Uid uid)
 {
     std::lock_guard<std::mutex> lg(guard);
     sessions.erase(uid);
 }
 
-remote::UnixDomainSocketAgent::Stub::Session::Ptr remote::UnixDomainSocketAgent::Stub::Session::Registry::resolve_session_for_uid(core::trust::Uid uid)
+remote::posix::Stub::Session::Ptr remote::posix::Stub::Session::Registry::resolve_session_for_uid(core::trust::Uid uid)
 {
     std::lock_guard<std::mutex> lg(guard);
     return sessions.at(uid);
 }
 
-remote::UnixDomainSocketAgent::Stub::Session::Session(boost::asio::io_service& io_service)
+remote::posix::Stub::Session::Session(boost::asio::io_service& io_service)
     : socket{io_service}
 {
 }
 
-remote::UnixDomainSocketAgent::Stub::Ptr remote::UnixDomainSocketAgent::Stub::create_stub_for_configuration(const Configuration& config)
+remote::posix::Stub::Ptr remote::posix::Stub::create_stub_for_configuration(const Configuration& config)
 {
-    remote::UnixDomainSocketAgent::Stub::Ptr stub
+    remote::posix::Stub::Ptr stub
     {
-        new remote::UnixDomainSocketAgent::Stub
+        new remote::posix::Stub
         {
             config
         }
@@ -120,7 +105,7 @@ remote::UnixDomainSocketAgent::Stub::Ptr remote::UnixDomainSocketAgent::Stub::cr
 
 // Creates a new instance with the given configuration.
 // Throws in case of errors.
-remote::UnixDomainSocketAgent::Stub::Stub(remote::UnixDomainSocketAgent::Stub::Configuration configuration)
+remote::posix::Stub::Stub(remote::posix::Stub::Configuration configuration)
     : io_service(configuration.io_service),
       end_point{configuration.endpoint},
       acceptor{io_service, end_point},
@@ -130,27 +115,27 @@ remote::UnixDomainSocketAgent::Stub::Stub(remote::UnixDomainSocketAgent::Stub::C
 {
 }
 
-void remote::UnixDomainSocketAgent::Stub::start_accept()
+void remote::posix::Stub::start_accept()
 {
-    remote::UnixDomainSocketAgent::Stub::Session::Ptr session
+    remote::posix::Stub::Session::Ptr session
     {
-        new remote::UnixDomainSocketAgent::Stub::Session{io_service}
+        new remote::posix::Stub::Session{io_service}
     };
 
     acceptor.async_accept(
                 session->socket,
-                boost::bind(&remote::UnixDomainSocketAgent::Stub::on_new_session,
+                boost::bind(&remote::posix::Stub::on_new_session,
                             shared_from_this(),
                             boost::asio::placeholders::error(),
                             session));
 }
 
-remote::UnixDomainSocketAgent::Stub::~Stub()
+remote::posix::Stub::~Stub()
 {
     acceptor.cancel();
 }
 
-core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
+core::trust::Request::Answer remote::posix::Stub::send(
         const core::trust::Agent::RequestParameters& parameters)
 {
     // We consider the process start time to prevent from spoofing.
@@ -159,7 +144,7 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
     // This call will throw if there is no session known for the uid.
     Session::Ptr session = session_registry->resolve_session_for_uid(parameters.application.uid);
 
-    remote::UnixDomainSocketAgent::Request request
+    remote::posix::Request request
     {
         parameters.application.uid,
         parameters.application.pid,
@@ -208,9 +193,9 @@ core::trust::Request::Answer remote::UnixDomainSocketAgent::Stub::send(
 }
 
 // Called in case of an incoming connection.
-void remote::UnixDomainSocketAgent::Stub::on_new_session(
+void remote::posix::Stub::on_new_session(
         const boost::system::error_code& ec,
-        const remote::UnixDomainSocketAgent::Stub::Session::Ptr& session)
+        const remote::posix::Stub::Session::Ptr& session)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -224,7 +209,7 @@ void remote::UnixDomainSocketAgent::Stub::on_new_session(
     start_accept();
 }
 
-void remote::UnixDomainSocketAgent::Stub::handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, trust::Uid uid)
+void remote::posix::Stub::handle_error_from_socket_operation_for_uid(const boost::system::error_code& ec, trust::Uid uid)
 {
     switch (ec.value())
     {
@@ -245,56 +230,17 @@ void remote::UnixDomainSocketAgent::Stub::handle_error_from_socket_operation_for
     throw std::system_error{ec.value(), std::system_category()};
 }
 
-bool remote::UnixDomainSocketAgent::Stub::has_session_for_uid(trust::Uid uid) const
+bool remote::posix::Stub::has_session_for_uid(trust::Uid uid) const
 {
     return session_registry->has_session_for_uid(uid);
 }
 
-remote::UnixDomainSocketAgent::Skeleton::AppIdResolver remote::UnixDomainSocketAgent::Skeleton::aa_get_task_con_app_id_resolver()
+remote::posix::Skeleton::Ptr remote::posix::Skeleton::create_skeleton_for_configuration(
+    const remote::posix::Skeleton::Configuration& configuration)
 {
-    return [](trust::Pid pid)
+    remote::posix::Skeleton::Ptr skeleton
     {
-        static const int app_armor_error{-1};
-
-        // We make sure to clean up the returned string.
-        struct Scope
-        {
-            ~Scope()
-            {
-                if (con) ::free(con);
-            }
-
-            char* con{nullptr};
-            char* mode{nullptr};
-        } scope;
-
-        // Reach out to apparmor
-        auto rc = aa_gettaskcon(pid.value, &scope.con, &scope.mode);
-
-        // From man aa_gettaskcon:
-        // On success size of data placed in the buffer is returned, this includes the mode if
-        //present and any terminating characters. On error, -1 is returned, and errno(3) is
-        //set appropriately.
-        if (rc == app_armor_error) throw std::system_error
-        {
-            errno,
-            std::system_category()
-        };
-
-        // Safely construct the string
-        return std::string
-        {
-            scope.con ? scope.con : ""
-        };
-    };
-}
-
-remote::UnixDomainSocketAgent::Skeleton::Ptr remote::UnixDomainSocketAgent::Skeleton::create_skeleton_for_configuration(
-    const remote::UnixDomainSocketAgent::Skeleton::Configuration& configuration)
-{
-    remote::UnixDomainSocketAgent::Skeleton::Ptr skeleton
-    {
-        new remote::UnixDomainSocketAgent::Skeleton
+        new remote::posix::Skeleton
         {
             configuration
         }
@@ -304,7 +250,7 @@ remote::UnixDomainSocketAgent::Skeleton::Ptr remote::UnixDomainSocketAgent::Skel
     return skeleton;
 }
 
-remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configuration)
+remote::posix::Skeleton::Skeleton(const Configuration& configuration)
     : core::trust::remote::Agent::Skeleton{configuration.impl},
       start_time_resolver{configuration.start_time_resolver},
       app_id_resolver{configuration.app_id_resolver},
@@ -324,12 +270,12 @@ remote::UnixDomainSocketAgent::Skeleton::Skeleton(const Configuration& configura
     }
 }
 
-remote::UnixDomainSocketAgent::Skeleton::~Skeleton()
+remote::posix::Skeleton::~Skeleton()
 {
     socket.cancel();
 }
 
-void remote::UnixDomainSocketAgent::Skeleton::start_read()
+void remote::posix::Skeleton::start_read()
 {
     Ptr sp{shared_from_this()};
 
@@ -342,7 +288,7 @@ void remote::UnixDomainSocketAgent::Skeleton::start_read()
                 });
 }
 
-void remote::UnixDomainSocketAgent::Skeleton::on_read_finished(const boost::system::error_code& ec, std::size_t size)
+void remote::posix::Skeleton::on_read_finished(const boost::system::error_code& ec, std::size_t size)
 {
     if (ec == boost::asio::error::operation_aborted)
         return;
@@ -361,7 +307,7 @@ void remote::UnixDomainSocketAgent::Skeleton::on_read_finished(const boost::syst
     start_read();
 }
 
-core::trust::Request::Answer remote::UnixDomainSocketAgent::Skeleton::process_incoming_request(const core::trust::remote::UnixDomainSocketAgent::Request& request)
+core::trust::Request::Answer remote::posix::Skeleton::process_incoming_request(const core::trust::remote::posix::Request& request)
 {
     // We first validate the process start time again.
     if (start_time_resolver(request.app_pid) != request.app_start_time) throw std::runtime_error

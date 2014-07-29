@@ -20,8 +20,8 @@
 
 #include <core/trust/store.h>
 
-#include "codec.h"
-#include "dbus_interface.h"
+#include "dbus/codec.h"
+#include "dbus/interface.h"
 
 #include <core/dbus/asio/executor.h>
 #include <core/dbus/codec.h>
