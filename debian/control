@@ -66,7 +66,7 @@ Section: devel
 Architecture: any
 Depends: libtrust-store1 (= ${binary:Version}),
          ${misc:Depends},
-Description: Test files for libtrust-store1
+Description: Daemon binaries to be used by services.
  Provides a common implementation of a trust store to be used by trusted
  helpers.
  .
