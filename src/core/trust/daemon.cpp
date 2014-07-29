@@ -345,7 +345,7 @@ core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust:
     Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
     {
         Runtime::instance().signal_trap->stop();
-    });
+    });    
 
     // Expose the local store to the bus, keeping it exposed for the
     // lifetime of the returned token.
