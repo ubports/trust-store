@@ -20,6 +20,7 @@
 #define CORE_TRUST_DBUS_AGENT_H_
 
 #include <core/trust/agent.h>
+#include <core/trust/dbus_agent.h>
 
 #include <core/trust/dbus/codec.h>
 #include <core/trust/remote/helpers.h>
@@ -148,6 +149,27 @@ struct Agent
 };
 }
 }
+}
+
+/**
+ * @brief create_per_user_agent_for_bus_connection creates a trust::Agent implementation communicating with a remote agent
+ * implementation living in the same user session.
+ * @param connection An existing DBus connection.
+ * @param service The name of the service we are operating for.
+ * @throws std::runtime_error in case of issues.
+ */
+std::shared_ptr<core::trust::Agent> core::trust::dbus::create_per_user_agent_for_bus_connection(
+        const std::shared_ptr<core::dbus::Bus>& connection,
+        const std::string& service_name)
+{
+    auto object =
+            core::dbus::Service::use_service(connection,"core.trust.dbus.Agent." + service_name)
+            ->object_for_path(core::dbus::types::ObjectPath{"/core/trust/dbus/Agent"});
+
+    return std::shared_ptr<core::trust::dbus::Agent::Stub>
+    {
+        new core::trust::dbus::Agent::Stub{object}
+    };
 }
 
 #endif // CORE_TRUST_DBUS_AGENT_H_

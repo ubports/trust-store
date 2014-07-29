@@ -809,14 +809,21 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
 
     auto stub = core::posix::fork([this, app_uid, app_pid, answer, &stub_ready, &skeleton_ready]()
     {
+        core::trust::Agent::RequestParameters ref_params
+        {
+            app_uid,
+            app_pid,
+            "just.a.testing.id",
+            core::trust::Feature{40},
+            "just an example description"
+        };
+
         auto bus = session_bus();
         bus->install_executor(core::dbus::asio::make_executor(bus));
 
         std::thread worker{[bus]() { bus->run(); }};
 
         std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
-
-        std::cout << dbus_service_name << std::endl;
 
         auto service = core::dbus::Service::add_service(bus, dbus_service_name);
         auto object = service->add_object_for_path(core::dbus::types::ObjectPath
@@ -830,24 +837,13 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
             bus
         };
 
-        std::cout << "here" << std::endl;
-
-        try
-        {
-            auto stub = std::make_shared<core::trust::remote::dbus::Agent::Stub>(config);
-            std::cout << "here 2" << std::endl;
-        } catch(const std::exception& e)
-        {
-            std::cout << e.what() << std::endl;
-        } catch(...)
-        {
-            std::cout << "Error instantiating stub" << std::endl;
-        }
-
-        std::cout << "Instantiated stub" << std::endl;
+        auto stub = std::make_shared<core::trust::remote::dbus::Agent::Stub>(config);
 
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
         skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
+        for (unsigned int i = 0; i < 100; i++)
+            EXPECT_EQ(answer, stub->authenticate_request_with_parameters(ref_params));
 
         bus->stop();
 
@@ -880,8 +876,6 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
                 .WillByDefault(Return(answer));
 
         std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
-
-        std::cout << "here in the skeleton: " << dbus_service_name << std::endl;
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
 

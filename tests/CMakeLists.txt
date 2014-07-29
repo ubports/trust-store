@@ -177,5 +177,5 @@ add_test(dbus_test ${CMAKE_CURRENT_BINARY_DIR}/dbus_test)
 
 install(
   TARGETS trust_store_test remote_trust_store_test request_processor_test mir_agent_test remote_agent_test cached_agent_test daemon_test dbus_test
-  RUNTIME DESTINATION bin/trust-store-tests
+  RUNTIME DESTINATION ${CMAKE_INSTALL_LIBDIR}/trust-store-tests
 )

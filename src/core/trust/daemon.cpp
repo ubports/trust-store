@@ -146,6 +146,27 @@ namespace
 
         core::trust::Request::Answer canned_answer;
     };
+
+    core::dbus::Bus::Ptr bus_from_dictionary(const core::trust::Daemon::Dictionary& dict)
+    {
+        std::string bus_name = dict.at("bus");
+
+        core::dbus::Bus::Ptr bus;
+
+        if (bus_name == "system")
+            bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
+        else if (bus_name == "session")
+            bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
+
+        if (not bus) throw std::runtime_error
+        {
+            "Could not create bus for name: " + bus_name
+        };
+
+        bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+
+        return bus;
+    }
 }
 
 const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& core::trust::Daemon::Skeleton::known_local_agent_factories()
@@ -228,21 +249,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                     "Missing bus specifier, please choose from {system, session}."
                 };
 
-                std::string bus_name = dict.at("bus");
-
-                core::dbus::Bus::Ptr bus;
-
-                if (bus_name == "system")
-                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
-                else if (bus_name == "session")
-                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
-
-                if (not bus) throw std::runtime_error
-                {
-                    "Could not create bus for name: " + bus_name
-                };
-
-                bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+                auto bus = bus_from_dictionary(dict);
 
                 std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 
@@ -380,26 +387,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>&  cor
             std::string{Daemon::RemoteAgents::DBusRemoteAgent::name},
             [](const std::string& service_name, const Dictionary& dict)
             {
-                if (dict.count("bus") == 0) throw std::runtime_error
-                {
-                    "Missing bus specifier, please choose from {system, session}."
-                };
-
-                std::string bus_name = dict.at("bus");
-
-                core::dbus::Bus::Ptr bus;
-
-                if (bus_name == "system")
-                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
-                else if (bus_name == "session")
-                    bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
-
-                if (not bus) throw std::runtime_error
-                {
-                    "Could not create bus for name: " + bus_name
-                };
-
-                bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+                auto bus = bus_from_dictionary(dict);
 
                 std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 

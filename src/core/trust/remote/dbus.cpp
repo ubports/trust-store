@@ -18,6 +18,8 @@
 
 #include <core/trust/remote/dbus.h>
 
+#include <core/trust/dbus_agent.h>
+
 core::trust::remote::dbus::Agent::Stub::Stub(const core::trust::remote::dbus::Agent::Stub::Configuration& configuration)
     : agent_registry_skeleton
       {
@@ -60,4 +62,31 @@ core::trust::remote::dbus::Agent::Skeleton::Skeleton(const core::trust::remote::
 core::trust::Request::Answer core::trust::remote::dbus::Agent::Skeleton::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
     return remote::Agent::Skeleton::authenticate_request_with_parameters(parameters);
+}
+
+std::shared_ptr<core::trust::Agent> core::trust::dbus::create_multi_user_agent_for_bus_connection(
+        const std::shared_ptr<core::dbus::Bus>& connection,
+        const std::string& service_name)
+{
+    auto dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+    auto service = core::dbus::Service::add_service(connection, dbus_service_name);
+    auto object = service->add_object_for_path(core::dbus::types::ObjectPath
+    {
+        core::trust::remote::dbus::default_agent_registry_path
+    });
+
+    core::trust::remote::dbus::Agent::Stub::Configuration config
+    {
+        object,
+        connection
+    };
+
+    return std::shared_ptr<core::trust::remote::dbus::Agent::Stub>
+    {
+        new core::trust::remote::dbus::Agent::Stub
+        {
+            config
+        }
+    };
 }
