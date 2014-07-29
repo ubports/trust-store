@@ -61,13 +61,24 @@ Description: C++11 library for persisting trust requests - dev files
  This package includes all the development headers and libraries for
  trust-store.
 
+Package: trust-store-bin
+Section: devel
+Architecture: any
+Depends: libtrust-store1 (= ${binary:Version}),
+         ${misc:Depends},
+Description: Test files for libtrust-store1
+ Provides a common implementation of a trust store to be used by trusted
+ helpers.
+ .
+ Daemon binaries to be used by services.
+
 Package: trust-store-tests
 Section: libdevel
 Architecture: any
 Depends: libtrust-store1 (= ${binary:Version}),
          ${misc:Depends},
 Suggests: libtrust-store-dev,
-Description: Test files for libtrust-store0
+Description: Test files for libtrust-store1
  Provides a common implementation of a trust store to be used by trusted
  helpers.
  .
