@@ -110,9 +110,9 @@ TEST(Daemon, unix_domain_agents_for_stub_and_skeleton_work_as_expected)
 
 TEST(Daemon, dbus_agents_for_stub_and_skeleton_work_as_expected)
 {
-    static const std::string bus{"--bus=session"};
+    static std::string bus_arg{"--bus=session"};
     if (::getuid() == 0) // We are root, so likely a packaging build
-        bus = "--bus=system";
+        bus_arg = "--bus=system";
     // The stub accepting trust requests, relaying them via
     // the configured remote agent.
     core::posix::ChildProcess stub = core::posix::fork([]()
@@ -122,7 +122,7 @@ TEST(Daemon, dbus_agents_for_stub_and_skeleton_work_as_expected)
             __PRETTY_FUNCTION__,
             "--for-service", service_name,
             "--remote-agent", "DBusRemoteAgent",
-            bus.c_str()
+            bus_arg.c_str()
         };
 
         auto configuration = core::trust::Daemon::Stub::Configuration::from_command_line(6, argv);
@@ -141,7 +141,7 @@ TEST(Daemon, dbus_agents_for_stub_and_skeleton_work_as_expected)
         {
             __PRETTY_FUNCTION__,
             "--remote-agent", "DBusRemoteAgent",
-            bus.c_str(),
+            bus_arg.c_str(),
             "--local-agent", "TheAlwaysDenyingLocalAgent",
             "--for-service", service_name
         };
