@@ -24,6 +24,8 @@
 
 #include <core/trust/remote/agent.h>
 
+#include <core/dbus/bus.h>
+
 #include <core/posix/exit.h>
 
 #include <functional>
@@ -53,11 +55,23 @@ struct Daemon
         // Implements the trust::Agent interface and dispatches calls to a helper
         // prompt provider, tying it together with the requesting service and app
         // by leveraging Mir's trusted session/prompting support.
-        struct MirAgent { static constexpr const char* name { "MirAgent" }; };
+        struct MirAgent
+        {
+            static constexpr const char* name
+            {
+                "MirAgent"
+            };
+        };
 
         // Implements the trust::Agent interface and dispatches calls to the user
         // leveraging whiptail to provide a dialog in a terminal.
-        struct TerminalAgent { static constexpr const char* name { "TerminalAgent" }; };
+        struct TerminalAgent
+        {
+            static constexpr const char* name
+            {
+                "TerminalAgent"
+            };
+        };
     };
 
     // Collects all known remote agents
@@ -69,10 +83,22 @@ struct Daemon
         // filesystem. The stub implementation exposes the socket and handles incoming
         // connections from its skeletons. For incoming requests, the stub selects the
         // handling skeleton based on the user id associated with the request.
-        struct UnixDomainSocketRemoteAgent { static constexpr const char* name { "UnixDomainSocketRemoteAgent" }; };
+        struct UnixDomainSocketRemoteAgent
+        {
+            static constexpr const char* name
+            {
+                "UnixDomainSocketRemoteAgent"
+            };
+        };
 
         // A remote agent implementation leveraging dbus.
-        struct DBusRemoteAgent { static constexpr const char* name { "DBusRemoteAgent" }; };
+        struct DBusRemoteAgent
+        {
+            static constexpr const char* name
+            {
+                "DBusRemoteAgent"
+            };
+        };
     };
 
     struct Skeleton
@@ -105,6 +131,12 @@ struct Daemon
         {
             Parameters() = delete;
 
+            struct StoreBus
+            {
+                static constexpr const char* name{"store-bus"};
+                static constexpr const char* description{"The bus that the remote store should be exposed on"};
+            };
+
             struct ForService
             {
                 static constexpr const char* name{"for-service"};
@@ -132,6 +164,9 @@ struct Daemon
 
             // The name of the service that the daemon should serve for.
             std::string service_name;
+
+            // The bus instance to expose the remote store instance on.
+            core::dbus::Bus::Ptr bus;
 
             // All local, i.e., actual implementations
             struct

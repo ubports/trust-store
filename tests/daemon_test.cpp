@@ -20,6 +20,8 @@
 
 #include "process_exited_successfully.h"
 
+#include <core/dbus/fixture.h>
+
 #include <core/posix/exec.h>
 #include <core/posix/fork.h>
 
@@ -43,6 +45,14 @@ static constexpr const char* endpoint
 
 TEST(Daemon, unix_domain_agents_for_stub_and_skeleton_work_as_expected)
 {
+    // We fire up private bus instances to ensure tests working
+    // during package builds.
+    core::dbus::Fixture private_buses
+    {
+        core::dbus::Fixture::default_session_bus_config_file(),
+        core::dbus::Fixture::default_system_bus_config_file()
+    };
+
     std::remove(endpoint);
 
     // The stub accepting trust requests, relaying them via
@@ -76,10 +86,11 @@ TEST(Daemon, unix_domain_agents_for_stub_and_skeleton_work_as_expected)
             "--remote-agent", "UnixDomainSocketRemoteAgent",
             "--endpoint=/tmp/unlikely.to.ever.exist.outside.of.testing",
             "--local-agent", "TheAlwaysDenyingLocalAgent",
-            "--for-service", service_name
+            "--for-service", service_name,
+            "--store-bus", "session_with_address_from_env"
         };
 
-        auto configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(8, argv);
+        auto configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(10, argv);
 
         return core::trust::Daemon::Skeleton::main(configuration);
     }, core::posix::StandardStream::empty);
@@ -110,9 +121,16 @@ TEST(Daemon, unix_domain_agents_for_stub_and_skeleton_work_as_expected)
 
 TEST(Daemon, dbus_agents_for_stub_and_skeleton_work_as_expected)
 {
-    static std::string bus_arg{"--bus=session"};
-    if (::getuid() == 0) // We are root, so likely a packaging build
-        bus_arg = "--bus=system";
+    // We fire up private bus instances to ensure tests working
+    // during package builds.
+    core::dbus::Fixture private_buses
+    {
+        core::dbus::Fixture::default_session_bus_config_file(),
+        core::dbus::Fixture::default_system_bus_config_file()
+    };
+
+    static std::string bus_arg{"--bus=session_with_address_from_env"};
+
     // The stub accepting trust requests, relaying them via
     // the configured remote agent.
     core::posix::ChildProcess stub = core::posix::fork([]()
@@ -143,10 +161,11 @@ TEST(Daemon, dbus_agents_for_stub_and_skeleton_work_as_expected)
             "--remote-agent", "DBusRemoteAgent",
             bus_arg.c_str(),
             "--local-agent", "TheAlwaysDenyingLocalAgent",
-            "--for-service", service_name
+            "--for-service", service_name,
+            "--store-bus", "session_with_address_from_env"
         };
 
-        auto configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(8, argv);
+        auto configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(10, argv);
 
         return core::trust::Daemon::Skeleton::main(configuration);
     }, core::posix::StandardStream::empty);

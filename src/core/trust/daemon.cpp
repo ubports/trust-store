@@ -147,16 +147,18 @@ namespace
         core::trust::Request::Answer canned_answer;
     };
 
-    core::dbus::Bus::Ptr bus_from_dictionary(const core::trust::Daemon::Dictionary& dict)
+    core::dbus::Bus::Ptr bus_from_name(const std::string& bus_name)
     {
-        std::string bus_name = dict.at("bus");
-
         core::dbus::Bus::Ptr bus;
 
         if (bus_name == "system")
             bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
         else if (bus_name == "session")
             bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
+        else if (bus_name == "system_with_address_from_env")
+            bus = std::make_shared<core::dbus::Bus>(core::posix::this_process::env::get_or_throw("DBUS_SYSTEM_BUS_ADDRESS"));
+        else if (bus_name == "session_with_address_from_env")
+            bus = std::make_shared<core::dbus::Bus>(core::posix::this_process::env::get_or_throw("DBUS_SESSION_BUS_ADDRESS"));
 
         if (not bus) throw std::runtime_error
         {
@@ -166,6 +168,11 @@ namespace
         bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
 
         return bus;
+    }
+
+    core::dbus::Bus::Ptr bus_from_dictionary(const core::trust::Daemon::Dictionary& dict)
+    {
+        return bus_from_name(dict.at("bus"));
     }
 }
 
@@ -285,6 +292,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     Options::options_description options{"Known options"};
     options.add_options()
             (Parameters::ForService::name, Options::value<std::string>()->required(), Parameters::ForService::description)
+            (Parameters::StoreBus::name, Options::value<std::string>()->default_value("session"), Parameters::StoreBus::description)
             (Parameters::LocalAgent::name, Options::value<std::string>()->required(), Parameters::LocalAgent::description)
             (Parameters::RemoteAgent::name, Options::value<std::string>()->required(), Parameters::RemoteAgent::description);
 
@@ -312,12 +320,10 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     auto service_name = vm[Parameters::ForService::name].as<std::string>();
 
     auto local_agent_factory = core::trust::Daemon::Skeleton::known_local_agent_factories()
-            .at(vm[Parameters::LocalAgent::name]
-            .as<std::string>());
+            .at(vm[Parameters::LocalAgent::name].as<std::string>());
 
     auto remote_agent_factory = core::trust::Daemon::Skeleton::known_remote_agent_factories()
-            .at(vm[Parameters::RemoteAgent::name]
-            .as<std::string>());
+            .at(vm[Parameters::RemoteAgent::name].as<std::string>());
 
     auto local_store = core::trust::create_default_store(service_name);
     auto local_agent = local_agent_factory(service_name, dict);
@@ -334,6 +340,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
+        bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
         {local_store, local_agent},
         {remote_agent}
     };
@@ -345,20 +352,31 @@ core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust:
     Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
     {
         Runtime::instance().signal_trap->stop();
-    });    
+    });
+
+    std::thread worker
+    {
+        [configuration]() { configuration.bus->run(); }
+    };
 
     // Expose the local store to the bus, keeping it exposed for the
     // lifetime of the returned token.
-    auto token = core::trust::expose_store_to_session_with_name(
+    auto token = core::trust::expose_store_to_bus_with_name(
                 configuration.local.store,
+                configuration.bus,
                 configuration.service_name);
 
     Runtime::instance().signal_trap->run();
 
+    configuration.bus->stop();
+
+    if (worker.joinable())
+        worker.join();
+
     return core::posix::exit::Status::success;
 }
 
-const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>&  core::trust::Daemon::Stub::known_remote_agent_factories()
+const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core::trust::Daemon::Stub::known_remote_agent_factories()
 {
     static std::map<std::string, RemoteAgentFactory> lut
     {
