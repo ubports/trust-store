@@ -14,7 +14,8 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"core::trust::mir::ConnectionVirtualTable::create_prompt_session_sync(core::trust::TaggedInteger<core::trust::tag::Pid, int>, void (*)(MirPromptSession*, MirPromptSessionState, void*), void*)@Base" 0replaceme
  (c++)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection*)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::PromptSessionVirtualTable::release_sync()@Base" 0.0.1+14.10.20140717.8
- (c++)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 0replaceme
+ (c++|arch=amd64 arm64 ppc64el)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 0replaceme
+ (c++|arch=i386 armhf powerpc)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 0replaceme
  (c++)"core::trust::mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession*)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::create_agent_for_mir_connection(MirConnection*)@Base" 0.0.1+14.10.20140717.8
@@ -52,7 +53,8 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"core::trust::remote::posix::Stub::Stub(core::trust::remote::posix::Stub::Configuration)@Base" 0replaceme
  (c++)"core::trust::remote::posix::Stub::~Stub()@Base" 0replaceme
  (c++)"core::trust::remote::posix::Skeleton::start_read()@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned long)@Base" 0replaceme
+ (c++|arch=amd64 arm64 ppc64el)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned long)@Base" 0replaceme
+ (c++|arch=i386 armhf powerpc)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned int)@Base" 0replaceme
  (c++)"core::trust::remote::posix::Skeleton::process_incoming_request(core::trust::remote::posix::Request const&)@Base" 0replaceme
  (c++)"core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 0replaceme
  (c++)"core::trust::remote::posix::Skeleton::Skeleton(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 0replaceme
