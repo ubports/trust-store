@@ -39,6 +39,12 @@ static const std::string service_name{"does_not_exist"};
 
 struct RemoteTrustStore : public core::dbus::testing::Fixture
 {
+    RemoteTrustStore()
+    {
+        // The tests being executed under this fixture are quite intense given their accesses
+        // to the disk. For that, we choose sufficiently high default timeout for the daemons.
+        core::dbus::Fixture::default_daemon_timeout() = core::dbus::Fixture::Seconds{300};
+    }
 };
 }
 
