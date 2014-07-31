@@ -307,6 +307,13 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
 {
     using namespace ::testing;
 
+    // We need to make sure that we have a valid pid.
+    auto app = core::posix::fork([]()
+    {
+        while(true) std::this_thread::sleep_for(std::chrono::milliseconds{500});
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
     // skeleton --| good to go |--> stub
     core::testing::CrossProcessSync cps;
 
@@ -379,7 +386,7 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
                   core::trust::Agent::RequestParameters
                   {
                       core::trust::Uid{::getuid()},
-                      core::trust::Pid{42},
+                      core::trust::Pid{app.pid()},
                       "",
                       core::trust::Feature{},
                       ""
