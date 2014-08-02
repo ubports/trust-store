@@ -67,7 +67,7 @@ struct Agent
         // And thus not constructible
         Methods() = delete;
 
-        DBUS_CPP_METHOD_WITH_TIMEOUT_DEF(AuthenticateRequestWithParameters, Agent, 10000)
+        DBUS_CPP_METHOD_WITH_TIMEOUT_DEF(AuthenticateRequestWithParameters, Agent, 120000)
     };
 
     class Stub : public core::trust::Agent
