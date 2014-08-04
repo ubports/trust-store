@@ -38,7 +38,7 @@ namespace dbus
  * @brief create_per_user_agent_for_bus_connection creates a trust::Agent implementation communicating with a remote agent
  * implementation living in the same user session.
  * @param connection An existing DBus connection.
- * @param service The name of the service we are operating for.
+ * @param service_name The name of the service we are operating for.
  * @throws std::runtime_error in case of issues.
  */
 CORE_TRUST_DLL_PUBLIC std::shared_ptr<core::trust::Agent> create_per_user_agent_for_bus_connection(
@@ -49,7 +49,7 @@ CORE_TRUST_DLL_PUBLIC std::shared_ptr<core::trust::Agent> create_per_user_agent_
  * @brief create_multi_user_agent_for_bus_connection creates a trust::Agent implementation communicating with user-specific
  * remote agent implementations, living in user sessions.
  * @param connection An existing DBus connection.
- * @param service The name of the service we are operating for.
+ * @param service_name The name of the service we are operating for.
  * @throws std::runtime_error in case of issues.
  */
 CORE_TRUST_DLL_PUBLIC std::shared_ptr<core::trust::Agent> create_multi_user_agent_for_bus_connection(

@@ -351,6 +351,7 @@ TEST_F(DBusAgentRegistry, remote_invocation_works_correctly)
 
             void notify()
             {
+                std::lock_guard<std::mutex> lg(guard);
                 invocation_count++;
                 wait_condition.notify_all();
             }
