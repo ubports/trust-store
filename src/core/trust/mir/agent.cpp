@@ -21,6 +21,7 @@
 #include "prompt_main.h"
 
 // For getuid
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -38,6 +39,13 @@ void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*
         return;
 
     ctxt->fd = fds[0];
+
+    // Upstart enables FD_CLOEXEC by default. We have to counteract.
+    if (::fcntl(ctxt->fd, F_SETFD, 0) == -1) throw std::system_error
+    {
+        errno,
+        std::system_category()
+    };
 }
 
 mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession* prompt_session)
