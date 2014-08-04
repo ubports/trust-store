@@ -159,7 +159,7 @@ private:
     // Throws in case of errors.
     Stub(Configuration configuration);
 
-    // Starts listening on the endpoing configured at creation time
+    // Starts listening on the endpoint configured at creation time
     // for incoming connections.
     void start_accept();
 

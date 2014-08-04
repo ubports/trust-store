@@ -248,7 +248,7 @@ struct AgentRegistry
                     reply = core::dbus::Message::make_method_return(in);
                 } catch(const std::exception&)
                 {
-                    // TODO(tvoss): We should report the execption here.
+                    // TODO(tvoss): We should report the exception here.
                     // For now, we silently drop it and return an empty description
                     // to the sender to prevent from leaking any privacy/security-relevant
                     // data to the other side.
@@ -269,7 +269,7 @@ struct AgentRegistry
                     configuration.bus->send(reply);
                 } catch(const std::exception&)
                 {
-                    // TODO(tvoss): We should report the execption here.
+                    // TODO(tvoss): We should report the exception here.
                     // We immediately remove the agent for the given user id
                     // as the transaction to the other side did not complete.
                     unregister_agent_for_user(uid);

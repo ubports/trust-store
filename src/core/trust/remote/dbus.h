@@ -86,7 +86,7 @@ struct CORE_TRUST_DLL_PUBLIC Agent
             std::shared_ptr<Agent> impl;
             // The remote object implementing core.trust.dbus.AgentRegistry.
             core::dbus::Object::Ptr agent_registry_object;
-            // The sevice that objects implementing core.trust.dbus.Agent should be added to.
+            // The service that objects implementing core.trust.dbus.Agent should be added to.
             core::dbus::Service::Ptr service;
             // The underlying bus instance.
             core::dbus::Bus::Ptr bus;

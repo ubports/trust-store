@@ -43,7 +43,7 @@ public:
 
     /**
      * @brief CachedAgent creates a new agent instance.
-     * @param configuration Specificies the actual agent and the store.
+     * @param configuration Specifies the actual agent and the store.
      * @throws std::logic_error if either the agent or the store are null.
      */
     CachedAgent(const Configuration& configuration);

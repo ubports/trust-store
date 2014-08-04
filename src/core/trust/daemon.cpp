@@ -86,7 +86,7 @@ namespace
             concurrency_hint
         };
 
-        // We keep the io_service alive and introduce some artifical
+        // We keep the io_service alive and introduce some artificial
         // work.
         boost::asio::io_service::work keep_alive
         {
@@ -446,8 +446,6 @@ core::trust::Daemon::Stub::Configuration core::trust::Daemon::Stub::Configuratio
         argv
     };
 
-    std::vector<std::string> unrecognized;
-
     try
     {
         auto parsed_options = parser.options(options).allow_unregistered().run();
@@ -540,7 +538,7 @@ struct Shell : public std::enable_shared_from_this<Shell>
         std::istream ss{&buffer};
         ss >> params.application.pid.value >> params.application.uid.value >> params.feature.value;
 
-        // We fixup the parameters.
+        // We fix up the parameters.
         params.application.id = app_id_resolver(params.application.pid);
 
         std::cout << agent->authenticate_request_with_parameters(params) << std::endl;
@@ -556,7 +554,7 @@ struct Shell : public std::enable_shared_from_this<Shell>
     boost::asio::posix::stream_descriptor stdin;
     // The buffer we read in.
     boost::asio::streambuf buffer;
-    // We use some helpers to fixup the quite limited requests we parse from the
+    // We use some helpers to fix up the quite limited requests we parse from the
     // command line
     core::trust::remote::helpers::AppIdResolver app_id_resolver;
 };
