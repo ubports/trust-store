@@ -491,7 +491,7 @@ struct Shell : public std::enable_shared_from_this<Shell>
     // Prints out the initial prompt and initiates a read operation on stdin.
     void start()
     {
-        std::cout << "This is the super simple, interactive shell of the trust::store Damon" << std::endl;
+        std::cout << "This is the super simple, interactive shell of the trust::store Daemon" << std::endl;
         std::cout << "The following commands are known:" << std::endl;
         std::cout << "  Enter a line like 'pid uid feature' to issue a query with the given parameters." << std::endl;
 

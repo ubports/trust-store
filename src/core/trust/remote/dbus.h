@@ -16,8 +16,8 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef CORE_TRUST_REMOTE_DBUS_AGENT_H_
-#define CORE_TRUST_REMOTE_DBUS_AGENT_H_
+#ifndef CORE_TRUST_REMOTE_DBUS_H_
+#define CORE_TRUST_REMOTE_DBUS_H_
 
 #include <core/trust/remote/agent.h>
 #include <core/trust/remote/helpers.h>
@@ -109,4 +109,4 @@ struct CORE_TRUST_DLL_PUBLIC Agent
 }
 }
 
-#endif // CORE_TRUST_REMOTE_DBUS_AGENT_H_
+#endif // CORE_TRUST_REMOTE_DBUS_H_

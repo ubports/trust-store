@@ -16,8 +16,8 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef CORE_TRUST_REMOTE_UNIX_DOMAIN_SOCKET_AGENT_H_
-#define CORE_TRUST_REMOTE_UNIX_DOMAIN_SOCKET_AGENT_H_
+#ifndef CORE_TRUST_REMOTE_POSIX_H_
+#define CORE_TRUST_REMOTE_POSIX_H_
 
 #include <core/trust/remote/agent.h>
 #include <core/trust/remote/helpers.h>
@@ -249,4 +249,4 @@ private:
 }
 }
 
-#endif // CORE_TRUST_REMOTE_AGENT_H_
+#endif // CORE_TRUST_REMOTE_POSIX_H_

@@ -369,22 +369,6 @@ TEST_F(DBusAgentRegistry, remote_invocation_works_correctly)
                         InvokeWithoutArgs(&state, &State::notify),
                         Return(core::trust::Request::Answer::denied)));
 
-        /*std::shared_ptr<core::trust::dbus::Agent::Skeleton> skeleton
-        {
-            new core::trust::dbus::Agent::Skeleton
-            {
-                core::trust::dbus::Agent::Skeleton::Configuration
-                {
-                    agent_object,
-                    bus,
-                    [agent](const core::trust::Agent::RequestParameters& params)
-                    {
-                        return agent->authenticate_request_with_parameters(params);
-                    }
-                }
-            }
-        };*/
-
         core::trust::dbus::AgentRegistry::Stub stub
         {
             core::trust::dbus::AgentRegistry::Stub::Configuration

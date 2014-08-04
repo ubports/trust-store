@@ -224,8 +224,8 @@ struct Token : public core::trust::Token
             });
             object->install_method_handler<core::trust::dbus::Store::Query::ForFeature>([this, query](const core::dbus::Message::Ptr& msg)
             {
-                std::uint64_t feature; msg->reader() >> feature;
-                query->for_feature(core::trust::Feature{feature});
+                core::trust::Feature feature; msg->reader() >> feature;
+                query->for_feature(feature);
 
                 auto reply = core::dbus::Message::make_method_return(msg);
                 bus->send(reply);
