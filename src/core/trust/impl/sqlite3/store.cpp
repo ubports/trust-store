@@ -79,7 +79,6 @@ std::pair<int, bool> is_error(int result)
 
 struct Database;
 
-template<typename Tag>
 class PreparedStatement
 {
 public:
@@ -93,8 +92,8 @@ public:
     {
     }
 
-    PreparedStatement(const PreparedStatement<Tag>&) = delete;
-    PreparedStatement(PreparedStatement<Tag>&& rhs)
+    PreparedStatement(const PreparedStatement&) = delete;
+    PreparedStatement(PreparedStatement&& rhs)
         : db(rhs.db),
           statement(rhs.statement)
     {
@@ -102,12 +101,12 @@ public:
         rhs.statement = nullptr;
     }
 
-    ~PreparedStatement()
+    virtual ~PreparedStatement()
     {
         sqlite3_finalize(statement);
     }
 
-    PreparedStatement<Tag>& operator=(PreparedStatement<Tag>&& rhs)
+    PreparedStatement& operator=(PreparedStatement&& rhs)
     {
         if (statement)
         {
@@ -123,8 +122,8 @@ public:
         return *this;
     }
 
-    PreparedStatement<Tag>& operator=(const PreparedStatement<Tag>&) = delete;
-    bool operator==(const PreparedStatement<Tag>&) const = delete;
+    PreparedStatement& operator=(const PreparedStatement&) = delete;
+    bool operator==(const PreparedStatement&) const = delete;
 
     template<int index>
     void bind_null()
@@ -232,7 +231,7 @@ public:
         return static_cast<State>(result);
     }
 
-private:
+protected:
     friend struct Database;
 
     PreparedStatement(Database* db, sqlite3_stmt* statement)
@@ -247,6 +246,19 @@ private:
 
     Database* db;
     sqlite3_stmt* statement;
+};
+
+template<typename Tag>
+struct TaggedPreparedStatement : public PreparedStatement
+{
+    TaggedPreparedStatement() : PreparedStatement()
+    {
+    }
+
+    TaggedPreparedStatement(Database* db, sqlite3_stmt* statement)
+        : PreparedStatement(db, statement)
+    {
+    }
 };
 
 struct Database
@@ -274,8 +286,38 @@ struct Database
     Database& operator=(const Database&) = delete;
     bool operator==(const Database&) = delete;
 
+    void set_version(std::int32_t version)
+    {
+        std::string pragma = "PRAGMA user_version=" + std::to_string(version) + ";";
+        prepare_statement(pragma).step();
+    }
+
+    std::int32_t get_version()
+    {
+        auto stmt = prepare_statement("PRAGMA user_version;"); stmt.step();
+        return stmt.column_int<0>();
+    }
+
+    PreparedStatement prepare_statement(const std::string& statement)
+    {
+        sqlite3_stmt* stmt = nullptr;
+        int result; bool e;
+        std::tie(result, e) = is_error(
+                    sqlite3_prepare(
+                        db,
+                        statement.c_str(),
+                        statement.size(),
+                        &stmt,
+                        nullptr));
+
+        if (e)
+            throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error());
+
+        return PreparedStatement(this, stmt);
+    }
+
     template<typename Statement>
-    PreparedStatement<Statement> prepare_statement()
+    TaggedPreparedStatement<Statement> prepare_tagged_statement()
     {
         sqlite3_stmt* stmt = nullptr;
         int result; bool e;
@@ -290,8 +332,8 @@ struct Database
         if (e)
             throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error());
 
-        return PreparedStatement<Statement>(this, stmt);
-    }
+        return TaggedPreparedStatement<Statement>(this, stmt);
+    }    
 
     std::string error() const
     {
@@ -302,20 +344,23 @@ struct Database
     sqlite3* db = nullptr;
 };
 
-template<typename Tag>
-std::string PreparedStatement<Tag>::error_from_db() const
+std::string PreparedStatement::error_from_db() const
 {
     return db->error();
 }
 
 // A store implementation persisting requests in an sqlite database.
-struct Store : public core::trust::Store,
-        public std::enable_shared_from_this<Store>
+struct Store
+        : public core::trust::Store,
+          public std::enable_shared_from_this<Store>
 {
+    // Our schema version constant.
+    static constexpr const std::int32_t version{1};
+
     // Describes the table and its schema for storing requests.
-    struct Table
+    struct RequestsTable
     {
-        Table() = delete;
+        RequestsTable() = delete;
 
         // The name of the table.
         static const std::string& name()
@@ -392,23 +437,23 @@ struct Store : public core::trust::Store,
 
     struct Statements
     {
-        struct CreateIfNotExists
+        struct CreateDataTableIfNotExists
         {
             static const std::string& statement()
             {
                 static const std::string s
                 {
                     "CREATE TABLE IF NOT EXISTS " +
-                    sqlite::Store::Table::name() + " (" +
-                    sqlite::Store::Table::Column::Id::name() + " INTEGER PRIMARY KEY ASC, " +
-                    sqlite::Store::Table::Column::ApplicationId::name() + " TEXT NOT NULL, " +
-                    sqlite::Store::Table::Column::Feature::name() + " BIGINT, " +
-                    sqlite::Store::Table::Column::Timestamp::name() + " BIGINT, " +
-                    sqlite::Store::Table::Column::Answer::name() + " INTEGER);"
+                    sqlite::Store::RequestsTable::name() + " (" +
+                    sqlite::Store::RequestsTable::Column::Id::name() + " INTEGER PRIMARY KEY ASC, " +
+                    sqlite::Store::RequestsTable::Column::ApplicationId::name() + " TEXT NOT NULL, " +
+                    sqlite::Store::RequestsTable::Column::Feature::name() + " BIGINT, " +
+                    sqlite::Store::RequestsTable::Column::Timestamp::name() + " BIGINT, " +
+                    sqlite::Store::RequestsTable::Column::Answer::name() + " INTEGER);"
                 };
                 return s;
             }
-        };
+        };       
 
         struct Delete
         {
@@ -416,7 +461,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string s
                 {
-                    "DELETE FROM " + sqlite::Store::Table::name()
+                    "DELETE FROM " + sqlite::Store::RequestsTable::name()
                 };
                 return s;
             }
@@ -428,7 +473,7 @@ struct Store : public core::trust::Store,
             {
                 static const std::string s
                 {
-                    "INSERT INTO " + Store::Table::name() + " ('ApplicationId','Feature','Timestamp','Answer') VALUES (?,?,?,?);"
+                    "INSERT INTO " + Store::RequestsTable::name() + " ('ApplicationId','Feature','Timestamp','Answer') VALUES (?,?,?,?);"
                 };
                 return s;
             }
@@ -448,7 +493,7 @@ struct Store : public core::trust::Store,
                     static const std::string s
                     {
                         "DELETE FROM " +
-                        Store::Table::name() +
+                        Store::RequestsTable::name() +
                         " WHERE Id=?;"
                     };
 
@@ -469,7 +514,7 @@ struct Store : public core::trust::Store,
                     static const std::string select
                     {
                         "SELECT * FROM " +
-                        Store::Table::name() +
+                        Store::RequestsTable::name() +
                         " WHERE ApplicationId=IFNULL(?,ApplicationId) AND"
                         " Feature=IFNULL(?,Feature) AND"
                         " (Timestamp BETWEEN IFNULL(?, Timestamp) AND IFNULL(?,Timestamp)) AND"
@@ -550,10 +595,10 @@ struct Store : public core::trust::Store,
 
             switch(result)
             {
-            case PreparedStatement<Statements::Select>::State::done:
+            case TaggedPreparedStatement<Statements::Select>::State::done:
                 d.status = Status::eor;
                 break;
-            case PreparedStatement<Statements::Select>::State::row:
+            case TaggedPreparedStatement<Statements::Select>::State::row:
                 d.status = Status::has_more_results;
                 break;
             }
@@ -565,10 +610,10 @@ struct Store : public core::trust::Store,
 
             switch(result)
             {
-            case PreparedStatement<Statements::Select>::State::done:
+            case TaggedPreparedStatement<Statements::Select>::State::done:
                 d.status = Status::eor;
                 break;
-            case PreparedStatement<Statements::Select>::State::row:
+            case TaggedPreparedStatement<Statements::Select>::State::row:
                 d.status = Status::has_more_results;
                 break;
             }
@@ -579,7 +624,7 @@ struct Store : public core::trust::Store,
             if (Status::eor == d.status)
                 throw std::runtime_error("Cannot delete request as query points beyond the result set.");
 
-            auto id = d.select_statement.column_int<Store::Table::Column::Id::index>();
+            auto id = d.select_statement.column_int<Store::RequestsTable::Column::Id::index>();
 
             d.delete_statement.reset();
             d.delete_statement.bind_int<Statements::Delete::Parameter::Id::index>(id);
@@ -599,19 +644,19 @@ struct Store : public core::trust::Store,
             {
                 trust::Request request
                 {
-                    d.select_statement.column_text<Store::Table::Column::ApplicationId::index>(),
+                    d.select_statement.column_text<Store::RequestsTable::Column::ApplicationId::index>(),
                     trust::Feature
                     {
-                        static_cast<trust::Feature::IntegerType>(d.select_statement.column_int<Store::Table::Column::Feature::index>())
+                        static_cast<trust::Feature::IntegerType>(d.select_statement.column_int<Store::RequestsTable::Column::Feature::index>())
                     },
                     std::chrono::system_clock::time_point
                     {
                         std::chrono::system_clock::duration
                         {
-                            d.select_statement.column_int64<Store::Table::Column::Timestamp::index>()
+                            d.select_statement.column_int64<Store::RequestsTable::Column::Timestamp::index>()
                         }
                     },
-                    (Request::Answer)d.select_statement.column_int<Store::Table::Column::Answer::index>()
+                    (Request::Answer)d.select_statement.column_int<Store::RequestsTable::Column::Answer::index>()
                 };
                 return request;
             }
@@ -624,8 +669,8 @@ struct Store : public core::trust::Store,
         {
             Private(const std::shared_ptr<Store>& store)
                 : store(store),
-                  delete_statement(store->db.prepare_statement<Statements::Delete>()),
-                  select_statement(store->db.prepare_statement<Statements::Select>())
+                  delete_statement(store->db.prepare_tagged_statement<Statements::Delete>()),
+                  select_statement(store->db.prepare_tagged_statement<Statements::Select>())
             {
             }
 
@@ -634,8 +679,8 @@ struct Store : public core::trust::Store,
             }
 
             std::shared_ptr<Store> store;
-            PreparedStatement<Statements::Delete> delete_statement;
-            PreparedStatement<Statements::Select> select_statement;
+            TaggedPreparedStatement<Statements::Delete> delete_statement;
+            TaggedPreparedStatement<Statements::Select> select_statement;
             Status status = Status::armed;
             std::string error;
         } d;
@@ -644,9 +689,13 @@ struct Store : public core::trust::Store,
     Store(const std::string &service_name);
     ~Store();
 
+    // Handles upgrades to the underlying database if the schema changes.
+    void upgrade(std::int32_t from_version);
+
     const char* error() const;
 
-    void create_table_if_not_exists();
+    // Creates the data table holding all requests if it not already exists.
+    void create_data_table_if_not_exists();
 
     // From core::trust::Store
     void reset();
@@ -656,9 +705,10 @@ struct Store : public core::trust::Store,
     std::mutex guard;
     core::Directory runtime_peristent_data_directory;
     Database db;
-    PreparedStatement<Statements::CreateIfNotExists> create_statement;
-    PreparedStatement<Statements::Delete> delete_statement;
-    PreparedStatement<Statements::Insert> insert_statement;
+    TaggedPreparedStatement<Statements::CreateDataTableIfNotExists> create_data_table_statement;
+
+    TaggedPreparedStatement<Statements::Delete> delete_statement;
+    TaggedPreparedStatement<Statements::Insert> insert_statement;
 };
 }
 }
@@ -670,22 +720,35 @@ namespace sqlite = core::trust::impl::sqlite;
 
 sqlite::Store::Store(const std::string& service_name)
     : runtime_peristent_data_directory{core::runtime_persistent_data_dir() + "/" + service_name},
-      db{core::runtime_persistent_data_dir() + "/" + service_name + "/trust.db"}
+      db{core::runtime_persistent_data_dir() + "/" + service_name + "/trust.db"},
+      create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
-    create_statement = db.prepare_statement<Statements::CreateIfNotExists>();
-    create_table_if_not_exists();
+    upgrade(db.get_version());
 
-    delete_statement = db.prepare_statement<Statements::Delete>();
-    insert_statement = db.prepare_statement<Statements::Insert>();
+    delete_statement = db.prepare_tagged_statement<Statements::Delete>();
+    insert_statement = db.prepare_tagged_statement<Statements::Insert>();
 }
 
 sqlite::Store::~Store()
 {
 }
 
-void sqlite::Store::create_table_if_not_exists()
+void sqlite::Store::upgrade(std::int32_t from_version)
 {
-    create_statement.step();
+    switch (from_version)
+    {
+    case 0:
+        create_data_table_if_not_exists();
+        db.set_version(Store::version);
+        break;
+    default:
+        break;
+    }
+}
+
+void sqlite::Store::create_data_table_if_not_exists()
+{
+    create_data_table_statement.step();
 }
 
 void sqlite::Store::reset()
@@ -707,10 +770,10 @@ void sqlite::Store::add(const trust::Request& request)
     std::lock_guard<std::mutex> lg(guard);
 
     insert_statement.reset();
-    insert_statement.bind_text<sqlite::Store::Table::Column::ApplicationId::index>(request.from);
-    insert_statement.bind_int<sqlite::Store::Table::Column::Feature::index>(request.feature.value);
-    insert_statement.bind_int64<sqlite::Store::Table::Column::Timestamp::index>(request.when.time_since_epoch().count());
-    insert_statement.bind_int<sqlite::Store::Table::Column::Answer::index>(static_cast<int>(request.answer));
+    insert_statement.bind_text<sqlite::Store::RequestsTable::Column::ApplicationId::index>(request.from);
+    insert_statement.bind_int<sqlite::Store::RequestsTable::Column::Feature::index>(request.feature.value);
+    insert_statement.bind_int64<sqlite::Store::RequestsTable::Column::Timestamp::index>(request.when.time_since_epoch().count());
+    insert_statement.bind_int<sqlite::Store::RequestsTable::Column::Answer::index>(static_cast<int>(request.answer));
     insert_statement.step();
 }
 
