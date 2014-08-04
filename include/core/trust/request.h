@@ -134,15 +134,16 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
  * {
  *     static constexpr std::uint64_t default_feature = 0;
  *
- *     void on_session_requested(pid_t app_pid, const std::string& app_id)
+ *     void on_session_requested(core::trust::Uid app_uid, core::trust::Pid app_pid, std::string const& app_id)
  *     {
  *         core::trust::RequestParameters params
  *         {
  *             trust.agent,
  *             trust.store,
+ *             app_uid,
  *             app_pid,
  *             app_id,
- *             default_feature,
+ *             core::trust::Feature{default_feature},
  *             "Application " + app_id + " wants to access the example service."
  *         };
  *

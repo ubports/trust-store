@@ -98,7 +98,7 @@ TEST(TrustStore, added_requests_are_found_by_query)
     r2.feature.value = base_feature + 1;
 
     core::trust::Request r3 = r2;
-    r2.feature.value = base_feature + 2;
+    r3.feature.value = base_feature + 2;
 
     store->add(r1);
     store->add(r2);
