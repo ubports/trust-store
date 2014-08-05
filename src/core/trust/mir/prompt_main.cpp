@@ -131,9 +131,14 @@ int main(int argc, char** argv)
         description = vm[core::trust::mir::cli::option_description].as<std::string>();
 
     if (vm.count(core::trust::mir::cli::option_server_socket) > 0)
+    {
+        // We make sure that the env variable is not set prior to adusting it.
+        core::posix::this_process::env::unset_or_throw(core::trust::mir::env::option_mir_socket);
+
         core::posix::this_process::env::set_or_throw(
                     core::trust::mir::env::option_mir_socket,
                     vm[core::trust::mir::cli::option_server_socket].as<std::string>());
+    }
 
     // We install a custom message handler to silence Qt's chattiness
     qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&, const QString& msg)
