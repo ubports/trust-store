@@ -270,6 +270,9 @@ TEST_F(UnixDomainSocketRemoteAgent, accepts_connections_on_endpoint)
     auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(
                 the_default_stub_configuration());
 
+    // Make sure that the stub and all its threads are spun up.
+    std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
     core::posix::ChildProcess child = core::posix::fork(
                 UnixDomainSocketRemoteAgent::a_raw_peer_immediately_exiting(),
                 core::posix::StandardStream::empty);
