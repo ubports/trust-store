@@ -11,10 +11,10 @@ export CC=$(DEB_HOST_GNU_TYPE)-gcc-4.9
 export CXX=$(DEB_HOST_GNU_TYPE)-g++-4.9
 
 # Mir is an optional build dependency
-ifneq (,$(filter $(DEB_HOST_ARCH),ppc64el powerpc))
-        TRUST_STORE_MIR_AGENT_ENABLED = OFF
-else
+ifneq (,$(filter $(DEB_HOST_ARCH),amd64 arm64 i386 armhf))
         TRUST_STORE_MIR_AGENT_ENABLED = ON
+else
+        TRUST_STORE_MIR_AGENT_ENABLED = OFF
 endif
 
 # The home directory of user buildd does not exist on the builders
