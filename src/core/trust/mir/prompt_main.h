@@ -27,6 +27,7 @@ namespace mir
 {
 namespace env
 {
+/** @brief Name of the environment variable to pass Mir's endpoint in. */
 static constexpr const char* option_mir_socket
 {
     "MIR_SOCKET"

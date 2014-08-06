@@ -53,6 +53,7 @@ protected:
  * @brief Exposes an existing store instance on the given bus.
  * @throw Error::ServiceNameMustNotBeEmpty.
  * @param store The instance to be exposed.
+ * @param bus The bus connection.
  * @param name The name under which the service can be found within the session.
  * @return A token that limits the lifetime of the exposure.
  */

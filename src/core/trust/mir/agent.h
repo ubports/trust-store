@@ -88,7 +88,7 @@ struct CORE_TRUST_DLL_PUBLIC ConnectionVirtualTable
     // Creates a new trusted prompt session instance synchronously.
     virtual PromptSessionVirtualTable::Ptr create_prompt_session_sync(
             // The process id of the requesting app/service
-            pid_t app_pid,
+            Pid app_pid,
             // Callback handling prompt session state changes.
             mir_prompt_session_state_change_callback cb,
             // Callback context
@@ -178,7 +178,7 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
     // From core::trust::Agent:
     // Throws a std::logic_error if anything unforeseen happens during execution, thus
     // indicating that no conclusive answer could be obtained from the user.
-    core::trust::Request::Answer prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description) override;
+    core::trust::Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) override;
 
     // The connection VTable used for creating trusted prompting sessions.
     ConnectionVirtualTable::Ptr connection_vtable;

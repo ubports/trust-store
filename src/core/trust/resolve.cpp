@@ -21,8 +21,8 @@
 #include <core/trust/request.h>
 #include <core/trust/store.h>
 
-#include "codec.h"
-#include "dbus_interface.h"
+#include "dbus/codec.h"
+#include "dbus/interface.h"
 
 #include <core/dbus/asio/executor.h>
 
@@ -142,7 +142,7 @@ struct Store : public core::trust::Store
                 throw std::runtime_error(result.error().print());
         }
 
-        void for_feature(std::uint64_t feature)
+        void for_feature(core::trust::Feature feature)
         {
             auto result = object->invoke_method_synchronously<core::trust::dbus::Store::Query::ForFeature, void>(feature);
 

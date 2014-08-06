@@ -20,8 +20,8 @@
 
 #include <core/trust/store.h>
 
-#include "codec.h"
-#include "dbus_interface.h"
+#include "dbus/codec.h"
+#include "dbus/interface.h"
 
 #include <core/dbus/asio/executor.h>
 #include <core/dbus/codec.h>
@@ -224,7 +224,7 @@ struct Token : public core::trust::Token
             });
             object->install_method_handler<core::trust::dbus::Store::Query::ForFeature>([this, query](const core::dbus::Message::Ptr& msg)
             {
-                std::uint64_t feature; msg->reader() >> feature;
+                core::trust::Feature feature; msg->reader() >> feature;
                 query->for_feature(feature);
 
                 auto reply = core::dbus::Message::make_method_return(msg);

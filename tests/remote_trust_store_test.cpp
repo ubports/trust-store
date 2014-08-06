@@ -39,6 +39,12 @@ static const std::string service_name{"does_not_exist"};
 
 struct RemoteTrustStore : public core::dbus::testing::Fixture
 {
+    RemoteTrustStore()
+    {
+        // The tests being executed under this fixture are quite intense given their accesses
+        // to the disk. For that, we choose sufficiently high default timeout for the daemons.
+        core::dbus::Fixture::default_daemon_timeout() = core::dbus::Fixture::Seconds{300};
+    }
 };
 }
 
@@ -93,7 +99,7 @@ TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
     core::trust::Request prototype_request
     {
         "com.does.not.exist.app1",
-        0,
+        core::trust::Feature{0},
         std::chrono::system_clock::time_point{std::chrono::seconds(500)},
         core::trust::Request::Answer::granted
     };
@@ -139,12 +145,12 @@ TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
 
         for (unsigned int i = 0; i < request_count; i++)
         {
-            r.feature = i;
+            r.feature.value = i;
             store->add(r);
         }
 
         // Resetting the feature counter and checking if all requests have been stored.
-        r.feature = 0;
+        r.feature.value = 0;
         auto query = store->query();
         query->execute();
         EXPECT_EQ(core::trust::Store::Query::Status::has_more_results, query->status());
@@ -152,7 +158,7 @@ TEST_F(RemoteTrustStore, a_store_exposed_to_the_session_can_be_added_to)
         {
             EXPECT_EQ(r, query->current());
             query->next();
-            r.feature++;
+            r.feature.value++;
         }
 
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
@@ -207,7 +213,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
         core::trust::Request r1
         {
             app1,
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -215,7 +221,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_app_id_returns_correct_results)
         core::trust::Request r2
         {
             app2,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -275,7 +281,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
         core::trust::Request r1
         {
             app1,
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -283,7 +289,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_feature_returns_correct_results)
         core::trust::Request r2
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -343,7 +349,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
         core::trust::Request r1
         {
             app1,
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -351,7 +357,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_answer_returns_correct_results)
         core::trust::Request r2
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::denied
         };
@@ -411,7 +417,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
         core::trust::Request r1
         {
             app1,
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::time_point(std::chrono::seconds{0}),
             core::trust::Request::Answer::granted
         };
@@ -419,7 +425,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
         core::trust::Request r2
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::time_point(std::chrono::seconds{500}),
             core::trust::Request::Answer::granted
         };
@@ -427,7 +433,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
         core::trust::Request r3
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::granted
         };
@@ -492,7 +498,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_corr
         core::trust::Request r1
         {
             app1,
-            0,
+            core::trust::Feature{0},
             std::chrono::system_clock::time_point(std::chrono::seconds{0}),
             core::trust::Request::Answer::granted
         };
@@ -500,7 +506,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_corr
         core::trust::Request r2
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::time_point(std::chrono::seconds{500}),
             core::trust::Request::Answer::granted
         };
@@ -508,7 +514,7 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_and_answer_returns_corr
         core::trust::Request r3
         {
             app1,
-            1,
+            core::trust::Feature{1},
             std::chrono::system_clock::now(),
             core::trust::Request::Answer::denied
         };
@@ -575,14 +581,14 @@ TEST_F(RemoteTrustStore, added_requests_are_found_by_query_multi_threaded)
             core::trust::Request r
             {
                 "this.does.not.exist.app",
-                base_feature,
+                core::trust::Feature{base_feature},
                 std::chrono::system_clock::now(),
                 core::trust::Request::Answer::granted
             };
 
             for (unsigned int i = 0; i < 100; i++)
             {
-                r.feature = base + i;
+                r.feature.value = base + i;
                 try
                 {
                     store->add(r);
@@ -658,14 +664,14 @@ TEST_F(RemoteTrustStore, erasing_requests_empties_store)
             core::trust::Request r
             {
                 "this.does.not.exist.app",
-                0,
+                core::trust::Feature{0},
                 std::chrono::system_clock::now(),
                 core::trust::Request::Answer::granted
             };
 
             for (unsigned int i = 0; i < 100; i++)
             {
-                r.feature = i;
+                r.feature.value = i;
                 store->add(r);
             }
 

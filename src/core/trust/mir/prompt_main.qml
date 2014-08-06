@@ -1,53 +1,54 @@
+/*
+ * Copyright 2014 Canonical Ltd.
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; version 3.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 import QtQuick 2.0
-import Ubuntu.Components 0.1
-import QtQuick.Layouts 1.1
+import Ubuntu.Components 1.1
+import Ubuntu.Components.Popups 1.0
 
 Rectangle {
-    anchors.fill: parent
+    width: units.gu(40)
+    height: units.gu(71)
+    color: "transparent"
+
+    property var dialogTitle: title
+    property var dialogDescription: description
 
     signal quit(int code)
 
-    ColumnLayout {
-        anchors.fill: parent
-        anchors.margins: units.gu(2)
-        spacing: units.gu(2)
+    Component.onCompleted: dialog.show();
 
-        Label {
-            anchors.horizontalCenter: parent.horizontalCenter
+    Dialog {
+        id: dialog
 
-            text: title
-            font.family: "Ubuntu"
-            fontSize: "large"
+        title: dialogTitle
+        text: dialogDescription
+        fadingAnimation: PropertyAnimation { duration: 0 }
 
-            maximumLineCount: 1
-            elide: Text.ElideRight
+        Button {
+            objectName: "deny"
+            text: i18n.tr("Deny")
+            color: UbuntuColors.red
+            onClicked: quit(1)
         }
 
-        Label {
-
-            text: description
-            font.family: "Ubuntu"
-            fontSize: "medium"
-            Layout.maximumWidth: parent.width
-            Layout.fillHeight: true
-
-            wrapMode: Text.WordWrap
-        }
-
-        RowLayout {
-            spacing: units.gu(1)
-            height: units.gu(3)
-            anchors.right: parent.right
-
-            Button {
-                text: "Deny"
-                onClicked: quit(1)
-            }
-            Button {
-                text: "Grant"
-                onClicked: quit(0)
-            }
+        Button {
+            objectName: "allow"
+            text: i18n.tr("Allow")
+            color: UbuntuColors.green
+            onClicked: quit(0)
         }
     }
 }
-

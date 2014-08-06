@@ -19,6 +19,7 @@
 #ifndef CORE_TRUST_REQUEST_H_
 #define CORE_TRUST_REQUEST_H_
 
+#include <core/trust/tagged_integer.h>
 #include <core/trust/visibility.h>
 
 #include <cstdint>
@@ -61,7 +62,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     static constexpr const unsigned int default_feature = 0;
 
     /** @brief Enumerates the possible answers given by a user. */
-    enum class Answer
+    enum class Answer : std::int32_t
     {
         denied, ///< Nope, I do not trust this application.
         granted, ///< Yup, I do trust this application.
@@ -70,7 +71,7 @@ struct CORE_TRUST_DLL_PUBLIC Request
     /** The application id of the application that resulted in the request. */
     std::string from;
     /** An application-specific feature identifier. */
-    std::uint64_t feature;
+    Feature feature;
     /** When the request happened in wallclock time. */
     Timestamp when;
     /** The user's answer. */
@@ -107,12 +108,14 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
     std::shared_ptr<Agent> agent;
     /** @brief The trust store to be used for caching purposes. */
     std::shared_ptr<Store> store;
+    /** @brief The user id under which the requesting application runs. */
+    core::trust::Uid application_uid;
     /** @brief The process id of the requesting application. */
-    pid_t application_pid;
+    core::trust::Pid application_pid;
     /** @brief The id of the requesting application. */
     std::string application_id;
     /** @brief The service-specific feature identifier. */
-    std::uint64_t feature;
+    Feature feature;
     /** @brief An extended description that should be presented to the user on prompting. */
     std::string description;
 };
@@ -131,15 +134,16 @@ struct CORE_TRUST_DLL_PUBLIC RequestParameters
  * {
  *     static constexpr std::uint64_t default_feature = 0;
  *
- *     void on_session_requested(pid_t app_pid, const std::string& app_id)
+ *     void on_session_requested(core::trust::Uid app_uid, core::trust::Pid app_pid, std::string const& app_id)
  *     {
  *         core::trust::RequestParameters params
  *         {
  *             trust.agent,
  *             trust.store,
+ *             app_uid,
  *             app_pid,
  *             app_id,
- *             default_feature,
+ *             core::trust::Feature{default_feature},
  *             "Application " + app_id + " wants to access the example service."
  *         };
  *

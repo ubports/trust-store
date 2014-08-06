@@ -38,6 +38,7 @@ class Store;
 /**
  * @brief Resolves an existing store instance within the current user session.
  * @throw Error::ServiceNameMustNotBeEmpty.
+ * @param bus The bus connection.
  * @param name The name under which the service can be found within the session.
  * @return A token that limits the lifetime of the exposure.
  */

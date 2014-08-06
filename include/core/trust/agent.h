@@ -20,15 +20,15 @@
 #define CORE_TRUST_AGENT_H_
 
 #include <core/trust/request.h>
+#include <core/trust/tagged_integer.h>
 #include <core/trust/visibility.h>
+
+#include <cstdint>
 
 namespace core
 {
 namespace trust
 {
-// Forward-declarations.
-struct RequestParameters;
-
 /** @brief Abstracts user-prompting functionality. */
 class CORE_TRUST_DLL_PUBLIC Agent
 {
@@ -43,14 +43,52 @@ public:
     Agent& operator=(Agent&&) = delete;
     /** @endcond */
 
+    /** @brief Abstracts functionality for storing agent instances and associating them with a user id. */
+    struct Registry
+    {
+        /** @brief Convenience typedef for a shared ptr. */
+        typedef std::shared_ptr<Registry> Ptr;
+
+        /** @cond */
+        Registry() = default;
+        virtual ~Registry() = default;
+        /** @endcond */
+
+        /** @brief Registers an agent for the given uid. */
+        virtual void register_agent_for_user(const core::trust::Uid& uid, const std::shared_ptr<core::trust::Agent>& agent) = 0;
+
+        /** @brief Removes the agent for the given uid from the registry */
+        virtual void unregister_agent_for_user(const core::trust::Uid& uid) = 0;
+    };
+
+    /** @brief Summarizes all parameters for processing a trust request. */
+    struct RequestParameters
+    {
+        /** @brief All application-specific parameters go here. */
+        struct
+        {
+            /** @brief The user id under which the requesting application runs. */
+            core::trust::Uid uid;
+            /** @brief The process id of the requesting application. */
+            core::trust::Pid pid;
+            /** @brief The id of the requesting application. */
+            std::string id;
+        } application;
+        /** @brief The service-specific feature identifier. */
+        Feature feature;
+        /** @brief An extended description that should be presented to the user on prompting. */
+        std::string description;
+    };
+
     /**
-     * @brief Presents the given request to the user, returning the user-provided answer.
-     * @param app_pid The process id of the requesting application.
-     * @param app_id The application id of the requesting application.
-     * @param description Extended description of the trust request.
+     * @brief Authenticates the given request and returns the user's answer.
+     * @param parameters [in] Describe the request.
      */
-    virtual Request::Answer prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description) = 0;
+    virtual Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) = 0;
 };
+
+/** @brief Returns true iff lhs and rhs are equal. */
+CORE_TRUST_DLL_PUBLIC bool operator==(const Agent::RequestParameters& lhs, const Agent::RequestParameters& rhs);
 }
 }
 

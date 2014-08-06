@@ -20,6 +20,11 @@
 
 #include "prompt_main.h"
 
+// For getuid
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+
 namespace mir = core::trust::mir;
 
 // Invoked whenever a request for creation of pre-authenticated fds succeeds.
@@ -34,6 +39,13 @@ void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*
         return;
 
     ctxt->fd = fds[0];
+
+    // Upstart enables FD_CLOEXEC by default. We have to counteract.
+    if (::fcntl(ctxt->fd, F_SETFD, 0) == -1) throw std::system_error
+    {
+        errno,
+        std::system_category()
+    };
 }
 
 mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession* prompt_session)
@@ -73,7 +85,7 @@ mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
 
 mir::PromptSessionVirtualTable::Ptr mir::ConnectionVirtualTable::create_prompt_session_sync(
         // The process id of the requesting app/service
-        pid_t app_pid,
+        core::trust::Pid app_pid,
         // Callback handling prompt session state changes.
         mir_prompt_session_state_change_callback cb,
         // Callback context
@@ -83,7 +95,7 @@ mir::PromptSessionVirtualTable::Ptr mir::ConnectionVirtualTable::create_prompt_s
     {
         new PromptSessionVirtualTable
         {
-            mir_connection_create_prompt_session_sync(connection, app_pid, cb, context)
+            mir_connection_create_prompt_session_sync(connection, app_pid.value, cb, context)
         }
     };
 }
@@ -181,8 +193,15 @@ mir::Agent::Agent(
 }
 
 // From core::trust::Agent:
-core::trust::Request::Answer mir::Agent::prompt_user_for_request(pid_t app_pid, const std::string& app_id, const std::string& description)
+core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
+    // We assume that the agent implementation runs under the same user id as
+    // the requesting app to prevent from cross-user attacks.
+    if (core::trust::Uid{::getuid()} != parameters.application.uid) throw std::logic_error
+    {
+        "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
+    };
+
     // We initialize our callback context with an invalid child-process for setup
     // purposes. Later on, once we have acquired a pre-authenticated fd for the
     // prompt provider, we exec the actual provider in a child process and replace the
@@ -201,7 +220,7 @@ core::trust::Request::Answer mir::Agent::prompt_user_for_request(pid_t app_pid, 
     {
         // We setup the prompt session and wire up to our own internal callback helper.
         connection_vtable->create_prompt_session_sync(
-                    app_pid,
+                    parameters.application.pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context)
     };
@@ -213,8 +232,8 @@ core::trust::Request::Answer mir::Agent::prompt_user_for_request(pid_t app_pid, 
     mir::PromptProviderHelper::InvocationArguments args
     {
         fd,
-        app_id,
-        description
+        parameters.application.id,
+        parameters.description
     };
 
     // Ask the helper to fire up the prompt provider.
@@ -233,6 +252,11 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 #include <core/trust/mir_agent.h>
 
 #include "config.h"
+
+MirConnection* mir::connect(const std::string& endpoint, const std::string& name)
+{
+    return mir_connect_sync(endpoint.c_str(), name.c_str());
+}
 
 std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConnection* connection)
 {
