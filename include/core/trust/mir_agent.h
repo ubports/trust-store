@@ -36,6 +36,14 @@ class Agent;
 namespace mir
 {
 /**
+ * @brief Helper function building up a connection to Mir.
+ * @param endpoint The name of the endpoint exposed by the Mir instance.
+ * @param name The name assigned to this connection.
+ * @throws std::runtime_error in case of issues.
+ */
+CORE_TRUST_DLL_PUBLIC MirConnection* connect(const std::string& endpoint, const std::string& name);
+
+/**
  * @brief create_agent_for_mir_connection creates a trust::Agent implementation leveraging Mir's trusted prompting API.
  * @param connection An existing connection to a Mir instance.
  * @throws std::logic_error if the connection object is NULL.

@@ -30,8 +30,20 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 find_package(PkgConfig)
 find_package(Boost COMPONENTS program_options system REQUIRED)
 
-pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
-pkg_check_modules(MIR_COMMON mircommon REQUIRED)
+option(
+  TRUST_STORE_MIR_AGENT_ENABLED
+  "Enables a local agent implementation relying on Mir's trusted prompting"
+  ON)
+
+if (TRUST_STORE_MIR_AGENT_ENABLED)
+  pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
+  pkg_check_modules(MIR_COMMON mircommon REUQUIRED)
+
+  include_directories(
+    ${MIR_CLIENT_INCLUDE_DIRS} ${MIR_COMMON_INCLUDE_DIRS}
+  )
+endif()
+
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
 set(TRUST_STORE_VERSION_MAJOR 1)
@@ -43,8 +55,6 @@ include(CTest)
 include_directories(
   include/
 
-  ${MIR_CLIENT_INCLUDE_DIRS}
-  ${MIR_COMMON_INCLUDE_DIRS}
   ${PROCESS_CPP_INCLUDE_DIRS}
 )
 

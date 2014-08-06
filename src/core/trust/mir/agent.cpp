@@ -253,6 +253,11 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 
 #include "config.h"
 
+MirConnection* mir::connect(const std::string& endpoint, const std::string& name)
+{
+    return mir_connect_sync(endpoint.c_str(), name.c_str());
+}
+
 std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConnection* connection)
 {
     mir::ConnectionVirtualTable::Ptr cvt

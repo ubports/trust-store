@@ -23,7 +23,6 @@
 #include <core/trust/store.h>
 
 #include <core/trust/mir_agent.h>
-#include <mirclient/mir_toolkit/mir_client_library.h>
 
 #include <core/trust/remote/agent.h>
 #include <core/trust/remote/dbus.h>
@@ -190,8 +189,11 @@ const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& c
                 };
 
                 auto trusted_mir_socket = dict.at("trusted-mir-socket");
-                auto mir_connection = mir_connect_sync(trusted_mir_socket.c_str(), service_name.c_str());
-                auto agent = core::trust::mir::create_agent_for_mir_connection(mir_connection);
+
+                auto agent = core::trust::mir::create_agent_for_mir_connection(
+                            core::trust::mir::connect(
+                                trusted_mir_socket,
+                                service_name));
 
                 return agent;
             }
