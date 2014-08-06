@@ -1,7 +1,7 @@
 libtrust-store.so.1 libtrust-store1 #MINVER#
- (c++)"core::trust::CachedAgent::Configuration::~Configuration()@Base" 0replaceme
- (c++)"core::trust::CachedAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::CachedAgent::CachedAgent(core::trust::CachedAgent::Configuration const&)@Base" 0replaceme
+ (c++)"core::trust::CachedAgent::Configuration::~Configuration()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::CachedAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::CachedAgent::CachedAgent(core::trust::CachedAgent::Configuration const&)@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::create_default_store(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::process_trust_request(core::trust::RequestParameters const&)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::expose_store_to_bus_with_name(std::shared_ptr<core::trust::Store> const&, std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
@@ -11,69 +11,69 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptProviderHelper::InvocationArguments::~InvocationArguments()@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptProviderHelper::exec_prompt_provider_with_arguments(core::trust::mir::PromptProviderHelper::InvocationArguments const&)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptProviderHelper::PromptProviderHelper(core::trust::mir::PromptProviderHelper::CreationArguments const&)@Base" 0.0.1+14.10.20140717.8
- (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::create_prompt_session_sync(core::trust::TaggedInteger<core::trust::tag::Pid, int>, void (*)(MirPromptSession*, MirPromptSessionState, void*), void*)@Base" 0replaceme
+ (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::create_prompt_session_sync(core::trust::TaggedInteger<core::trust::tag::Pid, int>, void (*)(MirPromptSession*, MirPromptSessionState, void*), void*)@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection*)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::release_sync()@Base" 0.0.1+14.10.20140717.8
- (c++|arch=amd64 arm64)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 0replaceme
- (c++|arch=i386 armhf)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 0replaceme
+ (c++|arch=amd64 arm64)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 1.0.0+14.10.20140806.7
+ (c++|arch=i386 armhf)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession*)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::connect(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::create_agent_for_mir_connection(MirConnection*)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::on_trust_session_changed_state(MirPromptSession*, MirPromptSessionState, void*)@Base" 0.0.1+14.10.20140717.8
- (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
+ (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::translator_only_accepting_exit_status_success()@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::Agent(std::shared_ptr<core::trust::mir::ConnectionVirtualTable> const&, std::shared_ptr<core::trust::mir::PromptProviderHelper> const&, std::function<core::trust::Request::Answer (core::posix::wait::Result const&)> const&)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::Agent::~Agent()@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::operator==(core::trust::mir::PromptProviderHelper::InvocationArguments const&, core::trust::mir::PromptProviderHelper::InvocationArguments const&)@Base" 0.0.1+14.10.20140717.8
- (c++)"core::trust::dbus::create_per_user_agent_for_bus_connection(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
- (c++)"core::trust::dbus::create_multi_user_agent_for_bus_connection(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
- (c++)"core::trust::Agent::RequestParameters::~RequestParameters()@Base" 0replaceme
+ (c++)"core::trust::dbus::create_per_user_agent_for_bus_connection(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::dbus::create_multi_user_agent_for_bus_connection(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::Agent::RequestParameters::~RequestParameters()@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::Store::Query::Errors::NoCurrentResult::~NoCurrentResult()@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::Store::Query::Errors::QueryIsInErrorState::~QueryIsInErrorState()@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::Store::Errors::ErrorResettingStore::~ErrorResettingStore()@Base" 0.0.1+14.10.20140626.1
- (c++)"core::trust::remote::dbus::Agent::Stub::send(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::remote::dbus::Agent::Stub::Stub(core::trust::remote::dbus::Agent::Stub::Configuration const&)@Base" 0replaceme
- (c++)"core::trust::remote::dbus::Agent::Stub::~Stub()@Base" 0replaceme
- (c++)"core::trust::remote::dbus::Agent::Skeleton::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::remote::dbus::Agent::Skeleton::Skeleton(core::trust::remote::dbus::Agent::Skeleton::Configuration const&)@Base" 0replaceme
- (c++)"core::trust::remote::dbus::Agent::Skeleton::~Skeleton()@Base" 0replaceme
- (c++)"core::trust::remote::Agent::Stub::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::remote::Agent::Skeleton::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::remote::Agent::Skeleton::Skeleton(std::shared_ptr<core::trust::Agent> const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::start_accept()@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::on_new_session(boost::system::error_code const&, std::shared_ptr<core::trust::remote::posix::Stub::Session> const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::create_stub_for_configuration(core::trust::remote::posix::Stub::Configuration const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver()@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::handle_error_from_socket_operation_for_uid(boost::system::error_code const&, core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::send(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Session::Registry::add_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>, std::shared_ptr<core::trust::remote::posix::Stub::Session>)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Session::Registry::remove_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Session::Registry::resolve_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Session::Session(boost::asio::io_service&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Stub(core::trust::remote::posix::Stub::Configuration)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::~Stub()@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::start_read()@Base" 0replaceme
- (c++|arch=amd64 arm64 ppc64el)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned long)@Base" 0replaceme
- (c++|arch=i386 armhf powerpc)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned int)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::process_incoming_request(core::trust::remote::posix::Request const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::Skeleton(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 0replaceme
- (c++)"core::trust::remote::posix::Skeleton::~Skeleton()@Base" 0replaceme
- (c++)"core::trust::remote::helpers::proc_stat_start_time_resolver()@Base" 0replaceme
- (c++)"core::trust::remote::helpers::aa_get_task_con_app_id_resolver()@Base" 0replaceme
- (c++)"core::trust::operator==(core::trust::Agent::RequestParameters const&, core::trust::Agent::RequestParameters const&)@Base" 0replaceme
+ (c++)"core::trust::remote::dbus::Agent::Stub::send(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::dbus::Agent::Stub::Stub(core::trust::remote::dbus::Agent::Stub::Configuration const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::dbus::Agent::Stub::~Stub()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::dbus::Agent::Skeleton::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::dbus::Agent::Skeleton::Skeleton(core::trust::remote::dbus::Agent::Skeleton::Configuration const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::dbus::Agent::Skeleton::~Skeleton()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::Agent::Stub::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::Agent::Skeleton::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::Agent::Skeleton::Skeleton(std::shared_ptr<core::trust::Agent> const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::start_accept()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::on_new_session(boost::system::error_code const&, std::shared_ptr<core::trust::remote::posix::Stub::Session> const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::create_stub_for_configuration(core::trust::remote::posix::Stub::Configuration const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::handle_error_from_socket_operation_for_uid(boost::system::error_code const&, core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::send(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Session::Registry::add_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>, std::shared_ptr<core::trust::remote::posix::Stub::Session>)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Session::Registry::remove_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Session::Registry::resolve_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Session::Session(boost::asio::io_service&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Stub(core::trust::remote::posix::Stub::Configuration)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::~Stub()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Skeleton::start_read()@Base" 1.0.0+14.10.20140806.7
+ (c++|arch=amd64 arm64 ppc64el)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned long)@Base" 1.0.0+14.10.20140806.7
+ (c++|arch=i386 armhf powerpc)"core::trust::remote::posix::Skeleton::on_read_finished(boost::system::error_code const&, unsigned int)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Skeleton::process_incoming_request(core::trust::remote::posix::Request const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Skeleton::Skeleton(core::trust::remote::posix::Skeleton::Configuration const&)@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Skeleton::~Skeleton()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::helpers::proc_stat_start_time_resolver()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::helpers::aa_get_task_con_app_id_resolver()@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::operator==(core::trust::Agent::RequestParameters const&, core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::operator==(core::trust::Request const&, core::trust::Request const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request::Answer const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::operator<<(std::basic_ostream<char, std::char_traits<char> >&, core::trust::Request const&)@Base" 0.0.1+14.10.20140626.1
- (c++)"core::trust::remote::posix::Stub::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 0replaceme
- (c++)"core::trust::remote::posix::Stub::Session::Registry::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 0replaceme
- (c++)"typeinfo for core::trust::CachedAgent@Base" 0replaceme
+ (c++)"core::trust::remote::posix::Stub::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 1.0.0+14.10.20140806.7
+ (c++)"core::trust::remote::posix::Stub::Session::Registry::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::Agent@Base" 0.0.1+14.10.20140717.8
- (c++)"typeinfo for core::trust::Agent::Registry@Base" 0replaceme
+ (c++)"typeinfo for core::trust::Agent::Registry@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo for core::trust::Agent@Base" 0.0.1+14.10.20140717.8
  (c++)"typeinfo for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0.0.1+14.10.20140717.8
  (c++)"typeinfo for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0.0.1+14.10.20140717.8
@@ -81,19 +81,19 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"typeinfo for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo for core::trust::Store@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo for core::trust::Token@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo for core::trust::remote::dbus::Agent::Stub@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::dbus::Agent::Skeleton@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::Agent::Stub@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::Agent::Skeleton@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::posix::Stub::Session::Registry@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::posix::Stub@Base" 0replaceme
- (c++)"typeinfo for core::trust::remote::posix::Skeleton@Base" 0replaceme
- (c++)"typeinfo name for core::trust::CachedAgent@Base" 0replaceme
+ (c++)"typeinfo for core::trust::remote::dbus::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::dbus::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::posix::Stub::Session::Registry@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::posix::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::remote::posix::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::Agent@Base" 0.0.1+14.10.20140717.8
- (c++)"typeinfo name for core::trust::Agent::Registry@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::Agent::Registry@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo name for core::trust::Agent@Base" 0.0.1+14.10.20140717.8
  (c++)"typeinfo name for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0.0.1+14.10.20140717.8
  (c++)"typeinfo name for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0.0.1+14.10.20140717.8
@@ -101,19 +101,19 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"typeinfo name for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo name for core::trust::Store@Base" 0.0.1+14.10.20140626.1
  (c++)"typeinfo name for core::trust::Token@Base" 0.0.1+14.10.20140626.1
- (c++)"typeinfo name for core::trust::remote::dbus::Agent::Stub@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::dbus::Agent::Skeleton@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::Agent::Stub@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::Agent::Skeleton@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::posix::Stub::Session::Registry@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::posix::Stub@Base" 0replaceme
- (c++)"typeinfo name for core::trust::remote::posix::Skeleton@Base" 0replaceme
- (c++)"vtable for core::trust::CachedAgent@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::remote::dbus::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::dbus::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::posix::Stub::Session::Registry@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::posix::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::remote::posix::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::Agent@Base" 0.0.1+14.10.20140717.8
- (c++)"vtable for core::trust::Agent::Registry@Base" 0replaceme
+ (c++)"vtable for core::trust::Agent::Registry@Base" 1.0.0+14.10.20140806.7
  (c++)"vtable for core::trust::Agent@Base" 0.0.1+14.10.20140717.8
  (c++)"vtable for core::trust::Store::Query::Errors::NoCurrentResult@Base" 0.0.1+14.10.20140717.8
  (c++)"vtable for core::trust::Store::Query::Errors::QueryIsInErrorState@Base" 0.0.1+14.10.20140717.8
@@ -121,10 +121,10 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"vtable for core::trust::Store::Errors::ErrorResettingStore@Base" 0.0.1+14.10.20140626.1
  (c++)"vtable for core::trust::Store@Base" 0.0.1+14.10.20140626.1
  (c++)"vtable for core::trust::Token@Base" 0.0.1+14.10.20140626.1
- (c++)"vtable for core::trust::remote::dbus::Agent::Stub@Base" 0replaceme
- (c++)"vtable for core::trust::remote::dbus::Agent::Skeleton@Base" 0replaceme
- (c++)"vtable for core::trust::remote::Agent::Stub@Base" 0replaceme
- (c++)"vtable for core::trust::remote::Agent::Skeleton@Base" 0replaceme
- (c++)"vtable for core::trust::remote::posix::Stub::Session::Registry@Base" 0replaceme
- (c++)"vtable for core::trust::remote::posix::Stub@Base" 0replaceme
- (c++)"vtable for core::trust::remote::posix::Skeleton@Base" 0replaceme
+ (c++)"vtable for core::trust::remote::dbus::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::dbus::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::Agent::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::Agent::Skeleton@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::posix::Stub::Session::Registry@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::posix::Stub@Base" 1.0.0+14.10.20140806.7
+ (c++)"vtable for core::trust::remote::posix::Skeleton@Base" 1.0.0+14.10.20140806.7
