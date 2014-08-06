@@ -468,6 +468,8 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
 
         auto stub = core::trust::remote::posix::Stub::create_stub_for_configuration(config);
 
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
         skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
 
@@ -525,7 +527,10 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+
         auto skeleton = core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
+        std::this_thread::sleep_for(std::chrono::milliseconds{500});
+
         skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
 
         trap->run();
