@@ -1,3 +1,10 @@
+trust-store (1.0.0+14.10.20140807-0ubuntu1) utopic; urgency=low
+
+  [ thomas-voss ]
+  * Remove unneeded build dependencies.
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 07 Aug 2014 09:10:54 +0000
+
 trust-store (1.0.0+14.10.20140806.7-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
