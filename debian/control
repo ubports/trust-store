@@ -5,7 +5,6 @@ Build-Depends: cmake,
                debhelper (>= 9),
                doxygen,
                google-mock,
-               gcovr,
                graphviz,
 # We rely on C++11 features, and to prevent from ABI breaks
 # in libstdc++ causing us issues, we explicitly select a G++
@@ -25,7 +24,6 @@ Build-Depends: cmake,
                qt5-default,
                qtbase5-dev,
                qtdeclarative5-dev,
-               qtquick1-5-dev,
 Standards-Version: 3.9.5
 Section: libs
 Homepage: https://launchpad.net/trust-store
