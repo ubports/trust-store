@@ -43,13 +43,21 @@ core::trust::CachedAgentGlogReporter::CachedAgentGlogReporter(const core::trust:
 }
 
 // Invoked whenever the implementation was able to resolve a cached request.
-void core::trust::CachedAgentGlogReporter::report_cached_answer_found(const core::trust::Request& r)
+void core::trust::CachedAgentGlogReporter::report_cached_answer_found(const core::trust::Agent::RequestParameters& params, const core::trust::Request& r)
 {
-    SYSLOG(INFO) << "CachedAgent::authenticate_request_with_parameters: Found cached answer " << r;
+    SYSLOG(INFO) << "CachedAgent::authenticate_request_with_parameters:" << std::endl
+                 << "  Application pid: " << params.application.pid
+                 << "  Application uid: " << params.application.uid
+                 << "  Application id:  " << params.application.id
+                 << "  Cached answer:   " << r;
 }
 
 // Invoked whenever the implementation called out to an agent to prompt the user for trust.
-void core::trust::CachedAgentGlogReporter::report_user_prompted_for_trust(const core::trust::Request::Answer& a)
+void core::trust::CachedAgentGlogReporter::report_user_prompted_for_trust(const core::trust::Agent::RequestParameters& params, const core::trust::Request::Answer& a)
 {
-    SYSLOG(INFO) << "CachedAgent::authenticate_request_with_parameters: No cached answer, prompted user for trust -> " << a;
+    SYSLOG(INFO) << "CachedAgent::authenticate_request_with_parameters: No cached answer, prompted user for trust:"
+                 << "  Application pid: " << params.application.pid
+                 << "  Application uid: " << params.application.uid
+                 << "  Application id:  " << params.application.id
+                 << "  User's' answer:   " << a;
 }

@@ -40,10 +40,10 @@ public:
     CachedAgentGlogReporter(const Configuration& configuration);
 
     // Invoked whenever the implementation was able to resolve a cached request.
-    void report_cached_answer_found(const core::trust::Request&);
+    void report_cached_answer_found(const core::trust::Agent::RequestParameters& params, const core::trust::Request&);
 
     // Invoked whenever the implementation called out to an agent to prompt the user for trust.
-    void report_user_prompted_for_trust(const core::trust::Request::Answer&);
+    void report_user_prompted_for_trust(const core::trust::Agent::RequestParameters& params, const core::trust::Request::Answer&);
 };
 }
 }

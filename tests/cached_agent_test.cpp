@@ -26,10 +26,10 @@ namespace
 struct MockReporter : public core::trust::CachedAgent::Reporter
 {
     /** @brief Invoked whenever the implementation was able to resolve a cached request. */
-    MOCK_METHOD1(report_cached_answer_found, void(const core::trust::Request&));
+    MOCK_METHOD2(report_cached_answer_found, void(const core::trust::Agent::RequestParameters&, const core::trust::Request&));
 
     /** @brief Invoked whenever the implementation called out to an agent to prompt the user for trust. */
-    MOCK_METHOD1(report_user_prompted_for_trust, void(const core::trust::Request::Answer&));
+    MOCK_METHOD2(report_user_prompted_for_trust, void(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&));
 };
 
 core::trust::Pid the_default_pid_for_testing()
@@ -182,8 +182,8 @@ TEST(CachedAgent, queries_store_for_cached_results_and_returns_cached_value)
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(_)).Times(0);
     // We expect the implementation to call into the reporter with the request
     // resolved from the cache, and returning early, thus not reporting any user prompting.
-    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(_)).Times(1);
-    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(_)).Times(0);
+    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(params, _)).Times(1);
+    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(params, _)).Times(0);
 
     core::trust::CachedAgent::Configuration configuration
     {
@@ -259,8 +259,8 @@ TEST(CachedAgent, queries_agent_if_no_cached_results_and_returns_users_answer)
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(agent_params)).Times(1);
     // We expect the implementation to *not* call into the reporter as there is no request
     // available from the cache. Instead the user should have been prompted.
-    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(_)).Times(0);
-    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(_)).Times(1);
+    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(params, _)).Times(0);
+    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(params, _)).Times(1);
 
     core::trust::CachedAgent::Configuration configuration
     {

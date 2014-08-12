@@ -41,10 +41,10 @@ public:
         /** @endcond */
 
         /** @brief Invoked whenever the implementation was able to resolve a cached request. */
-        virtual void report_cached_answer_found(const core::trust::Request&);
+        virtual void report_cached_answer_found(const core::trust::Agent::RequestParameters&, const core::trust::Request&);
 
         /** @brief Invoked whenever the implementation called out to an agent to prompt the user for trust. */
-        virtual void report_user_prompted_for_trust(const core::trust::Request::Answer&);
+        virtual void report_user_prompted_for_trust(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&);
     };
 
     /** @brief Creation time parameters. */
