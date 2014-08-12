@@ -37,6 +37,7 @@ set(
 
   # An agent-implementation using a store instance to cache user replies.
   core/trust/cached_agent.cpp
+  core/trust/cached_agent_glog_reporter.cpp
 
   # Agent implementations for handling request out of process.
   core/trust/remote/agent.h
@@ -160,6 +161,8 @@ target_link_libraries(
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}
+  ${GFLAGS_LDFLAGS}
+  ${GLOG_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
   ${MIR_COMMON_LDFLAGS}
