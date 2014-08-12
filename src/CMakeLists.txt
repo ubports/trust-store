@@ -153,6 +153,19 @@ add_executable(
   core/trust/daemon_stub_main.cpp
 )
 
+add_library(
+  trust-store-preseed-helper
+
+  core/trust/preseed.h
+  core/trust/preseed.cpp
+)
+
+add_executable(
+  trust-store-preseed
+
+  core/trust/preseed_main.cpp
+)
+
 target_link_libraries(
   trust-store
 
@@ -186,6 +199,18 @@ target_link_libraries(
   trust-stored-stub
 
   trust-stored
+)
+
+target_link_libraries(
+  trust-store-preseed-helper
+
+  trust-store
+)
+
+target_link_libraries(
+  trust-store-preseed
+
+  trust-store-preseed-helper
 )
 
 # We compile with all symbols visible by default. For the shipping library, we strip

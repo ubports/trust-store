@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2014 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -16,25 +16,11 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#ifndef TEST_DATA_H_
-#define TEST_DATA_H_
+#include <core/trust/preseed.h>
 
-namespace core
+int main(int argc, const char** argv)
 {
-namespace trust
-{
-namespace testing
-{
-static constexpr const char* trust_prompt_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-prompt"
-};
+    auto result = core::trust::Preseed::main(core::trust::Preseed::Configuration::parse_from_command_line(argc, argv));
 
-static constexpr const char* trust_store_preseed_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-store-preseed"
-};
+    return result == core::posix::exit::Status::success ? EXIT_SUCCESS : EXIT_FAILURE;
 }
-}
-}
-#endif // TEST_DATA_H_
