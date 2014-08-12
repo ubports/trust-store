@@ -29,10 +29,10 @@ namespace trust
 class CORE_TRUST_DLL_PUBLIC CachedAgent : public core::trust::Agent
 {
 public:
-    /** @brief To safe some typing. */
+    /** @brief To save some typing. */
     typedef std::shared_ptr<CachedAgent> Ptr;
 
-    /** @brief Abstracts capture of internal events for post-mortem debugging/analysis purposes. */
+    /** @brief Abstract capturer of internal events for post-mortem debugging/analysis purposes. */
     struct Reporter
     {
         /** @cond */
