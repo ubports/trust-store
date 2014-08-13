@@ -75,6 +75,7 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"core::trust::remote::posix::Stub::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::remote::posix::Stub::Session::Registry::has_session_for_uid(core::trust::TaggedInteger<core::trust::tag::Uid, unsigned int>) const@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo for core::trust::CachedAgent::Reporter@Base" 0replaceme
  (c++)"typeinfo for core::trust::CachedAgentGlogReporter@Base" 0replaceme
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
@@ -96,6 +97,8 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"typeinfo for core::trust::remote::posix::Stub@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo for core::trust::remote::posix::Skeleton@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo name for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
+ (c++)"typeinfo name for core::trust::CachedAgent::Reporter@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::CachedAgentGlogReporter@Base" 0replaceme
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
