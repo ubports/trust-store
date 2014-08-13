@@ -20,8 +20,12 @@
 
 #include <boost/exception/all.hpp>
 
+#include <glog/logging.h>
+
 int main(int argc, const char** argv)
 {
+    google::InitGoogleLogging("core::trust::Daemon::Skeleton");
+
     core::trust::Daemon::Skeleton::Configuration configuration;
 
     try

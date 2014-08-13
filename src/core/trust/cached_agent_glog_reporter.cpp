@@ -20,22 +20,6 @@
 
 #include <glog/logging.h>
 
-namespace
-{
-struct Initializer
-{
-    Initializer()
-    {
-        google::InitGoogleLogging("core::trust::Daemon");
-    }
-
-    ~Initializer()
-    {
-        google::ShutdownGoogleLogging();
-    }
-} initializer;
-}
-
 // Creates a reporter instance with the given configuration, and initializes Google logging.
 core::trust::CachedAgentGlogReporter::CachedAgentGlogReporter(const core::trust::CachedAgentGlogReporter::Configuration& configuration)
 {
