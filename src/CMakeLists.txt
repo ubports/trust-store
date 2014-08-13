@@ -165,7 +165,6 @@ target_link_libraries(
   ${GLOG_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
-  ${MIR_COMMON_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}
   ${SQLITE3_LIBRARIES}
 )
@@ -176,7 +175,6 @@ target_link_libraries(
   trust-store
 
   ${MIR_CLIENT_LDFLAGS}
-  ${MIR_COMMON_LDFLAGS}
 )
 
 target_link_libraries(

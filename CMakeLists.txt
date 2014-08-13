@@ -37,10 +37,9 @@ option(
 
 if (TRUST_STORE_MIR_AGENT_ENABLED)
   pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
-  pkg_check_modules(MIR_COMMON mircommon REQUIRED)
 
   include_directories(
-    ${MIR_CLIENT_INCLUDE_DIRS} ${MIR_COMMON_INCLUDE_DIRS}
+    ${MIR_CLIENT_INCLUDE_DIRS}
   )
 endif()
 
