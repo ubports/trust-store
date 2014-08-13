@@ -243,3 +243,8 @@ install(
   TARGETS trust-stored-stub
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
+
+install(
+  TARGETS trust-store-preseed
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
