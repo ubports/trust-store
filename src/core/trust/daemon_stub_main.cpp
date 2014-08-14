@@ -20,8 +20,12 @@
 
 #include <boost/exception/all.hpp>
 
+#include <glog/logging.h>
+
 int main(int argc, const char** argv)
 {
+    google::InitGoogleLogging("core::trust::Daemon::Stub");
+
     core::trust::Daemon::Stub::Configuration configuration;
 
     try

@@ -20,6 +20,14 @@
 
 #include <core/trust/store.h>
 
+void core::trust::CachedAgent::Reporter::report_cached_answer_found(const core::trust::Agent::RequestParameters&, const core::trust::Request&)
+{
+}
+
+void core::trust::CachedAgent::Reporter::report_user_prompted_for_trust(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&)
+{
+}
+
 core::trust::CachedAgent::CachedAgent(const core::trust::CachedAgent::Configuration& configuration)
     : configuration(configuration)
 {
@@ -51,6 +59,8 @@ core::trust::Request::Answer core::trust::CachedAgent::authenticate_request_with
     // We have got results and we take the most recent one as the most appropriate.
     if (query->status() == core::trust::Store::Query::Status::has_more_results)
     {
+        // Tell the reporter that we found a cached answer.
+        configuration.reporter->report_cached_answer_found(params, query->current());
         // And we are returning early.
         return query->current().answer;
     }
@@ -65,6 +75,9 @@ core::trust::Request::Answer core::trust::CachedAgent::authenticate_request_with
                     params.feature,
                     params.description
                 });
+
+    // Tell the reporter that the user was successfully prompted for an answer.
+    configuration.reporter->report_user_prompted_for_trust(params, answer);
 
     configuration.store->add(core::trust::Request
     {

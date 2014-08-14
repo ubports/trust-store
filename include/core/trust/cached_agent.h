@@ -29,8 +29,23 @@ namespace trust
 class CORE_TRUST_DLL_PUBLIC CachedAgent : public core::trust::Agent
 {
 public:
-    /** @brief To safe some typing. */
+    /** @brief To save some typing. */
     typedef std::shared_ptr<CachedAgent> Ptr;
+
+    /** @brief Abstract capturer of internal events for post-mortem debugging/analysis purposes. */
+    struct Reporter
+    {
+        /** @cond */
+        Reporter() = default;
+        virtual ~Reporter() = default;
+        /** @endcond */
+
+        /** @brief Invoked whenever the implementation was able to resolve a cached request. */
+        virtual void report_cached_answer_found(const core::trust::Agent::RequestParameters&, const core::trust::Request&);
+
+        /** @brief Invoked whenever the implementation called out to an agent to prompt the user for trust. */
+        virtual void report_user_prompted_for_trust(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&);
+    };
 
     /** @brief Creation time parameters. */
     struct Configuration
@@ -39,6 +54,8 @@ public:
         std::shared_ptr<Agent> agent;
         /** @brief The store caching user answers to trust prompts. */
         std::shared_ptr<Store> store;
+        /** @brief The reporter implementation. */
+        std::shared_ptr<Reporter> reporter;
     };
 
     /**

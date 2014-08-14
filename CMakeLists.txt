@@ -37,13 +37,14 @@ option(
 
 if (TRUST_STORE_MIR_AGENT_ENABLED)
   pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
-  pkg_check_modules(MIR_COMMON mircommon REQUIRED)
 
   include_directories(
-    ${MIR_CLIENT_INCLUDE_DIRS} ${MIR_COMMON_INCLUDE_DIRS}
+    ${MIR_CLIENT_INCLUDE_DIRS}
   )
 endif()
 
+pkg_check_modules(GFLAGS libgflags REQUIRED)
+pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
 set(TRUST_STORE_VERSION_MAJOR 1)
@@ -55,6 +56,8 @@ include(CTest)
 include_directories(
   include/
 
+  ${GFLAGS_INCLUDE_DIRS}
+  ${GLOG_INCLUDE_DIRS}
   ${PROCESS_CPP_INCLUDE_DIRS}
 )
 

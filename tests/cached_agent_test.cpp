@@ -23,6 +23,15 @@
 
 namespace
 {
+struct MockReporter : public core::trust::CachedAgent::Reporter
+{
+    /** @brief Invoked whenever the implementation was able to resolve a cached request. */
+    MOCK_METHOD2(report_cached_answer_found, void(const core::trust::Agent::RequestParameters&, const core::trust::Request&));
+
+    /** @brief Invoked whenever the implementation called out to an agent to prompt the user for trust. */
+    MOCK_METHOD2(report_user_prompted_for_trust, void(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&));
+};
+
 core::trust::Pid the_default_pid_for_testing()
 {
     return core::trust::Pid{42};
@@ -63,6 +72,11 @@ std::shared_ptr<testing::NiceMock<MockStore::MockQuery>> a_mocked_query()
     return std::make_shared<testing::NiceMock<MockStore::MockQuery>>();
 }
 
+std::shared_ptr<testing::NiceMock<MockReporter>> a_mocked_reporter()
+{
+    return std::make_shared<testing::NiceMock<MockReporter>>();
+}
+
 core::trust::Agent::RequestParameters default_request_parameters_for_testing()
 {
     return core::trust::Agent::RequestParameters
@@ -101,7 +115,8 @@ TEST(CachedAgent, ctor_throws_for_missing_agent_implementation)
     core::trust::CachedAgent::Configuration configuration
     {
         a_null_agent(),
-        a_mocked_store()
+        a_mocked_store(),
+        a_mocked_reporter()
     };
 
     EXPECT_THROW(core::trust::CachedAgent agent{configuration},
@@ -113,7 +128,8 @@ TEST(RequestProcessing, ctor_throws_for_missing_store_implementation)
     core::trust::CachedAgent::Configuration configuration
     {
         a_mocked_agent(),
-        a_null_store()
+        a_null_store(),
+        a_mocked_reporter()
     };
 
     EXPECT_THROW(core::trust::CachedAgent agent{configuration},
@@ -139,6 +155,7 @@ TEST(CachedAgent, queries_store_for_cached_results_and_returns_cached_value)
     auto mocked_agent = a_mocked_agent();
     auto mocked_query = a_mocked_query();
     auto mocked_store = a_mocked_store();
+    auto mocked_reporter = a_mocked_reporter();
 
     ON_CALL(*mocked_query, status())
             .WillByDefault(
@@ -163,11 +180,16 @@ TEST(CachedAgent, queries_store_for_cached_results_and_returns_cached_value)
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(_)).Times(0);
+    // We expect the implementation to call into the reporter with the request
+    // resolved from the cache, and returning early, thus not reporting any user prompting.
+    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(params, _)).Times(1);
+    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(params, _)).Times(0);
 
     core::trust::CachedAgent::Configuration configuration
     {
         mocked_agent,
-        mocked_store
+        mocked_store,
+        mocked_reporter
     };
 
     core::trust::CachedAgent agent
@@ -207,6 +229,7 @@ TEST(CachedAgent, queries_agent_if_no_cached_results_and_returns_users_answer)
     auto mocked_agent = a_mocked_agent();
     auto mocked_query = a_mocked_query();
     auto mocked_store = a_mocked_store();
+    auto mocked_reporter = a_mocked_reporter();
 
     ON_CALL(*mocked_agent, authenticate_request_with_parameters(agent_params))
             .WillByDefault(
@@ -234,11 +257,16 @@ TEST(CachedAgent, queries_agent_if_no_cached_results_and_returns_users_answer)
     // The setup ensures that a previously stored answer is available in the store.
     // For that, the agent should not be queried.
     EXPECT_CALL(*mocked_agent, authenticate_request_with_parameters(agent_params)).Times(1);
+    // We expect the implementation to *not* call into the reporter as there is no request
+    // available from the cache. Instead the user should have been prompted.
+    EXPECT_CALL(*mocked_reporter, report_cached_answer_found(params, _)).Times(0);
+    EXPECT_CALL(*mocked_reporter, report_user_prompted_for_trust(params, _)).Times(1);
 
     core::trust::CachedAgent::Configuration configuration
     {
         mocked_agent,
-        mocked_store
+        mocked_store,
+        mocked_reporter
     };
 
     core::trust::CachedAgent agent

@@ -31,6 +31,8 @@
 
 #include <core/trust/terminal_agent.h>
 
+#include <core/trust/cached_agent_glog_reporter.h>
+
 #include <core/dbus/asio/executor.h>
 
 #include <boost/asio.hpp>
@@ -334,7 +336,9 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
         core::trust::CachedAgent::Configuration
         {
             local_agent,
-            local_store
+            local_store,
+            std::make_shared<core::trust::CachedAgentGlogReporter>(
+                    core::trust::CachedAgentGlogReporter::Configuration{})
         });
 
     auto remote_agent = remote_agent_factory(service_name, cached_agent, dict);
