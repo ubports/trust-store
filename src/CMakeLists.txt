@@ -154,6 +154,19 @@ add_executable(
   core/trust/daemon_stub_main.cpp
 )
 
+add_library(
+  trust-store-preseed-helper
+
+  core/trust/preseed.h
+  core/trust/preseed.cpp
+)
+
+add_executable(
+  trust-store-preseed
+
+  core/trust/preseed_main.cpp
+)
+
 target_link_libraries(
   trust-store
 
@@ -189,6 +202,18 @@ target_link_libraries(
   trust-stored
 )
 
+target_link_libraries(
+  trust-store-preseed-helper
+
+  trust-store
+)
+
+target_link_libraries(
+  trust-store-preseed
+
+  trust-store-preseed-helper
+)
+
 # We compile with all symbols visible by default. For the shipping library, we strip
 # out all symbols that are not in core::trust::*
 set(symbol_map "${CMAKE_SOURCE_DIR}/symbols.map")
@@ -217,5 +242,10 @@ install(
 
 install(
   TARGETS trust-stored-stub
+  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+install(
+  TARGETS trust-store-preseed
   RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )

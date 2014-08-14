@@ -58,6 +58,11 @@ add_executable(
   dbus_test.cpp
 )
 
+add_executable(
+  preseed_test
+  preseed_test.cpp
+)
+
 target_link_libraries(
   trust_store_test
 
@@ -139,6 +144,19 @@ target_link_libraries(
   dbus_test
 
   trust-store
+
+  gmock
+
+  gtest
+  gtest_main
+
+  ${PROCESS_CPP_LIBRARIES}
+)
+
+target_link_libraries(
+  preseed_test
+
+  trust-store-preseed-helper
 
   gmock
 
