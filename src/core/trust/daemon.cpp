@@ -18,6 +18,7 @@
 
 #include <core/trust/daemon.h>
 
+#include <core/trust/app_id_formatting_trust_agent.h>
 #include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
 #include <core/trust/store.h>
@@ -347,7 +348,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, local_agent},
+        {local_store, std::make_shared<core::trust::AppIdFormattingTrustAgent>(local_agent)},
         {remote_agent}
     };
 }
