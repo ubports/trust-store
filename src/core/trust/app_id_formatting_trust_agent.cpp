@@ -36,8 +36,9 @@ core::trust::Request::Answer core::trust::AppIdFormattingTrustAgent::authenticat
 
     // We post-process the application id and try to extract the unversioned package name.
     // Please see https://wiki.ubuntu.com/AppStore/Interfaces/ApplicationId.
-    static const std::regex regex{"(.*)_(.*)"};
-    static constexpr std::size_t index_package_app{1};
+    static const std::regex regex{"(.*)_(.*)_(.*)"};
+    static constexpr std::size_t index_package{1};
+    static constexpr std::size_t index_app{2};
 
     // We store our matches here.
     std::smatch match;
@@ -46,7 +47,7 @@ core::trust::Request::Answer core::trust::AppIdFormattingTrustAgent::authenticat
     // https://wiki.ubuntu.com/AppStore/Interfaces/ApplicationId
     if (std::regex_match(params.application.id, match, regex))
     {
-        params.application.id = match[index_package_app];
+        params.application.id = std::string{match[index_package]} + "_" + std::string{match[index_app]};
     }
 
     return impl->authenticate_request_with_parameters(params);

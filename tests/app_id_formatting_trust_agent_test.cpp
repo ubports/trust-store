@@ -43,8 +43,9 @@ TEST(AppIdFormattingTrustAgent, removes_version_and_calls_to_implementation)
     auto mock_agent = a_mocked_agent();
 
     auto params = the::default_request_parameters_for_testing();
-    params.application.id = params.application.id + "_1.2.3";
+    params.application.id = params.application.id + std::string{"_app"} + std::string{"_1.2.3"};
     auto params_without_version = the::default_request_parameters_for_testing();
+    params_without_version.application.id = params_without_version.application.id + std::string{"_app"};
 
     EXPECT_CALL(*mock_agent,
                 authenticate_request_with_parameters(params_without_version))
