@@ -331,7 +331,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
             .at(vm[Parameters::RemoteAgent::name].as<std::string>());
 
     auto local_store = core::trust::create_default_store(service_name);
-    auto local_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(local_agent_factory(service_name, dict));
+    auto local_agent = local_agent_factory(service_name, dict);
 
     auto cached_agent = std::make_shared<core::trust::CachedAgent>(
         core::trust::CachedAgent::Configuration
@@ -341,14 +341,14 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
             std::make_shared<core::trust::CachedAgentGlogReporter>(
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
-
-    auto remote_agent = remote_agent_factory(service_name, cached_agent, dict);
+    auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(cached_agent);
+    auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
 
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, local_agent},
+        {local_store, formatting_agent},
         {remote_agent}
     };
 }
