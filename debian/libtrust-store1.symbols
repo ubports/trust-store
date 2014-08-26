@@ -10,9 +10,9 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"core::trust::CachedAgentGlogReporter::report_user_prompted_for_trust(core::trust::Agent::RequestParameters const&, core::trust::Request::Answer const&)@Base" 1.0.0+14.10.20140814.1
  (c++)"core::trust::CachedAgentGlogReporter::CachedAgentGlogReporter(core::trust::CachedAgentGlogReporter::Configuration const&)@Base" 1.0.0+14.10.20140814.1
  (c++)"core::trust::CachedAgentGlogReporter::~CachedAgentGlogReporter()@Base" 1.0.0+14.10.20140814.1
- (c++)"core::trust::AppIdFormattingTrustAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
- (c++)"core::trust::AppIdFormattingTrustAgent::AppIdFormattingTrustAgent(std::shared_ptr<core::trust::Agent> const&)@Base" 0replaceme
- (c++)"core::trust::AppIdFormattingTrustAgent::~AppIdFormattingTrustAgent()@Base" 0replaceme
+ (c++)"core::trust::AppIdFormattingTrustAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140826.1
+ (c++)"core::trust::AppIdFormattingTrustAgent::AppIdFormattingTrustAgent(std::shared_ptr<core::trust::Agent> const&)@Base" 1.0.0+14.10.20140826.1
+ (c++)"core::trust::AppIdFormattingTrustAgent::~AppIdFormattingTrustAgent()@Base" 1.0.0+14.10.20140826.1
  (c++)"core::trust::expose_store_to_bus_with_name(std::shared_ptr<core::trust::Store> const&, std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::resolve_store_on_bus_with_name(std::shared_ptr<core::dbus::Bus> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
  (c++)"core::trust::expose_store_to_session_with_name(std::shared_ptr<core::trust::Store> const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140626.1
@@ -80,7 +80,7 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"typeinfo for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo for core::trust::CachedAgent::Reporter@Base" 1.0.0+14.10.20140814.1
  (c++)"typeinfo for core::trust::CachedAgentGlogReporter@Base" 1.0.0+14.10.20140814.1
- (c++)"typeinfo for core::trust::AppIdFormattingTrustAgent@Base" 0replaceme
+ (c++)"typeinfo for core::trust::AppIdFormattingTrustAgent@Base" 1.0.0+14.10.20140826.1
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
@@ -103,7 +103,7 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"typeinfo name for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++)"typeinfo name for core::trust::CachedAgent::Reporter@Base" 1.0.0+14.10.20140814.1
  (c++)"typeinfo name for core::trust::CachedAgentGlogReporter@Base" 1.0.0+14.10.20140814.1
- (c++)"typeinfo name for core::trust::AppIdFormattingTrustAgent@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::AppIdFormattingTrustAgent@Base" 1.0.0+14.10.20140826.1
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"typeinfo name for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
@@ -126,7 +126,7 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++)"vtable for core::trust::CachedAgent::Reporter@Base" 1.0.0+14.10.20140814.1
  (c++)"vtable for core::trust::CachedAgent@Base" 1.0.0+14.10.20140806.7
  (c++)"vtable for core::trust::CachedAgentGlogReporter@Base" 1.0.0+14.10.20140814.1
- (c++)"vtable for core::trust::AppIdFormattingTrustAgent@Base" 0replaceme
+ (c++)"vtable for core::trust::AppIdFormattingTrustAgent@Base" 1.0.0+14.10.20140826.1
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::PromptProviderHelper@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::ConnectionVirtualTable@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"vtable for core::trust::mir::PromptSessionVirtualTable@Base" 0.0.1+14.10.20140717.8
