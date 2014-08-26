@@ -1,8 +1,13 @@
-trust-store (1.0.0+14.10.20140814.1-0ubuntu2) UNRELEASED; urgency=low
+trust-store (1.0.0+14.10.20140826.1-0ubuntu1) utopic; urgency=low
 
+  [ Ubuntu daily release ]
   * debian/libtrust-store1.symbols: auto-update to released version
 
- -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 26 Aug 2014 15:11:15 +0000
+  [ thomas-voss ]
+  * Add an agent implementation that strips off version information, and
+    leaves other information intact. (LP: #1356343)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 26 Aug 2014 15:11:18 +0000
 
 trust-store (1.0.0+14.10.20140814.1-0ubuntu1) utopic; urgency=low
 
