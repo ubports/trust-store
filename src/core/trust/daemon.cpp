@@ -18,6 +18,7 @@
 
 #include <core/trust/daemon.h>
 
+#include <core/trust/app_id_formatting_trust_agent.h>
 #include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
 #include <core/trust/store.h>
@@ -340,14 +341,14 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
             std::make_shared<core::trust::CachedAgentGlogReporter>(
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
-
-    auto remote_agent = remote_agent_factory(service_name, cached_agent, dict);
+    auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(cached_agent);
+    auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
 
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, local_agent},
+        {local_store, formatting_agent},
         {remote_agent}
     };
 }

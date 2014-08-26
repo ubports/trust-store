@@ -44,6 +44,11 @@ add_executable(
 )
 
 add_executable(
+  app_id_formatting_trust_agent_test
+  app_id_formatting_trust_agent_test.cpp
+)
+
+add_executable(
   cached_agent_test
   cached_agent_test.cpp
 )
@@ -114,6 +119,19 @@ target_link_libraries(
 )
 
 target_link_libraries(
+  app_id_formatting_trust_agent_test
+
+  trust-store
+
+  gmock
+
+  gtest
+  gtest_main
+
+  ${PROCESS_CPP_LIBRARIES}
+)
+
+target_link_libraries(
   cached_agent_test
 
   trust-store
@@ -170,6 +188,7 @@ add_test(trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/trust_store_test)
 add_test(remote_trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/remote_trust_store_test)
 add_test(request_processor_test ${CMAKE_CURRENT_BINARY_DIR}/request_processor_test)
 add_test(remote_agent_test ${CMAKE_CURRENT_BINARY_DIR}/remote_agent_test)
+add_test(app_id_formatting_trust_agent_test ${CMAKE_CURRENT_BINARY_DIR}/app_id_formatting_trust_agent_test)
 add_test(cached_agent_test ${CMAKE_CURRENT_BINARY_DIR}/cached_agent_test)
 # TODO(tvoss) Re-enable daemon tests once CI issues are resolved.
 # add_test(daemon_test ${CMAKE_CURRENT_BINARY_DIR}/daemon_test)

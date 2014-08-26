@@ -20,6 +20,7 @@
 
 #include "mock_agent.h"
 #include "mock_store.h"
+#include "the.h"
 
 namespace
 {
@@ -31,21 +32,6 @@ struct MockReporter : public core::trust::CachedAgent::Reporter
     /** @brief Invoked whenever the implementation called out to an agent to prompt the user for trust. */
     MOCK_METHOD2(report_user_prompted_for_trust, void(const core::trust::Agent::RequestParameters&, const core::trust::Request::Answer&));
 };
-
-core::trust::Pid the_default_pid_for_testing()
-{
-    return core::trust::Pid{42};
-}
-
-core::trust::Uid the_default_uid_for_testing()
-{
-    return core::trust::Uid{42};
-}
-
-core::trust::Feature the_default_feature_for_testing()
-{
-    return core::trust::Feature{0};
-}
 
 std::shared_ptr<core::trust::Agent> a_null_agent()
 {
@@ -75,18 +61,6 @@ std::shared_ptr<testing::NiceMock<MockStore::MockQuery>> a_mocked_query()
 std::shared_ptr<testing::NiceMock<MockReporter>> a_mocked_reporter()
 {
     return std::make_shared<testing::NiceMock<MockReporter>>();
-}
-
-core::trust::Agent::RequestParameters default_request_parameters_for_testing()
-{
-    return core::trust::Agent::RequestParameters
-    {
-        the_default_uid_for_testing(),
-        the_default_pid_for_testing(),
-        "this.is.just.for.testing.purposes",
-        the_default_feature_for_testing(),
-        "Someone wants to access all your credentials and steal your identity."
-    };
 }
 
 core::trust::Request::Answer throw_a_dice()
@@ -142,7 +116,7 @@ TEST(CachedAgent, queries_store_for_cached_results_and_returns_cached_value)
 
     auto answer = throw_a_dice();
 
-    auto params = default_request_parameters_for_testing();
+    auto params = the::default_request_parameters_for_testing();
 
     core::trust::Request request
     {
@@ -207,7 +181,7 @@ TEST(CachedAgent, queries_agent_if_no_cached_results_and_returns_users_answer)
 
     auto answer = throw_a_dice();
 
-    auto params = default_request_parameters_for_testing();
+    auto params = the::default_request_parameters_for_testing();
 
     core::trust::Agent::RequestParameters agent_params
     {

@@ -35,6 +35,10 @@ include_directories(
 set(
   TRUST_STORE_AGENT_SOURCES
 
+  # An agent-implementation transforming ensuring legible application ids.
+  core/trust/app_id_formatting_trust_agent.h
+  core/trust/app_id_formatting_trust_agent.cpp
+
   # An agent-implementation using a store instance to cache user replies.
   core/trust/cached_agent.cpp
   core/trust/cached_agent_glog_reporter.cpp
