@@ -20,8 +20,6 @@
 
 #include "prompt_main.h"
 
-#include <cassert>
-
 // For getuid
 #include <fcntl.h>
 #include <unistd.h>
