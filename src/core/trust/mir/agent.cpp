@@ -20,6 +20,8 @@
 
 #include "prompt_main.h"
 
+#include <cassert>
+
 // For getuid
 #include <fcntl.h>
 #include <unistd.h>
@@ -51,6 +53,15 @@ void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*
 mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession* prompt_session)
     : prompt_session(prompt_session)
 {
+    if (not prompt_session) throw std::runtime_error
+    {
+        "Cannot create instance for null prompt_session"
+    };
+}
+
+mir::PromptSessionVirtualTable::PromptSessionVirtualTable()
+    : prompt_session(nullptr)
+{
 }
 
 int mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()
@@ -80,6 +91,15 @@ void mir::PromptSessionVirtualTable::release_sync()
 
 mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
     : connection{connection}
+{
+    if (mir_connection_is_valid(connection) == mir_false) throw std::runtime_error
+    {
+        "Cannot create instance for invalid connection to Mir."
+    };
+}
+
+mir::ConnectionVirtualTable::ConnectionVirtualTable()
+    : connection{nullptr}
 {
 }
 
