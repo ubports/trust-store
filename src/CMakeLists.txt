@@ -91,11 +91,6 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     core/trust/mir/prompt_main.cpp
   )
 
-  set_target_properties(
-    trust-prompt
-    PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir
-  )
-
   qt5_use_modules(trust-prompt Core Gui Qml Quick)
 
   target_link_libraries(
