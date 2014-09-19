@@ -116,7 +116,7 @@ struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
     {
         // The pre-authenticated fd that the helper
         // should use for connecting to Mir.
-        int fd;
+        int fd;        
         // The application id of the requesting app.
         std::string application_id;
         // The extended description that should be presented to the user.
@@ -166,14 +166,13 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
     static std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator_only_accepting_exit_status_success();
 
     // Creates a new MirAgent instance with the given MirConnectionVirtualTable instance.
-    Agent(
-            // VTable object providing access to Mir's trusted prompting functionality.
-            const ConnectionVirtualTable::Ptr& connection_vtable,
-            // Exec helper for starting up prompt provider child processes with the correct setup
-            // of command line arguments and environment variables.
-            const PromptProviderHelper::Ptr& exec_helper,
-            // A translator function for mapping child process exit states to trust::Request answers.
-            const std::function<core::trust::Request::Answer(const core::posix::wait::Result&)>& translator);
+    Agent(// VTable object providing access to Mir's trusted prompting functionality.
+          const ConnectionVirtualTable::Ptr& connection_vtable,
+          // Exec helper for starting up prompt provider child processes with the correct setup
+          // of command line arguments and environment variables.
+          const PromptProviderHelper::Ptr& exec_helper,
+          // A translator function for mapping child process exit states to trust::Request answers.
+          const std::function<core::trust::Request::Answer(const core::posix::wait::Result&)>& translator);
 
     // From core::trust::Agent:
     // Throws a std::logic_error if anything unforeseen happens during execution, thus

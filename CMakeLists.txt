@@ -64,6 +64,7 @@ include_directories(
 add_subdirectory(doc)
 add_subdirectory(data)
 add_subdirectory(include)
+add_subdirectory(po)
 add_subdirectory(src)
 add_subdirectory(tests)
 

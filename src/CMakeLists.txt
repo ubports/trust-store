@@ -35,6 +35,10 @@ include_directories(
 set(
   TRUST_STORE_AGENT_SOURCES
 
+  # Translation helper
+  core/trust/i18n.h
+  core/trust/i18n.cpp
+
   # An agent-implementation transforming ensuring legible application ids.
   core/trust/app_id_formatting_trust_agent.h
   core/trust/app_id_formatting_trust_agent.cpp

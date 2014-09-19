@@ -173,7 +173,7 @@ TEST(DefaultPromptProviderHelper, correctly_passes_arguments_to_prompt_executabl
     {
         42,
         "does.not.exist.application",
-        "Just an extended description"
+        "Just an extended description for %1%"
     };
 
     core::trust::mir::PromptProviderHelper helper{cargs};
@@ -195,7 +195,7 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     const core::trust::Pid app_pid {21};
     const std::string app_id {"does.not.exist.application"};
     const core::trust::Feature feature{42};
-    const std::string app_description {"This is just an extended description"};
+    const std::string app_description {"This is just an extended description %1%"};
     const int pre_authenticated_fd {42};
 
     const core::trust::mir::PromptProviderHelper::InvocationArguments reference_invocation_args
@@ -252,7 +252,7 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
     const core::trust::Pid app_pid {21};
     const std::string app_id {"does.not.exist.application"};
     const core::trust::Feature feature{42};
-    const std::string app_description {"This is just an extended description"};
+    const std::string app_description {"This is just an extended description for %1%"};
     const int pre_authenticated_fd {42};
 
     auto a_spinning_process = []()
