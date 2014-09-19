@@ -1,4 +1,9 @@
 libtrust-store.so.1 libtrust-store1 #MINVER#
+ (c++)"core::trust::i18n::default_text_domain()@Base" 0replaceme
+ (c++)"core::trust::i18n::service_text_domain()@Base" 0replaceme
+ (c++)"core::trust::i18n::set_service_text_domain(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::i18n::tr(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
+ (c++)"core::trust::i18n::tr(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0replaceme
  (c++)"core::trust::CachedAgent::Configuration::~Configuration()@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::CachedAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 1.0.0+14.10.20140806.7
  (c++)"core::trust::CachedAgent::Reporter::report_cached_answer_found(core::trust::Agent::RequestParameters const&, core::trust::Request const&)@Base" 1.0.0+14.10.20140814.1
