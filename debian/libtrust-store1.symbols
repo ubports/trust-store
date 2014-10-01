@@ -21,11 +21,13 @@ libtrust-store.so.1 libtrust-store1 #MINVER#
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptProviderHelper::exec_prompt_provider_with_arguments(core::trust::mir::PromptProviderHelper::InvocationArguments const&)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptProviderHelper::PromptProviderHelper(core::trust::mir::PromptProviderHelper::CreationArguments const&)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::create_prompt_session_sync(core::trust::TaggedInteger<core::trust::tag::Pid, int>, void (*)(MirPromptSession*, MirPromptSessionState, void*), void*)@Base" 1.0.0+14.10.20140806.7
+ (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable()@Base" 0replaceme
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection*)@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::release_sync()@Base" 0.0.1+14.10.20140717.8
  (c++|arch=amd64 arm64)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned long, int const*, void*)@Base" 1.0.0+14.10.20140806.7
  (c++|arch=i386 armhf)"core::trust::mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession*, unsigned int, int const*, void*)@Base" 1.0.0+14.10.20140806.7
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()@Base" 0.0.1+14.10.20140717.8
+ (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable()@Base" 0replaceme
  (c++|arch=amd64 i386 armhf arm64)"core::trust::mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession*)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::connect(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 0.0.1+14.10.20140717.8
  (c++)"core::trust::mir::create_agent_for_mir_connection(MirConnection*)@Base" 0.0.1+14.10.20140717.8

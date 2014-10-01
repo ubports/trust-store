@@ -38,7 +38,7 @@ namespace
 {
 struct MockPromptSessionVirtualTable : public core::trust::mir::PromptSessionVirtualTable
 {
-    MockPromptSessionVirtualTable() : core::trust::mir::PromptSessionVirtualTable{nullptr}
+    MockPromptSessionVirtualTable() : core::trust::mir::PromptSessionVirtualTable{}
     {
     }
 
@@ -56,7 +56,7 @@ struct MockPromptSessionVirtualTable : public core::trust::mir::PromptSessionVir
 
 struct MockConnectionVirtualTable : public core::trust::mir::ConnectionVirtualTable
 {
-    MockConnectionVirtualTable() : core::trust::mir::ConnectionVirtualTable{nullptr}
+    MockConnectionVirtualTable() : core::trust::mir::ConnectionVirtualTable{}
     {
     }
 

@@ -39,8 +39,9 @@ namespace mir
 {
 // We wrap the Mir prompt session API into a struct to
 // ease with testing and mocking.
-struct CORE_TRUST_DLL_PUBLIC PromptSessionVirtualTable
+class CORE_TRUST_DLL_PUBLIC PromptSessionVirtualTable
 {
+public:
     // Just a convenience typedef
     typedef std::shared_ptr<PromptSessionVirtualTable> Ptr;
 
@@ -69,12 +70,19 @@ struct CORE_TRUST_DLL_PUBLIC PromptSessionVirtualTable
     // Finalizes and releases the given prompt session instance.
     virtual void release_sync();
 
+protected:
+    // Mainly used in testing to circumvent any assertions on the
+    // prompt_session pointer.
+    PromptSessionVirtualTable();
+
+private:
     // The underlying prompt session instance.
     MirPromptSession* prompt_session;
 };
 
-struct CORE_TRUST_DLL_PUBLIC ConnectionVirtualTable
+class CORE_TRUST_DLL_PUBLIC ConnectionVirtualTable
 {
+public:
     // Just a convenience typedef
     typedef std::shared_ptr<ConnectionVirtualTable> Ptr;
 
@@ -93,7 +101,11 @@ struct CORE_TRUST_DLL_PUBLIC ConnectionVirtualTable
             mir_prompt_session_state_change_callback cb,
             // Callback context
             void* context);
-
+protected:
+    // Mainly used in testing to circumvent any assertions on the
+    // connection pointer.
+    ConnectionVirtualTable();
+private:
     // We do not take over ownership of the connection object.
     MirConnection* connection;
 };
