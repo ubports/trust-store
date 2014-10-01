@@ -1,8 +1,14 @@
-trust-store (1.0.0+14.10.20140826.1-0ubuntu2) UNRELEASED; urgency=low
+trust-store (1.0.0+14.10.20141001-0ubuntu1) utopic; urgency=low
 
+  [ Ubuntu daily release ]
   * debian/libtrust-store1.symbols: auto-update to released version
+  * New rebuild forced
 
- -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 01 Oct 2014 20:32:28 +0000
+  [ thomas-voss ]
+  * Throw on invalid mir connection or invalid prompt session. (LP:
+    #1370444)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 01 Oct 2014 20:32:32 +0000
 
 trust-store (1.0.0+14.10.20140826.1-0ubuntu1) utopic; urgency=low
 
