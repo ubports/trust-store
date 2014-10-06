@@ -194,6 +194,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& c
 
                 auto trusted_mir_socket = dict.at("trusted-mir-socket");
 
+                // TODO: log reconnection attempts
                 int connection_attempts = 5;
                 while (true)
                 {
