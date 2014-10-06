@@ -17,8 +17,8 @@
  */
 
 #include "agent.h"
-
 #include "prompt_main.h"
+#include <core/trust/mir_agent.h>
 
 // For getuid
 #include <fcntl.h>
@@ -90,7 +90,7 @@ void mir::PromptSessionVirtualTable::release_sync()
 mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
     : connection{connection}
 {
-    if (mir_connection_is_valid(connection) == mir_false) throw std::runtime_error
+    if (mir_connection_is_valid(connection) == mir_false) throw InvalidMirConnection
     {
         "Cannot create instance for invalid connection to Mir."
     };
@@ -266,8 +266,6 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 {
     return std::tie(lhs.application_id, lhs.description, lhs.fd) == std::tie(rhs.application_id, rhs.description, rhs.fd);
 }
-
-#include <core/trust/mir_agent.h>
 
 #include "config.h"
 

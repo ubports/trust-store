@@ -31,7 +31,7 @@ int main(int argc, const char** argv)
     try
     {
         configuration = core::trust::Daemon::Skeleton::Configuration::from_command_line(argc, argv);
-    } catch(const boost::exception& e)
+    } catch(std::exception const& e)
     {
         std::cerr << "Error during initialization and startup: " << boost::diagnostic_information(e) << std::endl;
         return EXIT_FAILURE;

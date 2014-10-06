@@ -41,6 +41,7 @@
 #include <boost/program_options.hpp>
 
 #include <thread>
+#include <chrono>
 
 namespace Options = boost::program_options;
 
@@ -193,12 +194,25 @@ const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& c
 
                 auto trusted_mir_socket = dict.at("trusted-mir-socket");
 
-                auto agent = core::trust::mir::create_agent_for_mir_connection(
-                            core::trust::mir::connect(
-                                trusted_mir_socket,
-                                service_name));
-
-                return agent;
+                // TODO: log reconnection attempts
+                int connection_attempts = 5;
+                while (true)
+                {
+                    try
+                    {
+                        return core::trust::mir::create_agent_for_mir_connection(
+                                    core::trust::mir::connect(
+                                        trusted_mir_socket,
+                                        service_name));
+                    }
+                    catch (core::trust::mir::InvalidMirConnection const&)
+                    {
+                        if (--connection_attempts == 0)
+                            throw;
+                    }
+                    std::this_thread::sleep_for(std::chrono::seconds(1));
+                    std::cerr << "reattempt connection to mir..."<< std::endl;
+                }
             }
         },
         {
