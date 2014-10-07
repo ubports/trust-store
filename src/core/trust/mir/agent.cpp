@@ -17,8 +17,8 @@
  */
 
 #include "agent.h"
-
 #include "prompt_main.h"
+#include <core/trust/mir_agent.h>
 
 #include <core/trust/i18n.h>
 
@@ -57,6 +57,15 @@ void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*
 mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession* prompt_session)
     : prompt_session(prompt_session)
 {
+    if (not prompt_session) throw std::runtime_error
+    {
+        "Cannot create instance for null prompt_session"
+    };
+}
+
+mir::PromptSessionVirtualTable::PromptSessionVirtualTable()
+    : prompt_session(nullptr)
+{
 }
 
 int mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()
@@ -86,6 +95,15 @@ void mir::PromptSessionVirtualTable::release_sync()
 
 mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
     : connection{connection}
+{
+    if (mir_connection_is_valid(connection) == mir_false) throw InvalidMirConnection
+    {
+        "Cannot create instance for invalid connection to Mir."
+    };
+}
+
+mir::ConnectionVirtualTable::ConnectionVirtualTable()
+    : connection{nullptr}
 {
 }
 
@@ -271,8 +289,6 @@ bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, 
 {
     return std::tie(lhs.application_id, lhs.description, lhs.fd) == std::tie(rhs.application_id, rhs.description, rhs.fd);
 }
-
-#include <core/trust/mir_agent.h>
 
 #include "config.h"
 
