@@ -20,6 +20,8 @@
 
 #include <libintl.h>
 
+#include <clocale>
+
 #include <iostream>
 
 namespace
@@ -37,6 +39,9 @@ std::string& mutable_service_text_domain()
 
 bool init()
 {
+    // Make sure that *gettext calls work correctly.
+    std::setlocale(LC_ALL, "");
+
     ::bindtextdomain(this_text_domain, nullptr);
     ::textdomain(this_text_domain);
 
