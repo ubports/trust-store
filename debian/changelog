@@ -1,4 +1,4 @@
-trust-store (1.1.0) UNRELEASED; urgency=medium
+trust-store (1.1.0+14.10.20141008.1-0ubuntu1) utopic; urgency=medium
 
   [ Thomas Voß ]
   * Add i18n support to the store.
@@ -6,7 +6,7 @@ trust-store (1.1.0) UNRELEASED; urgency=medium
   [ Ubuntu daily release ]
   * debian/libtrust-store1.symbols: auto-update to released version
 
- -- Thomas Voß <thomas.voss@canonical.com>  Fri, 19 Sep 2014 21:51:00 +0200
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Wed, 08 Oct 2014 11:27:16 +0000
 
 trust-store (1.0.0+14.10.20141006-0ubuntu1) utopic; urgency=low
 
