@@ -33,7 +33,6 @@ Homepage: https://launchpad.net/trust-store
 # directly to Ubuntu, don't worry: your changes will be merged back into the
 # upstream branch
 Vcs-Bzr: lp:trust-store
-X-Ubuntu-Use-Langpack: yes
 
 Package: libtrust-store1
 Architecture: any
