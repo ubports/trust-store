@@ -1,6 +1,10 @@
 trust-store (1.1.0) UNRELEASED; urgency=medium
 
+  [ Thomas Voß ]
   * Add i18n support to the store.
+
+  [ Ubuntu daily release ]
+  * debian/libtrust-store1.symbols: auto-update to released version
 
  -- Thomas Voß <thomas.voss@canonical.com>  Fri, 19 Sep 2014 21:51:00 +0200
 
