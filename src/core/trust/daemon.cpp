@@ -21,6 +21,7 @@
 #include <core/trust/app_id_formatting_trust_agent.h>
 #include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
+#include <core/trust/i18n.h>
 #include <core/trust/store.h>
 
 #include <core/trust/mir_agent.h>
@@ -311,6 +312,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     Options::options_description options{"Known options"};
     options.add_options()
             (Parameters::ForService::name, Options::value<std::string>()->required(), Parameters::ForService::description)
+            (Parameters::WithTextDomain::name, Options::value<std::string>(), Parameters::WithTextDomain::description)
             (Parameters::StoreBus::name, Options::value<std::string>()->default_value("session"), Parameters::StoreBus::description)
             (Parameters::LocalAgent::name, Options::value<std::string>()->required(), Parameters::LocalAgent::description)
             (Parameters::RemoteAgent::name, Options::value<std::string>()->required(), Parameters::RemoteAgent::description);
@@ -337,6 +339,13 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     }
 
     auto service_name = vm[Parameters::ForService::name].as<std::string>();
+
+    auto service_text_domain = service_name;
+
+    if (vm.count(Parameters::WithTextDomain::name) > 0)
+        service_text_domain = vm[Parameters::WithTextDomain::name].as<std::string>();
+
+    core::trust::i18n::set_service_text_domain(service_text_domain);
 
     auto local_agent_factory = core::trust::Daemon::Skeleton::known_local_agent_factories()
             .at(vm[Parameters::LocalAgent::name].as<std::string>());

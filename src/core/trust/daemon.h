@@ -143,6 +143,12 @@ struct Daemon
                 static constexpr const char* description{"The name of the service to handle trust for"};
             };
 
+            struct WithTextDomain
+            {
+                static constexpr const char* name{"with-text-domain"};
+                static constexpr const char* description{"The text domain that should be used for translations"};
+            };
+
             struct LocalAgent
             {
                 static constexpr const char* name{"local-agent"};

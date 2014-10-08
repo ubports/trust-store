@@ -48,7 +48,7 @@ pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
 set(TRUST_STORE_VERSION_MAJOR 1)
-set(TRUST_STORE_VERSION_MINOR 0)
+set(TRUST_STORE_VERSION_MINOR 1)
 set(TRUST_STORE_VERSION_PATCH 0)
 
 include(CTest)
@@ -64,6 +64,7 @@ include_directories(
 add_subdirectory(doc)
 add_subdirectory(data)
 add_subdirectory(include)
+add_subdirectory(po)
 add_subdirectory(src)
 add_subdirectory(tests)
 

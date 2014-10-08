@@ -20,6 +20,12 @@
 #include "prompt_main.h"
 #include <core/trust/mir_agent.h>
 
+#include <core/trust/i18n.h>
+
+#include <boost/format.hpp>
+
+#include <regex>
+
 // For getuid
 #include <fcntl.h>
 #include <unistd.h>
@@ -128,11 +134,28 @@ core::posix::ChildProcess mir::PromptProviderHelper::exec_prompt_provider_with_a
 {
     static auto child_setup = []() {};
 
+    // We translate to human readable strings here, and do it a non-translateable way first
+    // We post-process the application id and try to extract the unversioned package name.
+    // Please see https://wiki.ubuntu.com/AppStore/Interfaces/ApplicationId.
+    static const std::regex regex_full_app_id{"(.*)_(.*)_(.*)"};
+    static const std::regex regex_short_app_id{"(.*)_(.*)"};
+    static constexpr std::size_t index_app{2};
+
+    auto app_name = args.application_id;
+
+    std::smatch match;
+    if (std::regex_match(app_name, match, regex_full_app_id))
+        app_name = std::string{match[index_app]};
+    else if (std::regex_match(app_name, match, regex_short_app_id))
+        app_name = std::string{match[index_app]};
+
+    auto description = (boost::format(i18n::tr(args.description, i18n::service_text_domain())) % app_name).str();
+
     std::vector<std::string> argv
     {
         "--" + std::string{core::trust::mir::cli::option_server_socket}, "fd://" + std::to_string(args.fd),
-        "--" + std::string{core::trust::mir::cli::option_title}, args.application_id,
-        "--" + std::string{core::trust::mir::cli::option_description}, args.description
+        "--" + std::string{core::trust::mir::cli::option_title}, app_name,
+        "--" + std::string{core::trust::mir::cli::option_description}, description
     };
 
     // We just copy the environment

@@ -31,6 +31,8 @@
 #include <boost/program_options.hpp>
 #include <boost/program_options/environment_iterator.hpp>
 
+#include <core/trust/i18n.h>
+
 #include <core/posix/this_process.h>
 
 #include "prompt_config.h"

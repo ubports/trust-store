@@ -35,6 +35,10 @@ include_directories(
 set(
   TRUST_STORE_AGENT_SOURCES
 
+  # Translation helper
+  core/trust/i18n.h
+  core/trust/i18n.cpp
+
   # An agent-implementation transforming ensuring legible application ids.
   core/trust/app_id_formatting_trust_agent.h
   core/trust/app_id_formatting_trust_agent.cpp
@@ -85,11 +89,6 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     trust-prompt
 
     core/trust/mir/prompt_main.cpp
-  )
-
-  set_target_properties(
-    trust-prompt
-    PROPERTIES INCLUDE_DIRECTORIES ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir
   )
 
   qt5_use_modules(trust-prompt Core Gui Qml Quick)

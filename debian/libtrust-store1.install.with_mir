@@ -1,3 +1,0 @@
-usr/lib/*/lib*.so.*
-usr/lib/*/trust-prompt
-usr/share/core/trust/mir/*
