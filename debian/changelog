@@ -1,3 +1,11 @@
+trust-store (1.1.0+14.10.20141009-0ubuntu1) utopic; urgency=low
+
+  [ Alberto Aguirre ]
+  * Fix packaging issue due to some install files moving from libtrust-
+    store1 to trust-store-bin
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Thu, 09 Oct 2014 19:28:10 +0000
+
 trust-store (1.1.0+14.10.20141008.1-0ubuntu1) utopic; urgency=medium
 
   [ Thomas Voß ]
