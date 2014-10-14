@@ -48,7 +48,11 @@ bool init()
     return true;
 }
 
-static const bool initialized = init();
+bool is_initialized()
+{
+    static const bool initialized = init();
+    return initialized;
+}
 }
 
 std::string core::trust::i18n::default_text_domain()
@@ -70,7 +74,7 @@ void core::trust::i18n::set_service_text_domain(const std::string& domain)
 
 std::string core::trust::i18n::tr(const std::string& in)
 {
-    if (not initialized)
+    if (not is_initialized())
         return in;
 
     return ::gettext(in.c_str());
@@ -78,7 +82,7 @@ std::string core::trust::i18n::tr(const std::string& in)
 
 std::string core::trust::i18n::tr(const std::string& in, const std::string& domain)
 {
-    if (not initialized)
+    if (not is_initialized())
         return in;
 
     return ::dgettext(domain.c_str(), in.c_str());
