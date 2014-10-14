@@ -1,3 +1,11 @@
+trust-store (1.1.0+14.10.20141014.1-0ubuntu1) utopic; urgency=low
+
+  [ thomas-voss ]
+  * Make sure that the text domain is only adjusted if i18n is actually
+    requested. (LP: #1380916)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Tue, 14 Oct 2014 09:16:35 +0000
+
 trust-store (1.1.0+14.10.20141009-0ubuntu1) utopic; urgency=low
 
   [ Alberto Aguirre ]
