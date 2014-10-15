@@ -1,4 +1,11 @@
 libtrust-store.so.1 libtrust-store1 #MINVER#
+ (c++)"core::trust::WhiteListingAgent::always_grant_for_unconfined()@Base" 0replaceme
+ (c++)"core::trust::WhiteListingAgent::authenticate_request_with_parameters(core::trust::Agent::RequestParameters const&)@Base" 0replaceme
+ (c++)"core::trust::WhiteListingAgent::WhiteListingAgent(std::function<bool (core::trust::Agent::RequestParameters const&)>, std::shared_ptr<core::trust::Agent> const&)@Base" 0replaceme
+ (c++)"core::trust::WhiteListingAgent::~WhiteListingAgent()@Base" 0replaceme
+ (c++)"typeinfo for core::trust::WhiteListingAgent@Base" 0replaceme
+ (c++)"typeinfo name for core::trust::WhiteListingAgent@Base" 0replaceme
+ (c++)"vtable for core::trust::WhiteListingAgent@Base" 0replaceme
  (c++)"core::trust::i18n::default_text_domain()@Base" 1.1.0+14.10.20141008.1
  (c++)"core::trust::i18n::service_text_domain()@Base" 1.1.0+14.10.20141008.1
  (c++)"core::trust::i18n::set_service_text_domain(std::basic_string<char, std::char_traits<char>, std::allocator<char> > const&)@Base" 1.1.0+14.10.20141008.1

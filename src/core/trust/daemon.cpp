@@ -23,6 +23,7 @@
 #include <core/trust/expose.h>
 #include <core/trust/i18n.h>
 #include <core/trust/store.h>
+#include <core/trust/white_listing_agent.h>
 
 #include <core/trust/mir_agent.h>
 
@@ -365,13 +366,16 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
     auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(cached_agent);
+    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>(
+                core::trust::WhiteListingAgent::always_grant_for_unconfined(),
+                formatting_agent);
     auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
 
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, formatting_agent},
+        {local_store, whitelisting_agent},
         {remote_agent}
     };
 }
