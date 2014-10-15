@@ -43,6 +43,8 @@ set(
   core/trust/app_id_formatting_trust_agent.h
   core/trust/app_id_formatting_trust_agent.cpp
 
+  # An agent-implementation that allows for selectively whitelisting app ids
+  core/trust/white_listing_agent.cpp
   # An agent-implementation using a store instance to cache user replies.
   core/trust/cached_agent.cpp
   core/trust/cached_agent_glog_reporter.cpp
