@@ -365,17 +365,22 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
             std::make_shared<core::trust::CachedAgentGlogReporter>(
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
-    auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(cached_agent);
-    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>(
-                core::trust::WhiteListingAgent::always_grant_for_unconfined(),
-                formatting_agent);
+
+    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>([](const core::trust::Agent::RequestParameters& params) -> bool
+    {
+        static auto unconfined_predicate = core::trust::WhiteListingAgent::always_grant_for_unconfined();
+        return unconfined_predicate(params) || params.application.id == "com.ubuntu.camera_camera";
+    }, cached_agent);
+
+    auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(whitelisting_agent);
+
     auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
 
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, whitelisting_agent},
+        {local_store, formatting_agent},
         {remote_agent}
     };
 }
