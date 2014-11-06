@@ -31,7 +31,6 @@ Rectangle {
     Component.onCompleted: dialog.show();
 
     Dialog {
-        i18n.domain: "trust-store"
         id: dialog
 
         title: dialogTitle
