@@ -90,6 +90,10 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
   add_executable(
     trust-prompt
 
+    # Translation helper
+    core/trust/i18n.h
+    core/trust/i18n.cpp
+
     core/trust/mir/prompt_main.cpp
   )
 

@@ -142,6 +142,9 @@ int main(int argc, char** argv)
                     vm[core::trust::mir::cli::option_server_socket].as<std::string>());
     }
 
+    // We install our default gettext domain prior to anything qt.
+    core::trust::i18n::default_text_domain();
+
     // We install a custom message handler to silence Qt's chattiness
     qInstallMessageHandler([](QtMsgType type, const QMessageLogContext&, const QString& msg)
     {
