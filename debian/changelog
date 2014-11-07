@@ -1,3 +1,13 @@
+trust-store (1.1.0+15.04.20141107.1-0ubuntu1) vivid; urgency=low
+
+  [ thomas-voss ]
+  * Select correct gettext domain for the trust prompt. (LP: #1354092)
+
+  [ Ubuntu daily release ]
+  * New rebuild forced
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 07 Nov 2014 12:10:51 +0000
+
 trust-store (1.1.0+14.10.20141015-0ubuntu1) utopic; urgency=low
 
   [ Ubuntu daily release ]
