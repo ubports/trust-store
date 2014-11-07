@@ -57,6 +57,9 @@ bool is_initialized()
 
 std::string core::trust::i18n::default_text_domain()
 {
+    if (not is_initialized())
+        return std::string{};
+
     return this_text_domain;
 }
 
