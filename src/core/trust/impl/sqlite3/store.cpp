@@ -518,7 +518,8 @@ struct Store
                         " WHERE ApplicationId=IFNULL(?,ApplicationId) AND"
                         " Feature=IFNULL(?,Feature) AND"
                         " (Timestamp BETWEEN IFNULL(?, Timestamp) AND IFNULL(?,Timestamp)) AND"
-                        " Answer=IFNULL(?,Answer);"
+                        " Answer=IFNULL(?,Answer)"
+                        " ORDER BY Timestamp DESC;"
                     };
                     return select;
                 }

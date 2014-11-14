@@ -449,8 +449,8 @@ TEST_F(RemoteTrustStore, limiting_query_to_time_interval_returns_correct_result)
         query->execute();
 
         EXPECT_EQ(core::trust::Store::Query::Status::has_more_results, query->status());
-        EXPECT_EQ(r2, query->current()); query->next();
         EXPECT_EQ(r3, query->current()); query->next();
+        EXPECT_EQ(r2, query->current()); query->next();
         EXPECT_EQ(core::trust::Store::Query::Status::eor, query->status());
 
         return ::testing::Test::HasFatalFailure() || ::testing::Test::HasFailure() ?
