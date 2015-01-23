@@ -24,6 +24,11 @@ include_directories(
 )
 
 add_executable(
+  bug_1387734
+  bug_1387734.cpp
+)
+
+add_executable(
   trust_store_test
   trust_store_test.cpp
 )
@@ -71,6 +76,17 @@ add_executable(
 add_executable(
   preseed_test
   preseed_test.cpp
+)
+
+target_link_libraries(
+  bug_1387734
+
+  trust-store
+
+  gmock
+
+  gtest
+  gtest_main
 )
 
 target_link_libraries(
@@ -202,6 +218,7 @@ target_link_libraries(
   ${PROCESS_CPP_LIBRARIES}
 )
 
+add_test(bug_1387734 ${CMAKE_CURRENT_BINARY_DIR}/bug_1387734)
 add_test(trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/trust_store_test)
 add_test(remote_trust_store_test ${CMAKE_CURRENT_BINARY_DIR}/remote_trust_store_test)
 add_test(request_processor_test ${CMAKE_CURRENT_BINARY_DIR}/request_processor_test)
