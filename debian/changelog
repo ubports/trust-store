@@ -1,3 +1,11 @@
+trust-store (1.1.0+15.04.20150123-0ubuntu1) vivid; urgency=low
+
+  [ thomas-voss ]
+  * Make sure that cached trust requests are sorted by their timestamp
+    in descending order. Add regression test case. (LP: #1387734)
+
+ -- Ubuntu daily release <ps-jenkins@lists.canonical.com>  Fri, 23 Jan 2015 09:56:00 +0000
+
 trust-store (1.1.0+15.04.20141107.1-0ubuntu1) vivid; urgency=low
 
   [ thomas-voss ]
