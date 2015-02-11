@@ -22,6 +22,7 @@
 // Qt
 #include <QCommandLineParser>
 #include <QGuiApplication>
+#include <QLibrary>
 
 #include <QQuickView>
 #include <QQuickItem>
@@ -99,7 +100,8 @@ int main(int argc, char** argv)
             (core::trust::mir::cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
             (core::trust::mir::cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
             (core::trust::mir::cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt.")
-            (core::trust::mir::cli::option_testing, "Only checks command-line parameters and does not execute any actions.");
+            (core::trust::mir::cli::option_testing, "Only checks command-line parameters and does not execute any actions.")
+            (core::trust::mir::cli::option_testability, "Loads the Qt Testability plugin if provided.");
 
     auto parsed_options = boost::program_options::command_line_parser{argc, argv}
             .options(options)
@@ -164,6 +166,28 @@ int main(int argc, char** argv)
     // We already parsed the command line arguments and do not parse them
     // to the application.
     QGuiApplication app{argc, argv};
+
+    if (vm.count(core::trust::mir::cli::option_testability) > 0 ||
+        core::posix::this_process::env::get(core::trust::mir::env::option_testability, "0") == "1")
+    {
+        // This initialization code is copy'n'pasted across multiple projects. We really should _not_
+        // do something like that and bundle initialization routines in autopilot-qt.
+        // The testability driver is only loaded by QApplication but not by QGuiApplication.
+        // However, QApplication depends on QWidget which would add some unneeded overhead => Let's load the testability driver on our own.
+        QLibrary testLib(QLatin1String("qttestability"));
+        if (testLib.load())
+        {
+            typedef void (*TasInitialize)(void);
+            TasInitialize initFunction = (TasInitialize)testLib.resolve("qt_testability_init");
+            if (initFunction)
+                initFunction();
+            else
+                qCritical("Library qttestability resolve failed!");
+        } else
+        {
+            qCritical("Library qttestability load failed!");
+        }
+    }
 
     core::trust::mir::SignalTrap signal_trap;
 

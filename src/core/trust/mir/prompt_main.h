@@ -32,6 +32,11 @@ static constexpr const char* option_mir_socket
 {
     "MIR_SOCKET"
 };
+/** @brief Name of the environment variable that triggers loading of the testability plugin. */
+static constexpr const char* option_testability
+{
+    "QT_LOAD_TESTABILITY"
+};
 }
 namespace cli
 {
@@ -57,6 +62,12 @@ static constexpr const char* option_description
 static constexpr const char* option_testing
 {
     "testing"
+};
+
+/** @brief Loads the Qt Testability plugin if provided. */
+static constexpr const char* option_testability
+{
+    "testability"
 };
 }
 }
