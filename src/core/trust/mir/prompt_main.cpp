@@ -39,6 +39,11 @@
 #include "prompt_config.h"
 #include "prompt_main.h"
 
+namespace cli = core::trust::mir::cli;
+namespace env = core::trust::mir::env;
+
+namespace this_env = core::posix::this_process::env;
+
 namespace core
 {
 namespace trust
@@ -67,22 +72,22 @@ void validate_command_line_arguments(const boost::program_options::variables_map
 {
     // We are throwing exceptions here, which immediately calls abort and still gives a
     // helpful error message on the terminal.
-    if (vm.count(core::trust::mir::cli::option_title) == 0) throw std::logic_error
+    if (vm.count(cli::option_title) == 0) throw std::logic_error
     {
         "Missing option title."
     };
 
-    if (vm.count(core::trust::mir::cli::option_description) == 0) throw std::logic_error
+    if (vm.count(cli::option_description) == 0) throw std::logic_error
     {
         "Missing option description"
     };
 
-    if (vm.count(core::trust::mir::cli::option_server_socket) == 0) throw std::logic_error
+    if (vm.count(cli::option_server_socket) == 0) throw std::logic_error
     {
         "Missing option mir_server_socket"
     };
 
-    std::string mir_server_socket = vm[core::trust::mir::cli::option_server_socket].as<std::string>();
+    std::string mir_server_socket = vm[cli::option_server_socket].as<std::string>();
 
     if (mir_server_socket.find("fd://") != 0) throw std::logic_error
     {
@@ -92,16 +97,15 @@ void validate_command_line_arguments(const boost::program_options::variables_map
 }
 }
 
-
 int main(int argc, char** argv)
 {
     boost::program_options::options_description options;
     options.add_options()
-            (core::trust::mir::cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
-            (core::trust::mir::cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
-            (core::trust::mir::cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt.")
-            (core::trust::mir::cli::option_testing, "Only checks command-line parameters and does not execute any actions.")
-            (core::trust::mir::cli::option_testability, "Loads the Qt Testability plugin if provided.");
+            (cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
+            (cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
+            (cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt.")
+            (cli::option_testing, "Only checks command-line parameters and does not execute any actions.")
+            (cli::option_testability, "Loads the Qt Testability plugin if provided.");
 
     auto parsed_options = boost::program_options::command_line_parser{argc, argv}
             .options(options)
@@ -119,29 +123,29 @@ int main(int argc, char** argv)
     boost::program_options::notify(vm);
 
     // We just verify command line arguments in testing and immediately return.
-    if (vm.count(core::trust::mir::cli::option_testing) > 0)
+    if (vm.count(cli::option_testing) > 0)
     {
         testing::validate_command_line_arguments(vm); return 0;
     }
 
     // Let's validate the arguments.
-    if (vm.count(core::trust::mir::cli::option_title) == 0)
+    if (vm.count(cli::option_title) == 0)
         abort(); // We have to call abort here to make sure that we get signalled.
 
-    std::string title = vm[core::trust::mir::cli::option_title].as<std::string>();
+    std::string title = vm[cli::option_title].as<std::string>();
 
     std::string description;
-    if (vm.count(core::trust::mir::cli::option_description) > 0)
-        description = vm[core::trust::mir::cli::option_description].as<std::string>();
+    if (vm.count(cli::option_description) > 0)
+        description = vm[cli::option_description].as<std::string>();
 
-    if (vm.count(core::trust::mir::cli::option_server_socket) > 0)
+    if (vm.count(cli::option_server_socket) > 0)
     {
         // We make sure that the env variable is not set prior to adusting it.
-        core::posix::this_process::env::unset_or_throw(core::trust::mir::env::option_mir_socket);
+        this_env::unset_or_throw(env::option_mir_socket);
 
-        core::posix::this_process::env::set_or_throw(
-                    core::trust::mir::env::option_mir_socket,
-                    vm[core::trust::mir::cli::option_server_socket].as<std::string>());
+        this_env::set_or_throw(
+                    env::option_mir_socket,
+                    vm[cli::option_server_socket].as<std::string>());
     }
 
     // We install our default gettext domain prior to anything qt.
@@ -167,8 +171,8 @@ int main(int argc, char** argv)
     // to the application.
     QGuiApplication app{argc, argv};
 
-    if (vm.count(core::trust::mir::cli::option_testability) > 0 ||
-        core::posix::this_process::env::get(core::trust::mir::env::option_testability, "0") == "1")
+    if (vm.count(cli::option_testability) > 0 ||
+        this_env::get(env::option_testability, "0") == "1")
     {
         // This initialization code is copy'n'pasted across multiple projects. We really should _not_
         // do something like that and bundle initialization routines in autopilot-qt.
@@ -198,11 +202,11 @@ int main(int argc, char** argv)
     // Make some properties known to the root context.
     // The title of the dialog.
     view->rootContext()->setContextProperty(
-                core::trust::mir::cli::option_title,
+                cli::option_title,
                 title.c_str());
     // The description of the dialog.
     view->rootContext()->setContextProperty(
-                    core::trust::mir::cli::option_description,
+                    cli::option_description,
                     description.c_str());
 
     // Point the engine to the right directory. Please note that
