@@ -10,13 +10,6 @@ include /usr/share/dpkg/default.mk
 export CC=$(DEB_HOST_GNU_TYPE)-gcc-4.9
 export CXX=$(DEB_HOST_GNU_TYPE)-g++-4.9
 
-# Mir is an optional build dependency
-ifneq (,$(filter $(DEB_HOST_ARCH),amd64 arm64 i386 armhf))
-        TRUST_STORE_MIR_AGENT_ENABLED = ON
-else
-        TRUST_STORE_MIR_AGENT_ENABLED = OFF
-endif
-
 # The home directory of user buildd does not exist on the builders
 export XDG_DATA_HOME=/tmp
 
@@ -24,4 +17,4 @@ export XDG_DATA_HOME=/tmp
 	dh $@ --fail-missing
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED)
+	dh_auto_configure -- -DCMAKE_C_COMPILER=$(CC) -DCMAKE_CXX_COMPILER=$(CXX) -DTRUST_STORE_MIR_AGENT_ENABLED=ON
