@@ -43,7 +43,6 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
   )
 endif()
 
-pkg_check_modules(GFLAGS libgflags REQUIRED)
 pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
@@ -56,7 +55,6 @@ include(CTest)
 include_directories(
   include/
 
-  ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
   ${PROCESS_CPP_INCLUDE_DIRS}
 )
