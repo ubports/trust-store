@@ -1,4 +1,0 @@
-usr/bin/trust*
-usr/lib/*/trust-prompt
-usr/share/locale/*
-usr/share/core/trust/mir/*
