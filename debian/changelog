@@ -1,3 +1,19 @@
+trust-store (1.1.0+15.04.20150629-0ubuntu1) vivid; urgency=medium
+
+  [ Andreas Pokorny ]
+  * Remove usage of mir_false make dependency to libmirclient-dev
+    architecture independent, and remove unused libgflags dependency.
+    removed: debian/trust-store-bin.install.amd64@ debian/trust-store-
+    bin.install.arm64@ debian/trust-store-bin.install.armhf@
+    debian/trust-store-bin.install.i386@ debian/trust-store-
+    bin.install.with_mir
+
+  [ CI Train Bot ]
+  * Resync trunk. added: po/af.po po/bg.po po/eo.po po/et.po po/mk.po
+    po/ny.po po/sk.po po/sq.po po/tg.po
+
+ -- CI Train Bot <ci-train-bot@canonical.com>  Mon, 29 Jun 2015 05:00:16 +0000
+
 trust-store (1.1.0+15.04.20150213-0ubuntu1) vivid; urgency=medium
 
   [ thomas-voss ]

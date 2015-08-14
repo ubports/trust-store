@@ -1,0 +1,26 @@
+# Uzbek translation for trust-store
+# Copyright (c) 2015 Rosetta Contributors and Canonical Ltd 2015
+# This file is distributed under the same license as the trust-store package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2015.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: trust-store\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: 2014-09-19 16:15+0200\n"
+"PO-Revision-Date: 2015-04-01 01:15+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: Uzbek <uz@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Launchpad-Export-Date: 2015-07-25 05:41+0000\n"
+"X-Generator: Launchpad (build 17628)\n"
+
+#: /tmp/trust-store-i18n/src/core/trust/mir/prompt_main.qml:42
+msgid "Deny"
+msgstr "Rad etish"
+
+#: /tmp/trust-store-i18n/src/core/trust/mir/prompt_main.qml:49
+msgid "Allow"
+msgstr "Ruxsat berish"
