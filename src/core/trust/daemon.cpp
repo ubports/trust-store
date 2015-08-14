@@ -262,7 +262,8 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
                     dict.count("description-pattern") > 0 ?
                             dict.at("description-pattern") :
-                            "Application %1% is trying to access " + service_name + "."
+                            "Application %1% is trying to access " + service_name + ".",
+                    dict.count("verify-process-timestamp") > 0
                 };
 
                 return core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
@@ -366,10 +367,10 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
 
-    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>([](const core::trust::Agent::RequestParameters& params) -> bool
+    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>([vm](const core::trust::Agent::RequestParameters& params) -> bool
     {
         static auto unconfined_predicate = core::trust::WhiteListingAgent::always_grant_for_unconfined();
-        return unconfined_predicate(params) || params.application.id == "com.ubuntu.camera_camera";
+        return not (vm.count("disable-whitelisting") > 0) && (unconfined_predicate(params) || params.application.id == "com.ubuntu.camera_camera");
     }, cached_agent);
 
     auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(whitelisting_agent);

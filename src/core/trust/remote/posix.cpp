@@ -315,9 +315,7 @@ core::trust::Request::Answer remote::posix::Skeleton::process_incoming_request(c
         "Potential spoofing detected on incoming request."
     };
 
-    // Assemble the description.
     auto app_id = app_id_resolver(request.app_pid);
-    auto description = (boost::format{description_pattern} % app_id).str();
 
     // And reach out to the user.
     // TODO(tvoss): How to handle exceptions here?
@@ -328,6 +326,6 @@ core::trust::Request::Answer remote::posix::Skeleton::process_incoming_request(c
         request.app_pid,
         app_id,
         request.feature,
-        description
+        description_pattern
     });
 }
