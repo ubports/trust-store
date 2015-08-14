@@ -210,6 +210,10 @@ public:
         // Pattern for assembling the prompt dialog's description given
         // an app id.
         std::string description_format;
+        // If set to true, enforces spoofing-prevention by inspecting and comparing
+        // process start times. This causes issues for the case of crossing the
+        // Android/Ubuntu boundary and we have to make it configurable.
+        bool verify_process_start_time;
     };
 
     static Ptr create_skeleton_for_configuration(const Configuration& configuration);
@@ -239,6 +243,10 @@ private:
     // Pattern for assembling the prompt dialog's description given
     // an app id.
     std::string description_pattern;
+    // If set to true, enforces spoofing-prevention by inspecting and comparing
+    // process start times. This causes issues for the case of crossing the
+    // Android/Ubuntu boundary and we have to make it configurable.
+    bool verify_process_start_time;
     // The endpoint in the filesystem that we are connected with.
     boost::asio::local::stream_protocol::endpoint endpoint;
     // The actual socket for communication with the service.
