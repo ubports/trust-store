@@ -367,10 +367,10 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
                     core::trust::CachedAgentGlogReporter::Configuration{})
         });
 
-    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>([vm](const core::trust::Agent::RequestParameters& params) -> bool
+    auto whitelisting_agent = std::make_shared<core::trust::WhiteListingAgent>([dict](const core::trust::Agent::RequestParameters& params) -> bool
     {
         static auto unconfined_predicate = core::trust::WhiteListingAgent::always_grant_for_unconfined();
-        return not (vm.count("disable-whitelisting") > 0) && (unconfined_predicate(params) || params.application.id == "com.ubuntu.camera_camera");
+        return not (dict.count("disable-whitelisting") > 0) && (unconfined_predicate(params) || params.application.id == "com.ubuntu.camera_camera");
     }, cached_agent);
 
     auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(whitelisting_agent);
