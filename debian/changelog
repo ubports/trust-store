@@ -1,4 +1,4 @@
-trust-store (1.1.0+15.10.20150629-0ubuntu1) wily; urgency=medium
+trust-store (1.1.0+15.04.20150629-0ubuntu1) vivid; urgency=medium
 
   [ Andreas Pokorny ]
   * Remove usage of mir_false make dependency to libmirclient-dev

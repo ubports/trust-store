@@ -255,6 +255,7 @@ remote::posix::Skeleton::Skeleton(const Configuration& configuration)
       start_time_resolver{configuration.start_time_resolver},
       app_id_resolver{configuration.app_id_resolver},
       description_pattern{configuration.description_format},
+      verify_process_start_time{configuration.verify_process_start_time},
       endpoint{configuration.endpoint},
       socket{configuration.io_service}
 {
@@ -309,15 +310,16 @@ void remote::posix::Skeleton::on_read_finished(const boost::system::error_code& 
 
 core::trust::Request::Answer remote::posix::Skeleton::process_incoming_request(const core::trust::remote::posix::Request& request)
 {
-    // We first validate the process start time again.
-    if (start_time_resolver(request.app_pid) != request.app_start_time) throw std::runtime_error
+    if (verify_process_start_time)
     {
-        "Potential spoofing detected on incoming request."
-    };
+        // We first validate the process start time again.
+        if (start_time_resolver(request.app_pid) != request.app_start_time) throw std::runtime_error
+        {
+            "Potential spoofing detected on incoming request."
+        };
+    }
 
-    // Assemble the description.
     auto app_id = app_id_resolver(request.app_pid);
-    auto description = (boost::format{description_pattern} % app_id).str();
 
     // And reach out to the user.
     // TODO(tvoss): How to handle exceptions here?
@@ -328,6 +330,6 @@ core::trust::Request::Answer remote::posix::Skeleton::process_incoming_request(c
         request.app_pid,
         app_id,
         request.feature,
-        description
+        description_pattern
     });
 }

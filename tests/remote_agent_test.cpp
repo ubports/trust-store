@@ -359,7 +359,8 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
             boost::asio::local::stream_protocol::endpoint{UnixDomainSocketRemoteAgent::endpoint_for_testing},
             process_start_time_resolver.to_functional(),
             core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
-            "Just a test for %1%."
+            "Just a test for %1%.",
+            true
         };
 
         auto skeleton = core::trust::remote::posix::Skeleton::create_skeleton_for_configuration(config);
@@ -523,7 +524,8 @@ TEST(UnixDomainSocket, a_service_can_query_a_remote_agent)
             boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
             core::trust::remote::helpers::proc_stat_start_time_resolver(),
             core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
-            "Just a test for %1%."
+            "Just a test for %1%.",
+            true
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
@@ -761,7 +763,8 @@ TEST(UnixDomainSocket, a_standalone_service_can_query_a_remote_agent)
             boost::asio::local::stream_protocol::endpoint{endpoint_for_acceptance_testing},
             core::trust::remote::helpers::proc_stat_start_time_resolver(),
             core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
-            "Just a test for %1%."
+            "Just a test for %1%.",
+            true
         };
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
