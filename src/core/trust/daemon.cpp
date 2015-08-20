@@ -262,7 +262,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
                     dict.count("description-pattern") > 0 ?
                             dict.at("description-pattern") :
-                            "Application %1% is trying to access " + service_name + ".",
+                            core::trust::i18n::tr("Application %1% is trying to access") + " " + service_name + ".",
                     dict.count("verify-process-timestamp") > 0
                 };
 
