@@ -1,4 +1,4 @@
-trust-store (2.0.0+15.10.20150831-0ubuntu1) UNRELEASED; urgency=medium
+trust-store (2.0.0+15.10.20150831-0ubuntu1) wily; urgency=medium
 
   [ Thomas Voß ]
   * Bump major revision to account for toolchain update. Fixes LP:#1452341
