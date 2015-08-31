@@ -46,8 +46,8 @@ endif()
 pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
-set(TRUST_STORE_VERSION_MAJOR 1)
-set(TRUST_STORE_VERSION_MINOR 1)
+set(TRUST_STORE_VERSION_MAJOR 2)
+set(TRUST_STORE_VERSION_MINOR 0)
 set(TRUST_STORE_VERSION_PATCH 0)
 
 include(CTest)
@@ -55,6 +55,7 @@ include(CTest)
 include_directories(
   include/
 
+  ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
   ${PROCESS_CPP_INCLUDE_DIRS}
 )

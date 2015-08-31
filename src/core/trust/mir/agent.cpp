@@ -96,7 +96,7 @@ void mir::PromptSessionVirtualTable::release_sync()
 mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
     : connection{connection}
 {
-    if (!mir_connection_is_valid(connection)) throw InvalidMirConnection
+    if (not mir_connection_is_valid(connection)) throw InvalidMirConnection
     {
         "Cannot create instance for invalid connection to Mir."
     };

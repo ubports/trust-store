@@ -39,6 +39,8 @@
 #include "prompt_config.h"
 #include "prompt_main.h"
 
+#include <iostream>
+
 namespace cli = core::trust::mir::cli;
 namespace env = core::trust::mir::env;
 

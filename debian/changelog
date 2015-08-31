@@ -1,3 +1,10 @@
+trust-store (2.0.0+15.10.20150831-0ubuntu1) UNRELEASED; urgency=medium
+
+  [ Thomas Voß ]
+  * Bump major revision to account for toolchain update. Fixes LP:#1452341
+
+ -- Alfonso Sanchez-Beato (email Canonical) <alfonso.sanchez-beato@canonical.com>  Mon, 31 Aug 2015 14:59:57 +0200
+
 trust-store (1.1.0+15.04.20150820-0ubuntu1) vivid; urgency=medium
 
   [ Ken VanDine ]
