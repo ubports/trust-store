@@ -371,7 +371,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     {
         static auto unconfined_predicate = core::trust::WhiteListingAgent::always_grant_for_unconfined();
         const bool is_unconfined = unconfined_predicate(params);
-        return is_unconfined || ((not dict.count("disable-whitelisting") > 0) && params.application.id == "com.ubuntu.camera_camera");
+        return is_unconfined || ((not (dict.count("disable-whitelisting") > 0)) && params.application.id == "com.ubuntu.camera_camera");
     }, cached_agent);
 
     auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(whitelisting_agent);
