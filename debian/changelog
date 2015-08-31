@@ -1,3 +1,15 @@
+trust-store (2.0.0+15.10.20150831-0ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge wily changes upstream
+
+ -- Alfonso Sanchez-Beato (email Canonical) <alfonso.sanchez-beato@canonical.com>  Mon, 31 Aug 2015 14:59:57 +0200
+
+trust-store (2.0.0-0ubuntu1) wily; urgency=medium
+
+  * Bump major revision to account for toolchain update. Fixes LP:#1452341
+
+ -- Thomas Voß <thomas.voss@canonical.com>  Thu, 23 Jul 2015 09:22:15 +0200
+
 trust-store (1.1.0+15.04.20150820-0ubuntu1) vivid; urgency=medium
 
   [ Ken VanDine ]

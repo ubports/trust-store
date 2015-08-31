@@ -6,19 +6,16 @@ Build-Depends: cmake,
                doxygen,
                google-mock,
                graphviz,
-# We rely on C++11 features, and to prevent from ABI breaks
-# in libstdc++ causing us issues, we explicitly select a G++
-# version.
-               g++-4.9,
                libapparmor-dev,
                libboost-program-options-dev,
                libboost-system-dev,
                libdbus-cpp-dev (>= 4.0.0),
                libdbus-1-dev,
+               libgflags-dev,
                libgoogle-glog-dev,
                libgtest-dev,
                libjson-c-dev,
-               libmirclient-dev (>= 0.14.0),
+               libmirclient-dev [amd64 arm64 i386 armhf],
                libprocess-cpp-dev,
                libsqlite3-dev,
                pkg-config,
@@ -33,7 +30,7 @@ Homepage: https://launchpad.net/trust-store
 # upstream branch
 Vcs-Bzr: lp:trust-store
 
-Package: libtrust-store1
+Package: libtrust-store2
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
@@ -51,7 +48,7 @@ Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
 Recommends: libtrust-store-doc,
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
 Description: C++11 library for persisting trust requests - dev files
  Provides a common implementation of a trust store to be used by trusted
@@ -63,10 +60,8 @@ Description: C++11 library for persisting trust requests - dev files
 Package: trust-store-bin
 Section: devel
 Architecture: any
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
-Replaces: libtrust-store1 (<< 1.1.0+14.10.20141008),
-Breaks: libtrust-store1 (<< 1.1.0+14.10.20141008),
 Description: Daemon binaries to be used by services.
  Provides a common implementation of a trust store to be used by trusted
  helpers.
@@ -76,7 +71,7 @@ Description: Daemon binaries to be used by services.
 Package: trust-store-tests
 Section: libdevel
 Architecture: any
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
 Suggests: libtrust-store-dev,
 Description: Test files for libtrust-store1
