@@ -99,6 +99,11 @@ struct MockTranslator
     MOCK_METHOD1(translate, core::trust::Request::Answer(const core::posix::wait::Result&));
 };
 
+struct MockAppNameResolver : public core::trust::mir::AppNameResolver
+{
+    MOCK_METHOD1(resolve, std::string(const std::string&));
+};
+
 std::shared_ptr<MockConnectionVirtualTable> a_mocked_connection_vtable()
 {
     return std::make_shared<testing::NiceMock<MockConnectionVirtualTable>>();
@@ -116,6 +121,11 @@ std::shared_ptr<MockPromptProviderHelper> a_mocked_prompt_provider_calling_bin_f
                 {
                     "/bin/false"
                 });
+}
+
+std::shared_ptr<MockAppNameResolver> a_mocked_app_name_resolver()
+{
+    return std::make_shared<MockAppNameResolver>();
 }
 }
 
@@ -209,6 +219,7 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     auto prompt_session_vtable = a_mocked_prompt_session_vtable();
 
     auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
+    auto app_name_resolver = a_mocked_app_name_resolver();
 
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
@@ -219,6 +230,9 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     ON_CALL(*prompt_session_vtable, add_prompt_provider_sync(_))
             .WillByDefault(Return(true));
 
+    ON_CALL(*app_name_resolver, resolve(_))
+            .WillByDefault(ReturnArg<0>());
+
     EXPECT_CALL(*connection_vtable, create_prompt_session_sync(app_pid, _, _)).Times(1);
     EXPECT_CALL(*prompt_session_vtable, new_fd_for_prompt_provider()).Times(1);
 
@@ -228,9 +242,13 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
 
     core::trust::mir::Agent agent
     {
-        connection_vtable,
-        prompt_provider_exec_helper,
-        core::trust::mir::Agent::translator_only_accepting_exit_status_success()
+        core::trust::mir::Agent::Configuration
+        {
+            connection_vtable,
+            prompt_provider_exec_helper,
+            core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
+            app_name_resolver
+        }
     };
 
     EXPECT_EQ(core::trust::Request::Answer::denied, // /bin/false exits with failure.
@@ -243,6 +261,68 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
                      feature,
                      app_description
                   }));
+}
+
+TEST(MirAgent, calls_into_app_name_resolver_with_app_id)
+{
+    using namespace ::testing;
+
+    const core::trust::Pid app_pid {21};
+    const std::string app_id {"does.not.exist.application"};
+    const std::string app_name{"MeMyselfAndI"};
+    const core::trust::Feature feature{42};
+    const std::string app_description {"This is just an extended description for %1%"};
+    const int pre_authenticated_fd {42};
+
+    const core::trust::mir::PromptProviderHelper::InvocationArguments reference_invocation_args
+    {
+        pre_authenticated_fd,
+        app_name,
+        app_description
+    };
+
+    auto connection_vtable = a_mocked_connection_vtable();
+    auto prompt_session_vtable = a_mocked_prompt_session_vtable();
+
+    auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
+    auto app_name_resolver = a_mocked_app_name_resolver();
+
+    ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
+            .WillByDefault(Return(prompt_session_vtable));
+
+    ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
+            .WillByDefault(Return(pre_authenticated_fd));
+
+    ON_CALL(*prompt_session_vtable, add_prompt_provider_sync(_))
+            .WillByDefault(Return(true));
+
+    EXPECT_CALL(*app_name_resolver, resolve(app_id)).Times(1).WillRepeatedly(Return(app_name));
+    EXPECT_CALL(*prompt_provider_exec_helper,
+                exec_prompt_provider_with_arguments(
+                    reference_invocation_args)).Times(1);
+
+    core::trust::mir::Agent agent
+    {
+        core::trust::mir::Agent::Configuration
+        {
+            connection_vtable,
+            prompt_provider_exec_helper,
+            core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
+            app_name_resolver
+        }
+    };
+
+    EXPECT_EQ(core::trust::Request::Answer::denied, // /bin/false exits with failure.
+              agent.authenticate_request_with_parameters(
+                  core::trust::Agent::RequestParameters
+                  {
+                     core::trust::Uid{::getuid()},
+                     app_pid,
+                     app_id,
+                     feature,
+                     app_description
+                  }));
+
 }
 
 TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
@@ -270,6 +350,8 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
     auto prompt_provider_helper = std::make_shared<MockPromptProviderHelper>(
                 core::trust::mir::PromptProviderHelper::CreationArguments{"/bin/false"});
 
+    auto app_name_resolver = a_mocked_app_name_resolver();
+
     void* prompt_session_state_callback_context{nullptr};
 
     ON_CALL(*prompt_provider_helper, exec_prompt_provider_with_arguments(_))
@@ -289,6 +371,9 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
                 Return(
                     true));
 
+    ON_CALL(*app_name_resolver, resolve(_))
+            .WillByDefault(ReturnArg<0>());
+
     // An invocation results in a session being created. In addition,
     // we store pointers to callback and context provided by the implementation
     // for being able to later trigger the callback.
@@ -300,9 +385,13 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
 
     core::trust::mir::Agent agent
     {
-        connection_vtable,
-        prompt_provider_helper,
-        core::trust::mir::Agent::translator_only_accepting_exit_status_success()
+        core::trust::mir::Agent::Configuration
+        {
+            connection_vtable,
+            prompt_provider_helper,
+            core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
+            app_name_resolver
+        }
     };
 
     std::thread asynchronously_stop_the_prompting_session

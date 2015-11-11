@@ -146,6 +146,17 @@ struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
     CreationArguments creation_arguments;
 };
 
+// An AppNameResolver resolves an application id to a localized application name.
+struct AppNameResolver
+{
+    // Save us some typing.
+    typedef std::shared_ptr<AppNameResolver> Ptr;
+
+    virtual ~AppNameResolver() = default;
+    // resolve maps app_id to a localized application name.
+    virtual std::string resolve(const std::string& app_id) = 0;
+};
+
 // Implements the trust::Agent interface and dispatches calls to a helper
 // prompt provider, tying it together with the requesting service and app
 // by leveraging Mir's trusted session/prompting support.
@@ -153,6 +164,20 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
 {
     // Convenience typedef
     typedef std::shared_ptr<Agent> Ptr;
+
+    // A Configuration bundles creation-time configuration options.
+    struct Configuration
+    {
+        // VTable object providing access to Mir's trusted prompting functionality.
+        ConnectionVirtualTable::Ptr connection_vtable;
+        // Exec helper for starting up prompt provider child processes with the correct setup
+        // of command line arguments and environment variables.
+        PromptProviderHelper::Ptr exec_helper;
+        // A translator function for mapping child process exit states to trust::Request answers.
+        std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator;
+        // AppNameResolver used by the agent to map incoming request app ids to application names.
+        AppNameResolver::Ptr app_name_resolver;
+    };
 
     // Helper struct for injecting state into on_trust_changed_state_state callbacks.
     // Used in prompt_user_for_request to wait for the trust session to be stopped.
@@ -177,26 +202,16 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
     // Throws std::logic_error if the process did not exit but was signaled.
     static std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator_only_accepting_exit_status_success();
 
-    // Creates a new MirAgent instance with the given MirConnectionVirtualTable instance.
-    Agent(// VTable object providing access to Mir's trusted prompting functionality.
-          const ConnectionVirtualTable::Ptr& connection_vtable,
-          // Exec helper for starting up prompt provider child processes with the correct setup
-          // of command line arguments and environment variables.
-          const PromptProviderHelper::Ptr& exec_helper,
-          // A translator function for mapping child process exit states to trust::Request answers.
-          const std::function<core::trust::Request::Answer(const core::posix::wait::Result&)>& translator);
+    // Creates a new MirAgent instance with the given Configuration.
+    Agent(const Configuration& config);
 
     // From core::trust::Agent:
     // Throws a std::logic_error if anything unforeseen happens during execution, thus
     // indicating that no conclusive answer could be obtained from the user.
     core::trust::Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) override;
 
-    // The connection VTable used for creating trusted prompting sessions.
-    ConnectionVirtualTable::Ptr connection_vtable;
-    // Execution helper for firing up prompt provider executables.
-    PromptProviderHelper::Ptr exec_helper;
-    // Translator instance.
-    std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator;
+    // The configured options.
+    Configuration config;
 };
 
 CORE_TRUST_DLL_PUBLIC bool operator==(const PromptProviderHelper::InvocationArguments&, const PromptProviderHelper::InvocationArguments&);

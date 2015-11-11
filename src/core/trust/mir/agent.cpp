@@ -219,17 +219,8 @@ std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> mi
     };
 }
 
-mir::Agent::Agent(
-        // VTable object providing access to Mir's trusted prompting functionality.
-        const mir::ConnectionVirtualTable::Ptr& connection_vtable,
-        // Exec helper for starting up prompt provider child processes with the correct setup
-        // of command line arguments and environment variables.
-        const mir::PromptProviderHelper::Ptr& exec_helper,
-        // A translator function for mapping child process exit states to trust::Request answers.
-        const std::function<core::trust::Request::Answer(const core::posix::wait::Result&)>& translator)
-    : connection_vtable(connection_vtable),
-      exec_helper(exec_helper),
-      translator(translator)
+mir::Agent::Agent(const mir::Agent::Configuration& config)
+    : config(config)
 {
 }
 
@@ -260,7 +251,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     } scope
     {
         // We setup the prompt session and wire up to our own internal callback helper.
-        connection_vtable->create_prompt_session_sync(
+        config.connection_vtable->create_prompt_session_sync(
                     parameters.application.pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context)
@@ -273,16 +264,16 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     mir::PromptProviderHelper::InvocationArguments args
     {
         fd,
-        parameters.application.id,
+        config.app_name_resolver->resolve(parameters.application.id),
         parameters.description
     };
 
     // Ask the helper to fire up the prompt provider.
-    cb_context.prompt_provider_process = exec_helper->exec_prompt_provider_with_arguments(args);
+    cb_context.prompt_provider_process = config.exec_helper->exec_prompt_provider_with_arguments(args);
     // And subsequently wait for it to finish.
     auto result = cb_context.prompt_provider_process.wait_for(core::posix::wait::Flags::untraced);
 
-    return translator(result);
+    return config.translator(result);
 }
 
 bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, const mir::PromptProviderHelper::InvocationArguments& rhs)
@@ -318,13 +309,8 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
         }
     };
 
-    return mir::Agent::Ptr
-    {
-        new mir::Agent
-        {
-            cvt,
-            pph,
-            mir::Agent::translator_only_accepting_exit_status_success()
-        }
-    };
+    mir::AppNameResolver::Ptr anr;
+
+    mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
+    return mir::Agent::Ptr{new mir::Agent{config}};
 }
