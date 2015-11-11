@@ -22,6 +22,7 @@ pkg_check_modules(CLICK click-0.4 REQUIRED)
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
 pkg_check_modules(GLIB glib-2.0 REQUIRED)
+pkg_check_modules(GOBJECT gobject-2.0 REQUIRED)
 pkg_check_modules(LIBAPPARMOR libapparmor REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
@@ -32,6 +33,7 @@ include_directories(
   ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
+  ${GOBJECT_INCLUDE_DIRS}
   ${LIBAPPARMOR_INCLUDE_DIRS}
   ${SQLITE3_INCLUDE_DIRS}
 )
@@ -192,6 +194,7 @@ target_link_libraries(
   ${GFLAGS_LDFLAGS}
   ${GLOG_LDFLAGS}
   ${GLIB_LDFLAGS}
+  ${GOBJECT_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}

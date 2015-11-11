@@ -27,21 +27,28 @@ namespace trust
 {
 namespace mir
 {
-// A ClickDesktopAppNameResolver queries the click database of installed
+// A ClickDesktopEntryAppNameResolver queries the click database of installed
 // packages to resolve an app's installation folder in the local filesystem.
 // The directory is searched for a .desktop file, that is then loaded and queried 
 // for the app's localized name.
-class ClickDesktopAppNameResolver : public AppNameResolver
+class CORE_TRUST_DLL_PUBLIC ClickDesktopEntryAppNameResolver : public AppNameResolver
 {
 public:
+    // ClickDesktopEntryAppNameResolver sets up an instance with default dbs.
+    // Additional dbs (mainly for testing purposes) can be injected and will be considered
+    // when resolving app ids to localized app names.
+    ClickDesktopEntryAppNameResolver(const std::vector<std::string>& additional_dbs = {});
+
     // resolve queries the click index and an apps desktop file entry for 
     // obtaining a localized application name. Throws std::runtime_error in 
     // case of issues.
     std::string resolve(const std::string& app_id) override;
+
+protected:
+    std::vector<std::string> additional_dbs;
 };
 }
 }
 }
 
 #endif // CORE_TRUST_MIR_CLICK_DESKTOP_ENTRY_APP_NAME_RESOLVER_H_
- 

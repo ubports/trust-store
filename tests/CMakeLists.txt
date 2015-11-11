@@ -242,6 +242,11 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     mir_agent_test.cpp
   )
 
+  add_executable(
+    click_desktop_entry_app_name_resolver
+    click_desktop_entry_app_name_resolver.cpp
+  )
+
   target_link_libraries(
     mir_agent_test
 
@@ -255,7 +260,22 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     ${PROCESS_CPP_LIBRARIES}
   )
 
+  target_link_libraries(
+    click_desktop_entry_app_name_resolver
+
+    trust-store
+
+    gmock
+
+    gtest
+    gtest_main
+
+    ${PROCESS_CPP_LIBRARIES}
+  )
+
+
   add_test(mir_agent_test ${CMAKE_CURRENT_BINARY_DIR}/mir_agent_test --gtest_filter=*-*requires_mir)
+  add_test(click_desktop_entry_app_name_resolver ${CMAKE_CURRENT_BINARY_DIR}/click_desktop_entry_app_name_resolver)
 
   install(
     TARGETS mir_agent_test

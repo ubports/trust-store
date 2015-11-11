@@ -296,7 +296,7 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
         }
     };
 
-    mir::AppNameResolver::Ptr anr{new mir::ClickDesktopAppNameResolver{}};
+    mir::AppNameResolver::Ptr anr{new mir::ClickDesktopEntryAppNameResolver{}};
 
     mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
     return mir::Agent::Ptr{new mir::Agent{config}};
