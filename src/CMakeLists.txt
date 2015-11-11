@@ -18,16 +18,20 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Qml REQUIRED)
 find_package(Qt5Quick REQUIRED)
 
+pkg_check_modules(CLICK click-0.4 REQUIRED)
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
+pkg_check_modules(GLIB glib-2.0 REQUIRED)
 pkg_check_modules(LIBAPPARMOR libapparmor REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(
+  ${CLICK_INCLUDE_DIRS}
   ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
   ${LIBAPPARMOR_INCLUDE_DIRS}
   ${SQLITE3_INCLUDE_DIRS}
 )
@@ -70,6 +74,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     # to prompt the user for trusting an application to access a trusted
     # system service.
     core/trust/mir/agent.cpp
+    core/trust/mir/click_desktop_entry_app_name_resolver.cpp
   )
 
   # Make sure Qt does not inject evil macros like 'signals' and 'slots'.
@@ -182,9 +187,11 @@ target_link_libraries(
   dbus-cpp
 
   ${Boost_LIBRARIES}
+  ${CLICK_LDFLAGS}
   ${DBUS_LIBRARIES}
   ${GFLAGS_LDFLAGS}
   ${GLOG_LDFLAGS}
+  ${GLIB_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}
