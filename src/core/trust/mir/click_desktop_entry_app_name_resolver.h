@@ -35,17 +35,12 @@ class CORE_TRUST_DLL_PUBLIC ClickDesktopEntryAppNameResolver : public AppNameRes
 {
 public:
     // ClickDesktopEntryAppNameResolver sets up an instance with default dbs.
-    // Additional dbs (mainly for testing purposes) can be injected and will be considered
-    // when resolving app ids to localized app names.
-    ClickDesktopEntryAppNameResolver(const std::vector<std::string>& additional_dbs = {});
+    ClickDesktopEntryAppNameResolver();
 
     // resolve queries the click index and an apps desktop file entry for 
     // obtaining a localized application name. Throws std::runtime_error in 
     // case of issues.
     std::string resolve(const std::string& app_id) override;
-
-protected:
-    std::vector<std::string> additional_dbs;
 };
 }
 }

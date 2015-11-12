@@ -18,7 +18,6 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Qml REQUIRED)
 find_package(Qt5Quick REQUIRED)
 
-pkg_check_modules(CLICK click-0.4 REQUIRED)
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
 pkg_check_modules(GLIB glib-2.0 REQUIRED)
@@ -29,7 +28,6 @@ pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 include_directories(
-  ${CLICK_INCLUDE_DIRS}
   ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
   ${GLIB_INCLUDE_DIRS}
@@ -189,7 +187,6 @@ target_link_libraries(
   dbus-cpp
 
   ${Boost_LIBRARIES}
-  ${CLICK_LDFLAGS}
   ${DBUS_LIBRARIES}
   ${GFLAGS_LDFLAGS}
   ${GLOG_LDFLAGS}

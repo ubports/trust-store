@@ -18,19 +18,77 @@
 
 #include <core/trust/mir/click_desktop_entry_app_name_resolver.h>
 
-#include <click.h>
 #include <glib.h>
 
+#include <core/posix/this_process.h>
+
+#include <boost/algorithm/string.hpp>
+#include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 
 #include <memory>
 #include <regex>
+#include <string>
 #include <stdexcept>
+#include <vector>
 
+namespace env = core::posix::this_process::env;
+namespace fs = boost::filesystem;
 namespace mir = core::trust::mir;
 
 namespace
 {
+boost::filesystem::path xdg_data_home()
+{
+    fs::path p{env::get("XDG_DATA_HOME")};
+    if (fs::is_directory(p))
+        return p;
+    return fs::path(env::get_or_throw("HOME")) / ".local" / "share";
+}
+
+std::vector<fs::path> xdg_data_dirs()
+{
+    std::vector<std::string> tokens;
+    auto dirs = env::get("XDG_DATA_DIRS", "/usr/local/share/:/usr/share/");
+    tokens = boost::split(tokens, dirs, boost::is_any_of(":"));
+
+    std::vector<fs::path> result;
+    for (const auto& token : tokens)
+    {
+        fs::path p(token);
+        if (fs::is_directory(p))
+            result.push_back(p);
+    }
+
+    return result;
+}
+
+boost::filesystem::path resolve_desktop_entry_or_throw(const std::string& app_id)
+{
+    boost::format pattern("%1%/applications/%2%.desktop");
+    fs::path p{(pattern % xdg_data_home().string() % app_id).str()};
+    if (fs::is_regular_file(p))
+        return p;
+    
+    fs::path applications{xdg_data_home() / "applications"};
+    fs::directory_iterator it(applications), itE;
+    while (it != itE)
+    {
+        if (it->path().filename().string().find(app_id) == 0)
+            return it->path();
+        ++it;
+    }
+    
+    for (auto dir : xdg_data_dirs())
+    {
+        fs::path p{(pattern % dir.string() % app_id).str()};
+        if (fs::is_regular_file(p))
+            return p;
+    }
+
+    throw std::runtime_error{"Could not resolve desktop entry for " + app_id};
+}
+
 // Wrap up a GError with an RAII approach, easing
 // cleanup if we throw an exception.
 struct Error
@@ -41,12 +99,12 @@ struct Error
     GError* error = nullptr;
 };
 
-std::string name_from_desktop_entry_or_throw(const std::string& fn)
+std::string name_from_desktop_entry_or_throw(const fs::path& fn)
 {
     Error g;
     std::shared_ptr<GKeyFile> key_file{g_key_file_new(), [](GKeyFile* file) { if (file) g_key_file_free(file); }};
 
-    if (not g_key_file_load_from_file(key_file.get(), fn.c_str(), G_KEY_FILE_NONE, &g.error)) throw std::runtime_error
+    if (not g_key_file_load_from_file(key_file.get(), fn.string().c_str(), G_KEY_FILE_NONE, &g.error)) throw std::runtime_error
     {
         "Failed to load desktop entry [" + std::string(g.error->message) + "]"
     };
@@ -62,61 +120,11 @@ std::string name_from_desktop_entry_or_throw(const std::string& fn)
 }
 }
 
-mir::ClickDesktopEntryAppNameResolver::ClickDesktopEntryAppNameResolver(const std::vector<std::string>& dbs)
-    : additional_dbs{dbs}
+mir::ClickDesktopEntryAppNameResolver::ClickDesktopEntryAppNameResolver()
 {
 }
 
 std::string mir::ClickDesktopEntryAppNameResolver::resolve(const std::string& app_id)
 {
-    // We translate to human readable strings here, and do it a non-translateable way first
-    // We post-process the application id and try to extract the unversioned package name.
-    // Please see https://wiki.ubuntu.com/AppStore/Interfaces/ApplicationId.
-    static const std::regex regex_full_app_id{"(.*)_(.*)_(.*)"};
-    static constexpr std::size_t index_pkg{1};
-    static constexpr std::size_t index_app{2};
-    static constexpr std::size_t index_version{3};
-
-    std::smatch match;
-    if (not std::regex_match(app_id, match, regex_full_app_id)) throw std::runtime_error
-    {
-        "Failed to parse application id " + app_id
-    };
-
-    std::shared_ptr<ClickDB> click_db{click_db_new(), [](ClickDB* db) { if (db) g_object_unref(db); }};
-
-    if (not click_db) throw std::runtime_error
-    {
-        "Failed to load click db"
-    };
-
-    for (const auto& db : additional_dbs)
-    {
-        click_db_add(click_db.get(), db.c_str());
-    }
-
-    Error g;
-
-    std::string path = click_db_get_path(click_db.get(), match.str(index_pkg).c_str(), match.str(index_version).c_str(), &g.error);
-
-    if (g.error) throw std::runtime_error
-    {
-        "Failed to query click db [" + std::string(g.error->message) + "]"
-    };
-
-    g.clear();
-
-    boost::format desktop_entry_pattern_default("%1%/%2%.desktop");
-    boost::format desktop_entry_pattern_alt("%1%/share/applications/%2%.desktop");
-
-    desktop_entry_pattern_default = desktop_entry_pattern_default % path % match.str(index_app);
-    desktop_entry_pattern_alt = desktop_entry_pattern_alt % path % match.str(index_app);
-
-    try
-    {
-        return name_from_desktop_entry_or_throw(desktop_entry_pattern_default.str());
-    } catch(const std::runtime_error& e)
-    {
-        return name_from_desktop_entry_or_throw(desktop_entry_pattern_alt.str());
-    }
+    return name_from_desktop_entry_or_throw(resolve_desktop_entry_or_throw(app_id));
 }
