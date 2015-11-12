@@ -243,8 +243,8 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
   )
 
   add_executable(
-    click_desktop_entry_app_name_resolver
-    click_desktop_entry_app_name_resolver.cpp
+    click_desktop_entry_app_name_resolver_test
+    click_desktop_entry_app_name_resolver_test.cpp
   )
 
   target_link_libraries(
@@ -261,7 +261,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
   )
 
   target_link_libraries(
-    click_desktop_entry_app_name_resolver
+    click_desktop_entry_app_name_resolver_test
 
     trust-store
 
@@ -275,7 +275,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
 
 
   add_test(mir_agent_test ${CMAKE_CURRENT_BINARY_DIR}/mir_agent_test --gtest_filter=*-*requires_mir)
-  add_test(click_desktop_entry_app_name_resolver ${CMAKE_CURRENT_BINARY_DIR}/click_desktop_entry_app_name_resolver)
+  add_test(click_desktop_entry_app_name_resolver_test ${CMAKE_CURRENT_BINARY_DIR}/click_desktop_entry_app_name_resolver_test)
 
   install(
     TARGETS mir_agent_test
