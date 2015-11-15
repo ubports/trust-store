@@ -246,6 +246,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     mir_agent_test
 
     trust-store
+    xdg
 
     gmock
 

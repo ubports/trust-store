@@ -368,6 +368,8 @@ TEST(TrustPrompt, aborts_for_missing_title)
 #include <core/trust/mir/config.h>
 #include <core/trust/mir/prompt_main.h>
 
+#include <xdg.h>
+
 namespace
 {
 std::map<std::string, std::string> a_copy_of_the_env()
@@ -383,15 +385,25 @@ std::map<std::string, std::string> a_copy_of_the_env()
 std::string mir_socket()
 {
     // We either take the XDG_RUNTIME_DIR or fall back to /tmp if XDG_RUNTIME_DIR is not set.
-    std::string dir = core::posix::this_process::env::get("XDG_RUNTIME_DIR", "/tmp");
-    return dir + "/mir_socket";
+    try
+    {
+        return xdg::runtime().dir().string() + "/mir_socket";
+    } catch(...)
+    {
+        return "/tmp/mir_socket";
+    }
 }
 
 std::string trusted_mir_socket()
 {
     // We either take the XDG_RUNTIME_DIR or fall back to /tmp if XDG_RUNTIME_DIR is not set.
-    std::string dir = core::posix::this_process::env::get("XDG_RUNTIME_DIR", "/tmp");
-    return dir + "/mir_socket_trusted";
+    try
+    {
+        return xdg::runtime().dir().string() + "/mir_socket_trusted";
+    } catch(...)
+    {
+        return "/tmp/mir_socket_trusted";
+    }
 }
 }
 
