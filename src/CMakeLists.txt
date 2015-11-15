@@ -185,6 +185,7 @@ target_link_libraries(
   trust-store
 
   dbus-cpp
+  xdg
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}

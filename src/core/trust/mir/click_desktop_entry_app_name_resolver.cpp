@@ -19,6 +19,7 @@
 #include <core/trust/mir/click_desktop_entry_app_name_resolver.h>
 
 #include <glib.h>
+#include <xdg.h>
 
 #include <core/posix/this_process.h>
 
@@ -38,39 +39,14 @@ namespace mir = core::trust::mir;
 
 namespace
 {
-boost::filesystem::path xdg_data_home()
-{
-    fs::path p{env::get("XDG_DATA_HOME")};
-    if (fs::is_directory(p))
-        return p;
-    return fs::path(env::get_or_throw("HOME")) / ".local" / "share";
-}
-
-std::vector<fs::path> xdg_data_dirs()
-{
-    std::vector<std::string> tokens;
-    auto dirs = env::get("XDG_DATA_DIRS", "/usr/local/share/:/usr/share/");
-    tokens = boost::split(tokens, dirs, boost::is_any_of(":"));
-
-    std::vector<fs::path> result;
-    for (const auto& token : tokens)
-    {
-        fs::path p(token);
-        if (fs::is_directory(p))
-            result.push_back(p);
-    }
-
-    return result;
-}
-
 boost::filesystem::path resolve_desktop_entry_or_throw(const std::string& app_id)
 {
     boost::format pattern("%1%/applications/%2%.desktop");
-    fs::path p{(pattern % xdg_data_home().string() % app_id).str()};
+    fs::path p{(pattern % xdg::data().home().string() % app_id).str()};
     if (fs::is_regular_file(p))
         return p;
     
-    fs::path applications{xdg_data_home() / "applications"};
+    fs::path applications{xdg::data().home() / "applications"};
     fs::directory_iterator it(applications), itE;
     while (it != itE)
     {
@@ -79,7 +55,7 @@ boost::filesystem::path resolve_desktop_entry_or_throw(const std::string& app_id
         ++it;
     }
     
-    for (auto dir : xdg_data_dirs())
+    for (auto dir : xdg::data().dirs())
     {
         fs::path p{(pattern % dir.string() % app_id).str()};
         if (fs::is_regular_file(p))

@@ -21,6 +21,7 @@
 #include <core/posix/this_process.h>
 
 #include <sqlite3.h>
+#include <xdg.h>
 
 #include <cstring>
 #include <iostream>
@@ -32,16 +33,9 @@
 
 namespace core
 {
-std::string home()
-{
-    return core::posix::this_process::env::get_or_throw("HOME");
-}
-
 std::string runtime_persistent_data_dir()
 {
-    return core::posix::this_process::env::get(
-                "XDG_DATA_HOME",
-                home() + "/.local/share");
+    return xdg::data().home().string();
 }
 
 struct Directory

@@ -30,6 +30,8 @@ ENDIF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 find_package(PkgConfig)
 find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
 
+add_subdirectory(3rd_party/xdg)
+
 option(
   TRUST_STORE_MIR_AGENT_ENABLED
   "Enables a local agent implementation relying on Mir's trusted prompting"
@@ -54,6 +56,7 @@ include(CTest)
 
 include_directories(
   include/
+  3rd_party/xdg
 
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
