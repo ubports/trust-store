@@ -18,6 +18,9 @@
 
 #include <core/trust/store.h>
 
+#include <xdg.h>
+
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <thread>
@@ -395,4 +398,50 @@ TEST(TrustStore, erasing_requests_empties_store)
     auto query = store->query();
     query->execute();
     EXPECT_EQ(core::trust::Store::Query::Status::eor, query->status());
+}
+
+#include <core/trust/impl/sqlite3/store.h>
+namespace
+{
+struct MockXdgRuntime : public xdg::Runtime
+{
+    MOCK_CONST_METHOD0(dir, boost::filesystem::path());
+};
+
+struct MockXdgBaseDirSpec : public xdg::BaseDirSpecification
+{
+    const xdg::Data& data() const override
+    {
+        return data_;
+    }
+
+    const xdg::Config& config() const override
+    {
+        return config_;
+    }
+
+    const xdg::Cache& cache() const override
+    {
+        return cache_;
+    }
+
+    const xdg::Runtime& runtime() const override
+    {
+        return runtime_;
+    }
+
+    xdg::Data data_;
+    xdg::Config config_;
+    xdg::Cache cache_;
+    MockXdgRuntime runtime_;
+};
+}
+
+TEST(SqliteTrustStore, queries_xdg_runtime_dir)
+{
+    using namespace ::testing;
+
+    MockXdgBaseDirSpec spec;
+    EXPECT_CALL(spec.runtime_, dir()).Times(1).WillRepeatedly(Return(boost::filesystem::path{"/tmp"}));
+    core::trust::impl::sqlite::create_for_service(service_name, spec);
 }

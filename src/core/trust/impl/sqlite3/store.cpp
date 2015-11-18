@@ -17,6 +17,7 @@
  */
 
 #include <core/trust/store.h>
+#include <core/trust/impl/sqlite3/store.h>
 
 #include <core/posix/this_process.h>
 
@@ -33,24 +34,6 @@
 
 namespace core
 {
-std::string runtime_persistent_data_dir()
-{
-    return xdg::data().home().string();
-}
-
-struct Directory
-{
-    Directory(const std::string& name)
-    {
-        // Default permissions for directory creation.
-        mode_t default_mode = 0755;
-        // This is only a helper and we are consciously ignoring
-        // errors. We will fail later on when trying to opening the
-        // database, anyway.
-        mkdir(name.c_str(), default_mode);
-    }
-};
-
 namespace trust
 {
 namespace impl
@@ -327,7 +310,7 @@ struct Database
             throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error());
 
         return TaggedPreparedStatement<Statement>(this, stmt);
-    }    
+    }
 
     std::string error() const
     {
@@ -681,7 +664,7 @@ struct Store
         } d;
     };
 
-    Store(const std::string &service_name);
+    Store(const std::string &service_name, xdg::BaseDirSpecification& spec);
     ~Store();
 
     // Handles upgrades to the underlying database if the schema changes.
@@ -698,7 +681,6 @@ struct Store
     std::shared_ptr<core::trust::Store::Query> query();
 
     std::mutex guard;
-    core::Directory runtime_peristent_data_directory;
     Database db;
     TaggedPreparedStatement<Statements::CreateDataTableIfNotExists> create_data_table_statement;
 
@@ -713,9 +695,8 @@ struct Store
 namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
-sqlite::Store::Store(const std::string& service_name)
-    : runtime_peristent_data_directory{core::runtime_persistent_data_dir() + "/" + service_name},
-      db{core::runtime_persistent_data_dir() + "/" + service_name + "/trust.db"},
+sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification& spec)
+    : db{(spec.runtime().dir() / service_name / "trust.db").string()},
       create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
     upgrade(db.get_version());
@@ -777,10 +758,15 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
     return std::shared_ptr<trust::Store::Query>{new sqlite::Store::Query{shared_from_this()}};
 }
 
-std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
+std::shared_ptr<core::trust::Store> core::trust::impl::sqlite::create_for_service(const std::string& name, xdg::BaseDirSpecification& spec)
 {
-    if (service_name.empty())
+    if (name.empty())
         throw core::trust::Errors::ServiceNameMustNotBeEmpty();
 
-    return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
+    return std::make_shared<sqlite::Store>(name, spec);
+}
+
+std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
+{
+    return core::trust::impl::sqlite::create_for_service(service_name, *xdg::BaseDirSpecification::create());
 }
