@@ -403,9 +403,10 @@ TEST(TrustStore, erasing_requests_empties_store)
 #include <core/trust/impl/sqlite3/store.h>
 namespace
 {
-struct MockXdgRuntime : public xdg::Runtime
+struct MockXdgData: public xdg::Data
 {
-    MOCK_CONST_METHOD0(dir, boost::filesystem::path());
+    MOCK_CONST_METHOD0(home, boost::filesystem::path());
+    MOCK_CONST_METHOD0(dirs, std::vector<boost::filesystem::path>());
 };
 
 struct MockXdgBaseDirSpec : public xdg::BaseDirSpecification
@@ -430,18 +431,18 @@ struct MockXdgBaseDirSpec : public xdg::BaseDirSpecification
         return runtime_;
     }
 
-    xdg::Data data_;
+    MockXdgData data_;
     xdg::Config config_;
     xdg::Cache cache_;
-    MockXdgRuntime runtime_;
+    xdg::Runtime runtime_;
 };
 }
 
-TEST(SqliteTrustStore, queries_xdg_runtime_dir)
+TEST(SqliteTrustStore, queries_xdg_data_home)
 {
     using namespace ::testing;
 
     MockXdgBaseDirSpec spec;
-    EXPECT_CALL(spec.runtime_, dir()).Times(1).WillRepeatedly(Return(boost::filesystem::path{"/tmp"}));
+    EXPECT_CALL(spec.data_, home()).Times(1).WillRepeatedly(Return(boost::filesystem::path{"/tmp"}));
     core::trust::impl::sqlite::create_for_service(service_name, spec);
 }

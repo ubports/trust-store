@@ -696,7 +696,7 @@ namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
 sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification& spec)
-    : db{(spec.runtime().dir() / service_name / "trust.db").string()},
+    : db{(spec.data().home() / service_name / "trust.db").string()},
       create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
     upgrade(db.get_version());
