@@ -32,6 +32,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+namespace fs = boost::filesystem;
+
 namespace core
 {
 namespace trust
@@ -40,6 +42,16 @@ namespace impl
 {
 namespace sqlite
 {
+// ensure_dirs_or_throw ensures that the directory p exists
+// with the correct permissions, i.e., 0700.
+fs::path ensure_dirs_or_throw(const fs::path& p)
+{
+    fs::create_directories(p);
+    fs::permissions(p, fs::perms::owner_all);
+
+    return p;
+}
+
 std::pair<int, bool> is_error(int result)
 {
     switch(result)
@@ -696,7 +708,7 @@ namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
 sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification& spec)
-    : db{(spec.data().home() / service_name / "trust.db").string()},
+    : db{(ensure_dirs_or_throw(spec.data().home() / service_name) / "trust.db").string()},
       create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
     upgrade(db.get_version());
