@@ -43,6 +43,9 @@ set(
   core/trust/app_id_formatting_trust_agent.h
   core/trust/app_id_formatting_trust_agent.cpp
 
+  # An agent implementation preventing privilege escalation attacks.
+  core/trust/privilege_escalation_prevention_agent.cpp
+
   # An agent-implementation that allows for selectively whitelisting app ids
   core/trust/white_listing_agent.cpp
   # An agent-implementation using a store instance to cache user replies.
