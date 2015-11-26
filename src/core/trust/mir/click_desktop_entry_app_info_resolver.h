@@ -31,16 +31,16 @@ namespace mir
 // packages to resolve an app's installation folder in the local filesystem.
 // The directory is searched for a .desktop file, that is then loaded and queried 
 // for the app's localized name.
-class CORE_TRUST_DLL_PUBLIC ClickDesktopEntryAppNameResolver : public AppNameResolver
+class CORE_TRUST_DLL_PUBLIC ClickDesktopEntryAppInfoResolver : public AppInfoResolver
 {
 public:
     // ClickDesktopEntryAppNameResolver sets up an instance with default dbs.
-    ClickDesktopEntryAppNameResolver();
+    ClickDesktopEntryAppInfoResolver();
 
     // resolve queries the click index and an apps desktop file entry for 
     // obtaining a localized application name. Throws std::runtime_error in 
     // case of issues.
-    std::string resolve(const std::string& app_id) override;
+    AppInfo resolve(const std::string& app_id) override;
 };
 }
 }

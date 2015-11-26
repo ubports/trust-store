@@ -27,6 +27,8 @@
 #include <mirclient/mir_toolkit/mir_client_library.h>
 #include <mirclient/mir_toolkit/mir_prompt_session.h>
 
+#include <boost/filesystem.hpp>
+
 #include <condition_variable>
 #include <functional>
 #include <mutex>
@@ -37,6 +39,17 @@ namespace trust
 {
 namespace mir
 {
+// Info bundles information about an application.
+struct AppInfo
+{
+    std::string icon; // The icon of the application.
+    std::string name; // The human-readable, localized name of the application.
+    std::string id; // The unique id of the application.
+};
+
+// operator== returns true iff lhs is exactly equal to rhs.
+bool operator==(const AppInfo& lhs, const AppInfo& rhs);
+
 // We wrap the Mir prompt session API into a struct to
 // ease with testing and mocking.
 class CORE_TRUST_DLL_PUBLIC PromptSessionVirtualTable
@@ -129,8 +142,8 @@ struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
         // The pre-authenticated fd that the helper
         // should use for connecting to Mir.
         int fd;        
-        // The application id of the requesting app.
-        std::string application_id;
+        // Application-specific information goes here.
+        AppInfo app_info;
         // The extended description that should be presented to the user.
         std::string description;
     };
@@ -147,14 +160,14 @@ struct CORE_TRUST_DLL_PUBLIC PromptProviderHelper
 };
 
 // An AppNameResolver resolves an application id to a localized application name.
-struct AppNameResolver
+struct AppInfoResolver
 {
     // Save us some typing.
-    typedef std::shared_ptr<AppNameResolver> Ptr;
+    typedef std::shared_ptr<AppInfoResolver> Ptr;
 
-    virtual ~AppNameResolver() = default;
+    virtual ~AppInfoResolver() = default;
     // resolve maps app_id to a localized application name.
-    virtual std::string resolve(const std::string& app_id) = 0;
+    virtual AppInfo resolve(const std::string& app_id) = 0;
 };
 
 // Implements the trust::Agent interface and dispatches calls to a helper
@@ -176,7 +189,7 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
         // A translator function for mapping child process exit states to trust::Request answers.
         std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator;
         // AppNameResolver used by the agent to map incoming request app ids to application names.
-        AppNameResolver::Ptr app_name_resolver;
+        AppInfoResolver::Ptr app_info_resolver;
     };
 
     // Helper struct for injecting state into on_trust_changed_state_state callbacks.

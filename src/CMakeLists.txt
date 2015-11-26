@@ -74,7 +74,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     # to prompt the user for trusting an application to access a trusted
     # system service.
     core/trust/mir/agent.cpp
-    core/trust/mir/click_desktop_entry_app_name_resolver.cpp
+    core/trust/mir/click_desktop_entry_app_info_resolver.cpp
   )
 
   # Make sure Qt does not inject evil macros like 'signals' and 'slots'.

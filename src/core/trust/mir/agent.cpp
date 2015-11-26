@@ -33,6 +33,11 @@
 
 namespace mir = core::trust::mir;
 
+bool mir::operator==(const mir::AppInfo& lhs, const mir::AppInfo& rhs)
+{
+    return lhs.icon == rhs.icon && lhs.id == rhs.id && lhs.name == rhs.name;
+}
+
 // Invoked whenever a request for creation of pre-authenticated fds succeeds.
 void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*prompt_session*/, size_t count, int const* fds, void* context)
 {
@@ -134,13 +139,15 @@ core::posix::ChildProcess mir::PromptProviderHelper::exec_prompt_provider_with_a
 {
     static auto child_setup = []() {};
 
-    auto app_name = args.application_id;
-    auto description = (boost::format(i18n::tr(args.description, i18n::service_text_domain())) % app_name).str();
+    auto app_name = args.app_info.name;
+    auto description = i18n::tr(args.description, i18n::service_text_domain());
 
     std::vector<std::string> argv
     {
         "--" + std::string{core::trust::mir::cli::option_server_socket}, "fd://" + std::to_string(args.fd),
-        "--" + std::string{core::trust::mir::cli::option_title}, app_name,
+        "--" + std::string{core::trust::mir::cli::option_icon}, args.app_info.icon,
+        "--" + std::string{core::trust::mir::cli::option_name}, args.app_info.name,
+        "--" + std::string{core::trust::mir::cli::option_id}, args.app_info.id,
         "--" + std::string{core::trust::mir::cli::option_description}, description
     };
 
@@ -250,7 +257,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     mir::PromptProviderHelper::InvocationArguments args
     {
         fd,
-        config.app_name_resolver->resolve(parameters.application.id),
+        config.app_info_resolver->resolve(parameters.application.id),
         parameters.description
     };
 
@@ -264,11 +271,11 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
 
 bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, const mir::PromptProviderHelper::InvocationArguments& rhs)
 {
-    return std::tie(lhs.application_id, lhs.description, lhs.fd) == std::tie(rhs.application_id, rhs.description, rhs.fd);
+    return std::tie(lhs.app_info, lhs.description, lhs.fd) == std::tie(rhs.app_info, rhs.description, rhs.fd);
 }
 
 #include "config.h"
-#include "click_desktop_entry_app_name_resolver.h"
+#include "click_desktop_entry_app_info_resolver.h"
 
 MirConnection* mir::connect(const std::string& endpoint, const std::string& name)
 {
@@ -296,7 +303,7 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
         }
     };
 
-    mir::AppNameResolver::Ptr anr{new mir::ClickDesktopEntryAppNameResolver{}};
+    mir::AppInfoResolver::Ptr anr{new mir::ClickDesktopEntryAppInfoResolver{}};
 
     mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
     return mir::Agent::Ptr{new mir::Agent{config}};

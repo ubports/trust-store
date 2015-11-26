@@ -16,7 +16,7 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#include <core/trust/mir/click_desktop_entry_app_name_resolver.h>
+#include <core/trust/mir/click_desktop_entry_app_info_resolver.h>
 
 #include <glib.h>
 #include <xdg.h>
@@ -39,10 +39,9 @@ namespace mir = core::trust::mir;
 
 namespace
 {
-boost::filesystem::path resolve_desktop_entry_or_throw(const std::string& app_id)
+fs::path resolve_desktop_entry_or_throw(const std::string& app_id)
 {
-    boost::format pattern("%1%/applications/%2%.desktop");
-    fs::path p{(pattern % xdg::data().home().string() % app_id).str()};
+    auto p = xdg::data().home() / "applications" / (app_id + ".desktop");
     if (fs::is_regular_file(p))
         return p;
     
@@ -57,7 +56,7 @@ boost::filesystem::path resolve_desktop_entry_or_throw(const std::string& app_id
     
     for (auto dir : xdg::data().dirs())
     {
-        fs::path p{(pattern % dir.string() % app_id).str()};
+        auto p = dir / "applications" / (app_id + ".desktop");
         if (fs::is_regular_file(p))
             return p;
     }
@@ -94,13 +93,47 @@ std::string name_from_desktop_entry_or_throw(const fs::path& fn)
 
     return app_name;
 }
+
+std::string icon_from_desktop_entry_or_throw(const fs::path& fn)
+{
+    Error g;
+    std::shared_ptr<GKeyFile> key_file{g_key_file_new(), [](GKeyFile* file) { if (file) g_key_file_free(file); }};
+
+    if (not g_key_file_load_from_file(key_file.get(), fn.string().c_str(), G_KEY_FILE_NONE, &g.error)) throw std::runtime_error
+    {
+        "Failed to load desktop entry [" + std::string(g.error->message) + "]"
+    };
+
+    auto app_icon = g_key_file_get_locale_string(key_file.get(), G_KEY_FILE_DESKTOP_GROUP, G_KEY_FILE_DESKTOP_KEY_ICON, nullptr, &g.error);
+
+    if (g.error) throw std::runtime_error
+    {
+        "Failed to query icon [" + std::string(g.error->message) + "]"
+    };
+
+    // We expect an absolute path to a regular file representing the icon. Ideally, we should
+    // also run further checks like the file not being part of another app for example.
+    fs::path p{app_icon};
+    if (not p.is_absolute() || not fs::is_regular_file(fs::status(p))) throw std::runtime_error
+    {
+        "Icon path is either not absolute or not pointing to a regular file [" + std::string{app_icon} + "]"
+    };
+
+    return app_icon;
+}
 }
 
-mir::ClickDesktopEntryAppNameResolver::ClickDesktopEntryAppNameResolver()
+mir::ClickDesktopEntryAppInfoResolver::ClickDesktopEntryAppInfoResolver()
 {
 }
 
-std::string mir::ClickDesktopEntryAppNameResolver::resolve(const std::string& app_id)
+mir::AppInfo mir::ClickDesktopEntryAppInfoResolver::resolve(const std::string& app_id)
 {
-    return name_from_desktop_entry_or_throw(resolve_desktop_entry_or_throw(app_id));
+    auto de = resolve_desktop_entry_or_throw(app_id);
+    return mir::AppInfo
+    {
+        icon_from_desktop_entry_or_throw(de),
+        name_from_desktop_entry_or_throw(de),
+        app_id
+    };
 }

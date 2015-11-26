@@ -16,45 +16,60 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
-#include <core/trust/mir/click_desktop_entry_app_name_resolver.h>
+#include <core/trust/mir/click_desktop_entry_app_info_resolver.h>
 #include <core/posix/this_process.h>
 #include "test_data.h"
 
 #include <gtest/gtest.h>
 
+#include <fstream>
+
 namespace env = core::posix::this_process::env;
 namespace mir = core::trust::mir;
 
-TEST(ClickDesktopEntryAppNameResolver, throws_for_invalid_app_id)
+namespace
 {
-    mir::ClickDesktopEntryAppNameResolver resolver;
-    EXPECT_THROW(resolver.resolve(""), std::runtime_error);
+bool ensure_icon_file()
+{
+    std::ofstream out{"/tmp/test.icon"};
+    out << "test.icon";
+    return out.good();
+}
+}
+
+TEST(ClickDesktopEntryAppInfoResolver, throws_for_invalid_app_id)
+{
+    ASSERT_TRUE(ensure_icon_file());
+    mir::ClickDesktopEntryAppInfoResolver resolver;
     EXPECT_THROW(resolver.resolve("something:not:right"), std::runtime_error);
 }
 
-TEST(ClickDesktopEntryAppNameResolver, resolves_existing_desktop_entry_from_xdg_data_home)
+TEST(ClickDesktopEntryAppInfoResolver, resolves_existing_desktop_entry_from_xdg_data_home)
 {
+    ASSERT_TRUE(ensure_icon_file());
     env::unset_or_throw("XDG_DATA_HOME");
     env::set_or_throw("XDG_DATA_HOME", core::trust::testing::current_source_dir + std::string("/share"));
-    mir::ClickDesktopEntryAppNameResolver resolver;
+    mir::ClickDesktopEntryAppInfoResolver resolver;
     EXPECT_NO_THROW(resolver.resolve("valid.pkg_app_0.0.0"));
 }
 
-TEST(ClickDesktopEntryAppNameResolver, robustly_resolves_existing_desktop_entry_from_xdg_data_home)
+TEST(ClickDesktopEntryAppInfoResolver, robustly_resolves_existing_desktop_entry_from_xdg_data_home)
 {
+    ASSERT_TRUE(ensure_icon_file());
     env::unset_or_throw("XDG_DATA_HOME");
     env::set_or_throw("XDG_DATA_HOME", core::trust::testing::current_source_dir + std::string("/share"));
 
-    mir::ClickDesktopEntryAppNameResolver resolver;
+    mir::ClickDesktopEntryAppInfoResolver resolver;
     EXPECT_NO_THROW(resolver.resolve("valid.pkg_app"));
 }
 
-TEST(ClickDesktopEntryAppNameResolver, resolves_existing_desktop_entry_from_xdg_data_dirs)
+TEST(ClickDesktopEntryAppInfoResolver, resolves_existing_desktop_entry_from_xdg_data_dirs)
 {
+    ASSERT_TRUE(ensure_icon_file());
     env::unset_or_throw("XDG_DATA_HOME"); env::unset_or_throw("XDG_DATA_DIRS");
     env::set_or_throw("XDG_DATA_HOME", core::trust::testing::current_source_dir + std::string("/empty"));
     env::set_or_throw("XDG_DATA_DIRS", core::trust::testing::current_source_dir + std::string("/share"));
 
-    mir::ClickDesktopEntryAppNameResolver resolver;
+    mir::ClickDesktopEntryAppInfoResolver resolver;
     resolver.resolve("valid.pkg_app_0.0.0");
 }
