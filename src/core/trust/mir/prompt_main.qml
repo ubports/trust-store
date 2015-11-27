@@ -33,13 +33,19 @@ Item {
             id: dialogue
             Column {
                 spacing: units.gu(0.5)
-                Image {
-                    id: icon
+                UbuntuShape {
                     anchors.horizontalCenter: parent.horizontalCenter
-                    source: appIcon
-                    width: units.gu(8)
-                    height: width
-                    smooth: true
+                    id: iconShape
+                    radius: "medium"
+                    aspect: UbuntuShape.Flat
+                    anchors.margins: units.gu(1)
+                    sourceFillMode: UbuntuShape.PreserveAspectCrop
+                    source: Image {
+                        id: icon
+                        sourceSize.width: iconShape.width
+                        sourceSize.height: iconShape.height
+                        source: appIcon
+                    }
                 }
                 Label {
                     anchors.horizontalCenter: parent.horizontalCenter
