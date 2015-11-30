@@ -37,7 +37,7 @@ Item {
                     anchors.horizontalCenter: parent.horizontalCenter
                     id: iconShape
                     radius: "medium"
-                    aspect: UbuntuShape.Flat
+                    aspect: UbuntuShape.DropShadow
                     anchors.margins: units.gu(1)
                     sourceFillMode: UbuntuShape.PreserveAspectCrop
                     source: Image {
