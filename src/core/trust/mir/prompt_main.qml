@@ -80,8 +80,8 @@ Item {
                 onClicked: quit(0)
             }
             Button {
-                text: i18n.tr("Don't Allow")
-                color: UbuntuColors.orange
+                text: i18n.tr("Don’t Allow")
+                color: UbuntuColors.lightGrey
                 onClicked: quit(1)
             }           
         }
