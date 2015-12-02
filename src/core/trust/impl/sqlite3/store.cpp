@@ -44,10 +44,16 @@ namespace sqlite
 {
 // ensure_dirs_or_throw ensures that the directory p exists
 // with the correct permissions, i.e., 0700.
-fs::path ensure_dirs_or_throw(const fs::path& p)
+fs::path ensure_dir_or_throw(const fs::path& p)
 {
-    fs::create_directories(p);
-    fs::permissions(p, fs::perms::owner_all);
+    // Ideally, we would use fs::create_directories but
+    //   https://svn.boost.org/trac/boost/ticket/11179
+    // Prevents us from doing so.
+    static const mode_t owner_all = S_IRWXU;
+    if (mkdir(p.string().c_str(), owner_all) != 0)
+    {
+        if (errno != EEXIST) throw std::system_error(errno, std::system_category());
+    }
 
     return p;
 }
@@ -708,7 +714,7 @@ namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
 sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification& spec)
-    : db{(ensure_dirs_or_throw(spec.data().home() / service_name) / "trust.db").string()},
+    : db{(ensure_dir_or_throw(spec.data().home() / service_name) / "trust.db").string()},
       create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
     upgrade(db.get_version());
