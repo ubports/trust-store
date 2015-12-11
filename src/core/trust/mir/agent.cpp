@@ -236,13 +236,6 @@ mir::Agent::Agent(
 // From core::trust::Agent:
 core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
-    // We assume that the agent implementation runs under the same user id as
-    // the requesting app to prevent from cross-user attacks.
-    if (core::trust::Uid{::getuid()} != parameters.application.uid) throw std::logic_error
-    {
-        "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
-    };
-
     // We initialize our callback context with an invalid child-process for setup
     // purposes. Later on, once we have acquired a pre-authenticated fd for the
     // prompt provider, we exec the actual provider in a child process and replace the
