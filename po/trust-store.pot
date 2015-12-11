@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: trust-store\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2015-08-20 13:41-0400\n"
+"POT-Creation-Date: 2015-11-27 13:56+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,15 +17,14 @@ msgstr ""
 "Content-Type: text/plain; charset=CHARSET\n"
 "Content-Transfer-Encoding: 8bit\n"
 
-#: /tmp/trust-store-i18n/src/core/trust/daemon.cpp:265
-#, boost-format
-msgid "Application %1% is trying to access"
+#: /home/tvoss/ubuntu/scratch/fix-1504022/src/core/trust/daemon.cpp:265
+msgid "is trying to access"
 msgstr ""
 
-#: /tmp/trust-store-i18n/src/core/trust/mir/prompt_main.qml:42
-msgid "Deny"
-msgstr ""
-
-#: /tmp/trust-store-i18n/src/core/trust/mir/prompt_main.qml:49
+#: /home/tvoss/ubuntu/scratch/fix-1504022/src/core/trust/mir/prompt_main.qml:78
 msgid "Allow"
+msgstr ""
+
+#: /home/tvoss/ubuntu/scratch/fix-1504022/src/core/trust/mir/prompt_main.qml:83
+msgid "Don't Allow"
 msgstr ""
