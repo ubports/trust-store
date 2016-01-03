@@ -797,7 +797,7 @@ struct DBus : public core::dbus::testing::Fixture
     core::dbus::Bus::Ptr session_bus_with_executor()
     {
         auto sb = session_bus();
-        sb->install_executor(core::dbus::asio::make_executor(sb, core::trust::Runtime::instance().io_service));
+        sb->install_executor(core::trust::Runtime::instance().make_executor_for_bus(sb));
         return sb;
     }
 };

@@ -21,6 +21,9 @@
 
 #include <core/posix/signal.h>
 
+#include <core/dbus/bus.h>
+#include <core/dbus/executor.h>
+
 #include <boost/asio.hpp>
 
 #include <memory>
@@ -34,8 +37,9 @@ namespace trust
 // A Runtime maintains a pool of workers enabling
 // implementations to dispatch invocations and have their
 // ready handlers automatically executed.
-struct Runtime
+class Runtime
 {
+public:
     // Do not execute in parallel, serialize
     // accesses.
     static constexpr std::size_t concurrency_hint{2};
@@ -50,10 +54,22 @@ struct Runtime
     // Gracefully shuts down operations.
     ~Runtime() noexcept(true);
 
+
     // run blocks until either stop is called or a
     // signal requesting graceful shutdown is received.
     void run();
 
+    // requests the runtime to shut down, does not block.
+    void stop();
+
+    // Returns a mutable reference to the underlying boost::asio::io_service
+    // powering the runtime's reactor.
+    boost::asio::io_service& service();
+
+    // Creates an executor for a bus instance hooking into this Runtime instance.
+    core::dbus::Executor::Ptr make_executor_for_bus(const core::dbus::Bus::Ptr& bus);
+
+private:
     // We trap sig term to ensure a clean shutdown.
     std::shared_ptr<core::posix::SignalTrap> signal_trap;
 

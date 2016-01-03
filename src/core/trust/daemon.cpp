@@ -110,7 +110,7 @@ namespace
             "Could not create bus for name: " + bus_name
         };
 
-        bus->install_executor(core::dbus::asio::make_executor(bus, core::trust::Runtime::instance().io_service));
+        bus->install_executor(core::trust::Runtime::instance().make_executor_for_bus(bus));
 
         return bus;
     }
@@ -196,7 +196,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                 core::trust::remote::posix::Skeleton::Configuration config
                 {
                     agent,
-                    core::trust::Runtime::instance().io_service,
+                    core::trust::Runtime::instance().service(),
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
@@ -360,7 +360,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core
 
                 core::trust::remote::posix::Stub::Configuration config
                 {
-                    core::trust::Runtime::instance().io_service,
+                    core::trust::Runtime::instance().service(),
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
@@ -450,9 +450,9 @@ namespace
 // A user can feed a request to the stub.
 struct Shell : public std::enable_shared_from_this<Shell>
 {
-    Shell(const std::shared_ptr<core::trust::Agent>& agent)
+    Shell(const std::shared_ptr<core::trust::Agent>& agent, boost::asio::io_service& ios)
         : agent{agent},
-          stdin{core::trust::Runtime::instance().io_service, STDIN_FILENO},
+          stdin{ios, STDIN_FILENO},
           app_id_resolver{core::trust::remote::helpers::aa_get_task_con_app_id_resolver()}
     {
     }
@@ -538,7 +538,7 @@ struct Shell : public std::enable_shared_from_this<Shell>
 core::posix::exit::Status core::trust::Daemon::Stub::main(const core::trust::Daemon::Stub::Configuration& configuration)
 {
     // We setup our minimal shell here.
-    auto shell = std::make_shared<Shell>(configuration.remote.agent);
+    auto shell = std::make_shared<Shell>(configuration.remote.agent, core::trust::Runtime::instance().service());
 
     // We start up our shell
     shell->start();

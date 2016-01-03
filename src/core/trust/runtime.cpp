@@ -18,6 +18,8 @@
 
 #include <core/trust/runtime.h>
 
+#include <core/dbus/asio/executor.h>
+
 #include <iostream>
 #include <stdexcept>
 
@@ -61,7 +63,7 @@ core::trust::Runtime::Runtime()
 
     signal_trap->signal_raised().connect([this](const core::posix::Signal&)
     {
-        signal_trap->stop();
+        stop();
     });
 }
 
@@ -77,4 +79,19 @@ core::trust::Runtime::~Runtime()
 void core::trust::Runtime::run()
 {
     signal_trap->run();
+}
+
+void core::trust::Runtime::stop()
+{
+    signal_trap->stop();
+}
+
+boost::asio::io_service& core::trust::Runtime::service()
+{
+    return io_service;
+}
+
+core::dbus::Executor::Ptr core::trust::Runtime::make_executor_for_bus(const core::dbus::Bus::Ptr& bus)
+{
+    return core::dbus::asio::make_executor(bus, io_service);
 }
