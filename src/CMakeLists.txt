@@ -149,6 +149,9 @@ add_library(
   trust-stored
 
   core/trust/daemon.cpp
+
+  core/trust/runtime.h
+  core/trust/runtime.cpp
 )
 
 add_executable(

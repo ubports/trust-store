@@ -46,6 +46,9 @@ add_executable(
 add_executable(
   remote_agent_test
   remote_agent_test.cpp
+
+  ${CMAKE_SOURCE_DIR}/src/core/trust/runtime.h
+  ${CMAKE_SOURCE_DIR}/src/core/trust/runtime.cpp
 )
 
 add_executable(

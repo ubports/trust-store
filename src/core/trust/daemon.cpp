@@ -22,6 +22,7 @@
 #include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
 #include <core/trust/i18n.h>
+#include <core/trust/runtime.h>
 #include <core/trust/store.h>
 #include <core/trust/white_listing_agent.h>
 
@@ -49,67 +50,6 @@ namespace Options = boost::program_options;
 
 namespace
 {
-    struct Runtime
-    {
-        // Do not execute in parallel, serialize
-        // accesses.
-        static constexpr std::size_t concurrency_hint{2};
-
-        // Our evil singleton pattern. Not bad though, we control the
-        // entire executable and rely on automatic cleanup of static
-        // instances.
-        static Runtime& instance()
-        {
-            static Runtime runtime;
-            return runtime;
-        }
-
-        ~Runtime()
-        {
-            io_service.stop();
-
-            if (worker1.joinable())
-                worker1.join();
-
-            if (worker2.joinable())
-                worker2.join();
-        }
-
-        // We trap sig term to ensure a clean shutdown.
-        std::shared_ptr<core::posix::SignalTrap> signal_trap
-        {
-            core::posix::trap_signals_for_all_subsequent_threads(
-            {
-                core::posix::Signal::sig_term,
-                core::posix::Signal::sig_int
-            })
-        };
-
-        // Our io_service instance exposed to remote agents.
-        boost::asio::io_service io_service
-        {
-            concurrency_hint
-        };
-
-        // We keep the io_service alive and introduce some artificial
-        // work.
-        boost::asio::io_service::work keep_alive
-        {
-            io_service
-        };
-
-        // We immediate execute the io_service instance
-        std::thread worker1
-        {
-            std::thread{[this]() { io_service.run(); }}
-        };
-
-        std::thread worker2
-        {
-            std::thread{[this]() { io_service.run(); }}
-        };
-    };
-
     core::trust::Daemon::Dictionary fill_dictionary_from_unrecognized_options(const Options::parsed_options& parsed_options)
     {
         auto unrecognized = Options::collect_unrecognized(
@@ -170,7 +110,7 @@ namespace
             "Could not create bus for name: " + bus_name
         };
 
-        bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
+        bus->install_executor(core::dbus::asio::make_executor(bus, core::trust::Runtime::instance().io_service));
 
         return bus;
     }
@@ -256,7 +196,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                 core::trust::remote::posix::Skeleton::Configuration config
                 {
                     agent,
-                    Runtime::instance().io_service,
+                    core::trust::Runtime::instance().io_service,
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
@@ -289,16 +229,19 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                                 core::trust::remote::dbus::default_agent_registry_path
                             });
 
+                core::dbus::DBus daemon{bus};
+
                 core::trust::remote::dbus::Agent::Skeleton::Configuration config
                 {
                     agent,
                     object,
+                    daemon.make_service_watcher(dbus_service_name),
                     service,
                     bus,
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
                 };
 
-                return std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
+                return std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(std::move(config));
             }
         }
     };
@@ -390,16 +333,6 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
 // Executes the daemon with the given configuration.
 core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust::Daemon::Skeleton::Configuration& configuration)
 {
-    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
-    {
-        Runtime::instance().signal_trap->stop();
-    });
-
-    std::thread worker
-    {
-        [configuration]() { configuration.bus->run(); }
-    };
-
     // Expose the local store to the bus, keeping it exposed for the
     // lifetime of the returned token.
     auto token = core::trust::expose_store_to_bus_with_name(
@@ -407,12 +340,7 @@ core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust:
                 configuration.bus,
                 configuration.service_name);
 
-    Runtime::instance().signal_trap->run();
-
-    configuration.bus->stop();
-
-    if (worker.joinable())
-        worker.join();
+    core::trust::Runtime::instance().run();
 
     return core::posix::exit::Status::success;
 }
@@ -432,7 +360,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core
 
                 core::trust::remote::posix::Stub::Configuration config
                 {
-                    Runtime::instance().io_service,
+                    core::trust::Runtime::instance().io_service,
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
@@ -524,9 +452,14 @@ struct Shell : public std::enable_shared_from_this<Shell>
 {
     Shell(const std::shared_ptr<core::trust::Agent>& agent)
         : agent{agent},
-          stdin{Runtime::instance().io_service, STDIN_FILENO},
+          stdin{core::trust::Runtime::instance().io_service, STDIN_FILENO},
           app_id_resolver{core::trust::remote::helpers::aa_get_task_con_app_id_resolver()}
     {
+    }
+
+    ~Shell()
+    {
+        stop();
     }
 
     // Prints out the initial prompt and initiates a read operation on stdin.
@@ -607,18 +540,11 @@ core::posix::exit::Status core::trust::Daemon::Stub::main(const core::trust::Dae
     // We setup our minimal shell here.
     auto shell = std::make_shared<Shell>(configuration.remote.agent);
 
-    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
-    {
-        Runtime::instance().signal_trap->stop();
-    });
-
     // We start up our shell
     shell->start();
 
     // Wait until signal arrives.
-    Runtime::instance().signal_trap->run();
-
-    shell->stop();
+    core::trust::Runtime::instance().run();
 
     return core::posix::exit::Status::success;
 }

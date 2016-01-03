@@ -19,6 +19,7 @@
 #include <core/trust/remote/dbus.h>
 
 #include <core/trust/dbus_agent.h>
+#include <core/trust/runtime.h>
 
 core::trust::remote::dbus::Agent::Stub::Stub(const core::trust::remote::dbus::Agent::Stub::Configuration& configuration)
     : agent_registry_skeleton
@@ -43,20 +44,34 @@ core::trust::Request::Answer core::trust::remote::dbus::Agent::Stub::send(const 
     return agent->authenticate_request_with_parameters(parameters);
 }
 
-core::trust::remote::dbus::Agent::Skeleton::Skeleton(const core::trust::remote::dbus::Agent::Skeleton::Configuration& configuration)
+core::trust::remote::dbus::Agent::Skeleton::Skeleton(core::trust::remote::dbus::Agent::Skeleton::Configuration configuration)
     : core::trust::remote::Agent::Skeleton{configuration.impl},
+      config(std::move(configuration)),
       agent_registry_stub
       {
           core::trust::dbus::AgentRegistry::Stub::Configuration
           {
-              configuration.agent_registry_object,
+              config.agent_registry_object,
               core::trust::dbus::AgentRegistry::Stub::counting_object_path_generator(),
-              configuration.service,
-              configuration.bus
+              config.service,
+              config.bus
           }
       }
 {
-    agent_registry_stub.register_agent_for_user(core::trust::Uid{::getuid()}, configuration.impl);
+    agent_registry_stub.register_agent_for_user_async(core::trust::Uid{::getuid()}, config.impl, []()
+    {
+        std::cout << "Error registering agent for user." << std::endl;
+    });
+
+    // We don't have to track the lifetime of "this" as config.agent_registry_watcher is owned
+    // by "this".
+    config.agent_registry_watcher->service_registered().connect([this]()
+    {
+        agent_registry_stub.register_agent_for_user_async(core::trust::Uid{::getuid()}, config.impl, []()
+        {
+            std::cout << "Error registering agent for user." << std::endl;
+        });
+    });
 }
 
 core::trust::Request::Answer core::trust::remote::dbus::Agent::Skeleton::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
