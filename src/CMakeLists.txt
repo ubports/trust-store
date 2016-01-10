@@ -141,6 +141,8 @@ add_library(
   # All dbus-specific headers go here
   core/trust/dbus/agent.h
   core/trust/dbus/agent_registry.h
+  core/trust/dbus/bus_factory.h
+  core/trust/dbus/bus_factory.cpp
   core/trust/dbus/codec.h
   core/trust/dbus/interface.h
 

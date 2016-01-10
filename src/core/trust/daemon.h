@@ -92,11 +92,20 @@ struct Daemon
         };
 
         // A remote agent implementation leveraging dbus.
-        struct DBusRemoteAgent
+        struct SystemServiceDBusRemoteAgent
         {
             static constexpr const char* name
             {
-                "DBusRemoteAgent"
+                "SystemServiceDBusRemoteAgent"
+            };
+        };
+
+        // A remote agent implementation leveraging dbus.
+        struct SessionServiceDBusRemoteAgent
+        {
+            static constexpr const char* name
+            {
+                "SessionServiceDBusRemoteAgent"
             };
         };
     };
