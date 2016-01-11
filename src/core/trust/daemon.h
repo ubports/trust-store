@@ -97,7 +97,7 @@ struct Daemon
         {
             static constexpr const char* name
             {
-                "SystemServiceDBusRemoteAgent"
+                "DBusRemoteAgent" // TODO(tvoss): Rename and adjust downstream projects on next abi bump.
             };
         };
 
