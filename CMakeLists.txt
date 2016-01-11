@@ -28,7 +28,9 @@ IF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 ENDIF(CMAKE_BUILD_TYPE MATCHES [cC][oO][vV][eE][rR][aA][gG][eE])
 
 find_package(PkgConfig)
-find_package(Boost COMPONENTS program_options system REQUIRED)
+find_package(Boost COMPONENTS filesystem program_options system REQUIRED)
+
+add_subdirectory(3rd_party/xdg)
 
 option(
   TRUST_STORE_MIR_AGENT_ENABLED
@@ -46,14 +48,15 @@ endif()
 pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
 
-set(TRUST_STORE_VERSION_MAJOR 2)
-set(TRUST_STORE_VERSION_MINOR 0)
+set(TRUST_STORE_VERSION_MAJOR 1)
+set(TRUST_STORE_VERSION_MINOR 1)
 set(TRUST_STORE_VERSION_PATCH 0)
 
 include(CTest)
 
 include_directories(
   include/
+  3rd_party/xdg
 
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}

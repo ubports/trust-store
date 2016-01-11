@@ -20,6 +20,8 @@ find_package(Qt5Quick REQUIRED)
 
 pkg_check_modules(DBUS_CPP dbus-cpp REQUIRED)
 pkg_check_modules(DBUS dbus-1 REQUIRED)
+pkg_check_modules(GLIB glib-2.0 REQUIRED)
+pkg_check_modules(GOBJECT gobject-2.0 REQUIRED)
 pkg_check_modules(LIBAPPARMOR libapparmor REQUIRED)
 pkg_check_modules(SQLITE3 sqlite3 REQUIRED)
 
@@ -28,6 +30,8 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 include_directories(
   ${DBUS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
+  ${GLIB_INCLUDE_DIRS}
+  ${GOBJECT_INCLUDE_DIRS}
   ${LIBAPPARMOR_INCLUDE_DIRS}
   ${SQLITE3_INCLUDE_DIRS}
 )
@@ -42,6 +46,9 @@ set(
   # An agent-implementation transforming ensuring legible application ids.
   core/trust/app_id_formatting_trust_agent.h
   core/trust/app_id_formatting_trust_agent.cpp
+
+  # An agent implementation preventing privilege escalation attacks.
+  core/trust/privilege_escalation_prevention_agent.cpp
 
   # An agent-implementation that allows for selectively whitelisting app ids
   core/trust/white_listing_agent.cpp
@@ -70,6 +77,7 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     # to prompt the user for trusting an application to access a trusted
     # system service.
     core/trust/mir/agent.cpp
+    core/trust/mir/click_desktop_entry_app_info_resolver.cpp
   )
 
   # Make sure Qt does not inject evil macros like 'signals' and 'slots'.
@@ -180,11 +188,14 @@ target_link_libraries(
   trust-store
 
   dbus-cpp
+  xdg
 
   ${Boost_LIBRARIES}
   ${DBUS_LIBRARIES}
   ${GFLAGS_LDFLAGS}
   ${GLOG_LDFLAGS}
+  ${GLIB_LDFLAGS}
+  ${GOBJECT_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}

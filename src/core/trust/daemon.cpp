@@ -22,6 +22,7 @@
 #include <core/trust/cached_agent.h>
 #include <core/trust/expose.h>
 #include <core/trust/i18n.h>
+#include <core/trust/privilege_escalation_prevention_agent.h>
 #include <core/trust/store.h>
 #include <core/trust/white_listing_agent.h>
 
@@ -262,7 +263,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
                     dict.count("description-pattern") > 0 ?
                             dict.at("description-pattern") :
-                            core::trust::i18n::tr("Application %1% is trying to access") + " " + service_name + ".",
+                            core::trust::i18n::tr("is trying to access") + " " + service_name + ".",
                     dict.count("verify-process-timestamp") > 0
                 };
 
@@ -375,6 +376,10 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     }, cached_agent);
 
     auto formatting_agent = std::make_shared<core::trust::AppIdFormattingTrustAgent>(whitelisting_agent);
+    
+    auto privilege_escalation_prevention_agent = std::make_shared<core::trust::PrivilegeEscalationPreventionAgent>(
+        core::trust::PrivilegeEscalationPreventionAgent::default_user_id_functor(),
+        formatting_agent);
 
     auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
 
@@ -382,7 +387,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     {
         service_name,
         bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
-        {local_store, formatting_agent},
+        {local_store, privilege_escalation_prevention_agent},
         {remote_agent}
     };
 }

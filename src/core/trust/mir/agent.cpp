@@ -33,6 +33,11 @@
 
 namespace mir = core::trust::mir;
 
+bool mir::operator==(const mir::AppInfo& lhs, const mir::AppInfo& rhs)
+{
+    return lhs.icon == rhs.icon && lhs.id == rhs.id && lhs.name == rhs.name;
+}
+
 // Invoked whenever a request for creation of pre-authenticated fds succeeds.
 void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*prompt_session*/, size_t count, int const* fds, void* context)
 {
@@ -134,27 +139,15 @@ core::posix::ChildProcess mir::PromptProviderHelper::exec_prompt_provider_with_a
 {
     static auto child_setup = []() {};
 
-    // We translate to human readable strings here, and do it a non-translateable way first
-    // We post-process the application id and try to extract the unversioned package name.
-    // Please see https://wiki.ubuntu.com/AppStore/Interfaces/ApplicationId.
-    static const std::regex regex_full_app_id{"(.*)_(.*)_(.*)"};
-    static const std::regex regex_short_app_id{"(.*)_(.*)"};
-    static constexpr std::size_t index_app{2};
-
-    auto app_name = args.application_id;
-
-    std::smatch match;
-    if (std::regex_match(app_name, match, regex_full_app_id))
-        app_name = std::string{match[index_app]};
-    else if (std::regex_match(app_name, match, regex_short_app_id))
-        app_name = std::string{match[index_app]};
-
-    auto description = (boost::format(i18n::tr(args.description, i18n::service_text_domain())) % app_name).str();
+    auto app_name = args.app_info.name;
+    auto description = i18n::tr(args.description, i18n::service_text_domain());
 
     std::vector<std::string> argv
     {
         "--" + std::string{core::trust::mir::cli::option_server_socket}, "fd://" + std::to_string(args.fd),
-        "--" + std::string{core::trust::mir::cli::option_title}, app_name,
+        "--" + std::string{core::trust::mir::cli::option_icon}, args.app_info.icon,
+        "--" + std::string{core::trust::mir::cli::option_name}, args.app_info.name,
+        "--" + std::string{core::trust::mir::cli::option_id}, args.app_info.id,
         "--" + std::string{core::trust::mir::cli::option_description}, description
     };
 
@@ -219,30 +212,14 @@ std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> mi
     };
 }
 
-mir::Agent::Agent(
-        // VTable object providing access to Mir's trusted prompting functionality.
-        const mir::ConnectionVirtualTable::Ptr& connection_vtable,
-        // Exec helper for starting up prompt provider child processes with the correct setup
-        // of command line arguments and environment variables.
-        const mir::PromptProviderHelper::Ptr& exec_helper,
-        // A translator function for mapping child process exit states to trust::Request answers.
-        const std::function<core::trust::Request::Answer(const core::posix::wait::Result&)>& translator)
-    : connection_vtable(connection_vtable),
-      exec_helper(exec_helper),
-      translator(translator)
+mir::Agent::Agent(const mir::Agent::Configuration& config)
+    : config(config)
 {
 }
 
 // From core::trust::Agent:
 core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(const core::trust::Agent::RequestParameters& parameters)
 {
-    // We assume that the agent implementation runs under the same user id as
-    // the requesting app to prevent from cross-user attacks.
-    if (core::trust::Uid{::getuid()} != parameters.application.uid) throw std::logic_error
-    {
-        "mir::Agent::prompt_user_for_request: current user id does not match requesting app's user id"
-    };
-
     // We initialize our callback context with an invalid child-process for setup
     // purposes. Later on, once we have acquired a pre-authenticated fd for the
     // prompt provider, we exec the actual provider in a child process and replace the
@@ -260,7 +237,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     } scope
     {
         // We setup the prompt session and wire up to our own internal callback helper.
-        connection_vtable->create_prompt_session_sync(
+        config.connection_vtable->create_prompt_session_sync(
                     parameters.application.pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context)
@@ -273,24 +250,25 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     mir::PromptProviderHelper::InvocationArguments args
     {
         fd,
-        parameters.application.id,
+        config.app_info_resolver->resolve(parameters.application.id),
         parameters.description
     };
 
     // Ask the helper to fire up the prompt provider.
-    cb_context.prompt_provider_process = exec_helper->exec_prompt_provider_with_arguments(args);
+    cb_context.prompt_provider_process = config.exec_helper->exec_prompt_provider_with_arguments(args);
     // And subsequently wait for it to finish.
     auto result = cb_context.prompt_provider_process.wait_for(core::posix::wait::Flags::untraced);
 
-    return translator(result);
+    return config.translator(result);
 }
 
 bool mir::operator==(const mir::PromptProviderHelper::InvocationArguments& lhs, const mir::PromptProviderHelper::InvocationArguments& rhs)
 {
-    return std::tie(lhs.application_id, lhs.description, lhs.fd) == std::tie(rhs.application_id, rhs.description, rhs.fd);
+    return std::tie(lhs.app_info, lhs.description, lhs.fd) == std::tie(rhs.app_info, rhs.description, rhs.fd);
 }
 
 #include "config.h"
+#include "click_desktop_entry_app_info_resolver.h"
 
 MirConnection* mir::connect(const std::string& endpoint, const std::string& name)
 {
@@ -318,13 +296,8 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
         }
     };
 
-    return mir::Agent::Ptr
-    {
-        new mir::Agent
-        {
-            cvt,
-            pph,
-            mir::Agent::translator_only_accepting_exit_status_success()
-        }
-    };
+    mir::AppInfoResolver::Ptr anr{new mir::ClickDesktopEntryAppInfoResolver{}};
+
+    mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
+    return mir::Agent::Ptr{new mir::Agent{config}};
 }
