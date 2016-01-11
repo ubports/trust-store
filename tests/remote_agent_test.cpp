@@ -860,6 +860,8 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
         skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
 
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+
         for (unsigned int i = 0; i < 100; i++)
             EXPECT_EQ(answer, stub->authenticate_request_with_parameters(ref_params));
 
