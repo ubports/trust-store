@@ -2,6 +2,37 @@ cmake_minimum_required(VERSION 2.8)
 
 project(trust-store)
 
+# We haven't received version information via the packaging setup.
+# For that, we try to determine sensible values on our own, ensuring
+# plain old invocations to cmake still work as expected.
+if (NOT DEFINED TRUST_STORE_VERSION_MAJOR)
+  find_program(LSB_RELEASE lsb_release)
+  execute_process(
+    COMMAND ${LSB_RELEASE} -c -s
+    OUTPUT_VARIABLE DISTRO_CODENAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  # We explicitly ignore errors and only check if we are building for vivid.
+  # For all other cases:
+  #   - releases other than vivid
+  #   - other distros
+  #   - errors
+  # we define the version to be 2.0.0
+  if (${DISTRO_CODENAME} STREQUAL "vivid")
+    set(TRUST_STORE_VERSION_MAJOR 1)
+    set(TRUST_STORE_VERSION_MINOR 1)
+    set(TRUST_STORE_VERSION_PATCH 0)
+  else ()
+    set(TRUST_STORE_VERSION_MAJOR 2)
+    set(TRUST_STORE_VERSION_MINOR 0)
+    set(TRUST_STORE_VERSION_PATCH 0)
+  endif()
+endif()
+
+message(STATUS "${CMAKE_PROJECT_NAME} ${TRUST_STORE_VERSION_MAJOR}.${TRUST_STORE_VERSION_MINOR}.${TRUST_STORE_VERSION_PATCH}")
+
+
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
 include(cmake/EnableCoverageReport.cmake)
@@ -47,10 +78,6 @@ endif()
 
 pkg_check_modules(GLOG libglog REQUIRED)
 pkg_check_modules(PROCESS_CPP process-cpp REQUIRED)
-
-set(TRUST_STORE_VERSION_MAJOR 1)
-set(TRUST_STORE_VERSION_MINOR 1)
-set(TRUST_STORE_VERSION_PATCH 0)
 
 include(CTest)
 
