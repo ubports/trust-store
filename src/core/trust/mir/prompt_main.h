@@ -46,10 +46,22 @@ static constexpr const char* option_server_socket
     "mir_server_socket"
 };
 
-/** @brief Title of the prompt. */
-static constexpr const char* option_title
+/** @brief Icon of the requesting app. */
+static constexpr const char* option_icon
 {
-    "title"
+    "icon"
+};
+
+/** @brief Name of the requesting app. */
+static constexpr const char* option_name
+{
+    "name"
+};
+
+/** @brief Id of the requesting app. */
+static constexpr const char* option_id
+{
+    "id"
 };
 
 /** @brief Extended description of the prompt. */

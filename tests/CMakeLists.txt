@@ -59,6 +59,11 @@ add_executable(
 )
 
 add_executable(
+  privilege_escalation_prevention_agent_test
+  privilege_escalation_prevention_agent_test.cpp
+)
+
+add_executable(
   cached_agent_test
   cached_agent_test.cpp
 )
@@ -166,6 +171,20 @@ target_link_libraries(
 )
 
 target_link_libraries(
+  privilege_escalation_prevention_agent_test
+
+  trust-store
+
+  gmock
+
+  gtest
+  gtest_main
+
+  ${PROCESS_CPP_LIBRARIES}
+)
+
+
+target_link_libraries(
   cached_agent_test
 
   trust-store
@@ -226,6 +245,7 @@ add_test(remote_agent_test ${CMAKE_CURRENT_BINARY_DIR}/remote_agent_test)
 add_test(app_id_formatting_trust_agent_test ${CMAKE_CURRENT_BINARY_DIR}/app_id_formatting_trust_agent_test)
 add_test(cached_agent_test ${CMAKE_CURRENT_BINARY_DIR}/cached_agent_test)
 add_test(white_listing_agent_test ${CMAKE_CURRENT_BINARY_DIR}/white_listing_agent_test)
+add_test(privilege_escalation_prevention_agent_test ${CMAKE_CURRENT_BINARY_DIR}/privilege_escalation_prevention_agent_test)
 # TODO(tvoss) Re-enable daemon tests once CI issues are resolved.
 # add_test(daemon_test ${CMAKE_CURRENT_BINARY_DIR}/daemon_test)
 add_test(dbus_test ${CMAKE_CURRENT_BINARY_DIR}/dbus_test)
@@ -242,8 +262,27 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     mir_agent_test.cpp
   )
 
+  add_executable(
+    click_desktop_entry_app_name_resolver_test
+    click_desktop_entry_app_name_resolver_test.cpp
+  )
+
   target_link_libraries(
     mir_agent_test
+
+    trust-store
+    xdg
+
+    gmock
+
+    gtest
+    gtest_main
+
+    ${PROCESS_CPP_LIBRARIES}
+  )
+
+  target_link_libraries(
+    click_desktop_entry_app_name_resolver_test
 
     trust-store
 
@@ -255,7 +294,9 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     ${PROCESS_CPP_LIBRARIES}
   )
 
+
   add_test(mir_agent_test ${CMAKE_CURRENT_BINARY_DIR}/mir_agent_test --gtest_filter=*-*requires_mir)
+  add_test(click_desktop_entry_app_name_resolver_test ${CMAKE_CURRENT_BINARY_DIR}/click_desktop_entry_app_name_resolver_test)
 
   install(
     TARGETS mir_agent_test

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2013 Canonical Ltd.
+ * Copyright © 2015 Canonical Ltd.
  *
  * This program is free software: you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License version 3,
@@ -15,31 +15,35 @@
  *
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
+#ifndef CORE_TRUST_IMPL_SQLITE3_H_
+#define CORE_TRUST_IMPL_SQLITE3_H_
 
-#ifndef TEST_DATA_H_
-#define TEST_DATA_H_
+#include <core/trust/visibility.h>
+
+#include <memory>
+#include <string>
+
+namespace xdg
+{
+class BaseDirSpecification;
+}
 
 namespace core
 {
 namespace trust
 {
-namespace testing
+class Store;
+namespace impl
 {
-static constexpr const char* current_source_dir
+namespace sqlite
 {
-    "@CMAKE_CURRENT_SOURCE_DIR@"
-};
+// create_for_service creates a Store implementation relying on sqlite3, managing
+// trust for the service identified by service_name. Uses spec to determine a user-specific
+// directory to place the trust database.
+CORE_TRUST_DLL_PUBLIC std::shared_ptr<core::trust::Store> create_for_service(const std::string& service_name, xdg::BaseDirSpecification& spec);
+}
+}
+}
+}
 
-static constexpr const char* trust_prompt_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-prompt"
-};
-
-static constexpr const char* trust_store_preseed_executable_in_build_dir
-{
-    "@CMAKE_BINARY_DIR@/src/trust-store-preseed"
-};
-}
-}
-}
-#endif // TEST_DATA_H_
+#endif // CORE_TRUST_IMPL_SQLITE3_H_

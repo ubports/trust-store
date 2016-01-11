@@ -74,9 +74,19 @@ void validate_command_line_arguments(const boost::program_options::variables_map
 {
     // We are throwing exceptions here, which immediately calls abort and still gives a
     // helpful error message on the terminal.
-    if (vm.count(cli::option_title) == 0) throw std::logic_error
+    if (vm.count(cli::option_icon) == 0) throw std::logic_error
     {
-        "Missing option title."
+        "Missing option icon."
+    };
+
+    if (vm.count(cli::option_name) == 0) throw std::logic_error
+    {
+        "Missing option name."
+    };
+
+    if (vm.count(cli::option_id) == 0) throw std::logic_error
+    {
+        "Missing option id."
     };
 
     if (vm.count(cli::option_description) == 0) throw std::logic_error
@@ -84,17 +94,13 @@ void validate_command_line_arguments(const boost::program_options::variables_map
         "Missing option description"
     };
 
-    if (vm.count(cli::option_server_socket) == 0) throw std::logic_error
+    if (vm.count(cli::option_server_socket) > 0)
     {
-        "Missing option mir_server_socket"
-    };
-
-    std::string mir_server_socket = vm[cli::option_server_socket].as<std::string>();
-
-    if (mir_server_socket.find("fd://") != 0) throw std::logic_error
-    {
-        "mir_server_socket does not being with fd://"
-    };
+        if (vm[cli::option_server_socket].as<std::string>().find("fd://") != 0) throw std::logic_error
+        {
+            "mir_server_socket does not being with fd://"
+        };
+    }
 }
 }
 }
@@ -104,8 +110,10 @@ int main(int argc, char** argv)
     boost::program_options::options_description options;
     options.add_options()
             (cli::option_server_socket, boost::program_options::value<std::string>(), "Mir server socket to connect to.")
+            (cli::option_icon, boost::program_options::value<std::string>(), "Icon of the requesting application.")
+            (cli::option_name, boost::program_options::value<std::string>(), "Name of the requesting application.")
+            (cli::option_id, boost::program_options::value<std::string>(), "Id of the requesting application.")
             (cli::option_description, boost::program_options::value<std::string>(), "Extended description of the prompt.")
-            (cli::option_title, boost::program_options::value<std::string>(), "Title of the prompt.")
             (cli::option_testing, "Only checks command-line parameters and does not execute any actions.")
             (cli::option_testability, "Loads the Qt Testability plugin if provided.");
 
@@ -124,30 +132,29 @@ int main(int argc, char** argv)
     boost::program_options::store(parsed_options, vm);
     boost::program_options::notify(vm);
 
+    // We immediately bail out if verification of command line arguments fails.
+    testing::validate_command_line_arguments(vm);
+
     // We just verify command line arguments in testing and immediately return.
     if (vm.count(cli::option_testing) > 0)
-    {
-        testing::validate_command_line_arguments(vm); return 0;
-    }
+        return 0;
 
-    // Let's validate the arguments.
-    if (vm.count(cli::option_title) == 0)
-        abort(); // We have to call abort here to make sure that we get signalled.
-
-    std::string title = vm[cli::option_title].as<std::string>();
-
-    std::string description;
-    if (vm.count(cli::option_description) > 0)
-        description = vm[cli::option_description].as<std::string>();
+    auto icon = vm[cli::option_icon].as<std::string>();
+    auto name = vm[cli::option_name].as<std::string>();
+    auto id = vm[cli::option_id].as<std::string>();
+    // As per design, we replace "_" in app ids with a "/", thereby
+    // rendering the app id a little nicer. See:
+    //
+    //   http://pasteboard.co/2qhB6op7.png
+    //
+    // for an example.
+    std::replace(id.begin(), id.end(), '_', '/');
+    auto description = vm[cli::option_description].as<std::string>();
 
     if (vm.count(cli::option_server_socket) > 0)
     {
-        // We make sure that the env variable is not set prior to adusting it.
         this_env::unset_or_throw(env::option_mir_socket);
-
-        this_env::set_or_throw(
-                    env::option_mir_socket,
-                    vm[cli::option_server_socket].as<std::string>());
+        this_env::set_or_throw(env::option_mir_socket, vm[cli::option_server_socket].as<std::string>());
     }
 
     // We install our default gettext domain prior to anything qt.
@@ -202,14 +209,10 @@ int main(int argc, char** argv)
     view->setTitle(QGuiApplication::applicationName());
 
     // Make some properties known to the root context.
-    // The title of the dialog.
-    view->rootContext()->setContextProperty(
-                cli::option_title,
-                title.c_str());
-    // The description of the dialog.
-    view->rootContext()->setContextProperty(
-                    cli::option_description,
-                    description.c_str());
+    view->rootContext()->setContextProperty(cli::option_icon, icon.c_str());
+    view->rootContext()->setContextProperty(cli::option_name, name.c_str());
+    view->rootContext()->setContextProperty(cli::option_id, id.c_str());
+    view->rootContext()->setContextProperty(cli::option_description, description.c_str());
 
     // Point the engine to the right directory. Please note that
     // the respective value changes with the installation state.

@@ -14,6 +14,32 @@ trust-store (2.0.0-0ubuntu1) wily; urgency=medium
 
  -- Thomas Voß <thomas.voss@canonical.com>  Thu, 23 Jul 2015 09:22:15 +0200
 
+trust-store (1.1.0+15.04.20151211-0ubuntu1) vivid; urgency=medium
+
+  [ CI Train Bot ]
+  * Revert bump to major revision 2, vivid (+overlay) still has 1.1.0
+    and gcc 4.9.
+
+  [ Thomas Voß ]
+  * Add a 3rd-party dependency on github.com/vosst/xdg.
+  * Add interface mir::AppNameResolver. (LP: #1382610, #1504022)
+  * Introduce a trust::PrivilegeEscalationPreventionAgent, filtering out
+    invalid requests. Fixes lp:#1518883. (LP: #1518883)
+
+ -- Thomas Voß <ci-train-bot@canonical.com>  Fri, 11 Dec 2015 08:58:16 +0000
+
+trust-store (1.1.0+15.04.20151126-0ubuntu1) vivid; urgency=medium
+
+  [ Thomas Voß ]
+  * Revert bump to major revision 2, vivid (+overlay) still has
+    1.1.0 and gcc 4.9. 
+
+  [ CI Train Bot ]
+  * New rebuild forced.
+  * Resync trunk.
+
+ -- Thomas Voß <ci-train-bot@canonical.com>  Thu, 26 Nov 2015 07:32:48 +0000
+
 trust-store (1.1.0+15.04.20150820-0ubuntu1) vivid; urgency=medium
 
   [ Ken VanDine ]
