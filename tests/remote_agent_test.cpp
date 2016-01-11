@@ -381,6 +381,10 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
 
     cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
+    // We have to provide some grace to the service, such that it can spin up threads
+    // and handle incoming connections. This is specifically required to satisfy slow builders.
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+
     EXPECT_CALL(process_start_time_resolver, resolve_process_start_time(_))
             .Times(2)
             .WillRepeatedly(Return(42));
