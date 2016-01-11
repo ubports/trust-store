@@ -59,7 +59,7 @@ protected:
  */
 CORE_TRUST_DLL_PUBLIC std::unique_ptr<Token> expose_store_to_bus_with_name(
         const std::shared_ptr<Store>& store,
-        const std::shared_ptr<dbus::Bus>& bus,
+        const std::shared_ptr<core::dbus::Bus>& bus,
         const std::string& name);
 
 /**

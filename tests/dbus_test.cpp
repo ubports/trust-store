@@ -16,10 +16,14 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
+#include <core/trust/daemon.h>
+#include <core/trust/runtime.h>
+
 #include <core/trust/dbus/agent.h>
 #include <core/trust/dbus/agent_registry.h>
 
 #include "mock_agent.h"
+#include "process_exited_successfully.h"
 
 #include <core/dbus/fixture.h>
 #include <core/dbus/asio/executor.h>
@@ -43,6 +47,10 @@ std::shared_ptr<core::posix::SignalTrap> a_trap_for_sig_term()
 
     return trap;
 }
+
+struct BusFactoryType : public testing::TestWithParam<std::pair<core::trust::dbus::BusFactory::Type, std::string>>
+{
+};
 
 struct DBusAgent : public core::dbus::testing::Fixture
 {
@@ -88,6 +96,76 @@ core::trust::Agent::RequestParameters ref_params
     "just an example description"
 };
 
+}
+
+TEST_P(BusFactoryType, stream_insertion_operator_works)
+{
+    core::trust::dbus::BusFactory::Type t{GetParam().first};
+    std::stringstream ss; ss << t;
+    EXPECT_EQ(GetParam().second, ss.str());
+}
+
+TEST_P(BusFactoryType, stream_extraction_operator_works)
+{
+    core::trust::dbus::BusFactory::Type t;
+    std::stringstream ss{GetParam().second}; ss >> t;
+    EXPECT_EQ(GetParam().first, t);
+}
+
+INSTANTIATE_TEST_CASE_P(BusFactoryType, BusFactoryType, testing::Values(
+                            std::make_pair(core::trust::dbus::BusFactory::Type::session, "session"),
+                            std::make_pair(core::trust::dbus::BusFactory::Type::system, "system"),
+                            std::make_pair(core::trust::dbus::BusFactory::Type::session_with_address_from_env, "session_with_address_from_env"),
+                            std::make_pair(core::trust::dbus::BusFactory::Type::system_with_address_from_env, "system_with_address_from_env")));
+
+TEST_F(DBusAgent, public_api_with_daemon_works)
+{
+    using namespace ::testing;
+
+    core::testing::CrossProcessSync cps;
+
+    auto daemon = core::posix::fork([this]()
+    {        
+        const char* argv[] =
+        {
+            __PRETTY_FUNCTION__,
+            "--remote-agent", "SessionServiceDBusRemoteAgent",
+            "--bus=session_with_address_from_env",
+            "--local-agent", "TheAlwaysDenyingLocalAgent",
+            "--for-service", "TestService",
+            "--store-bus", "session_with_address_from_env"
+        };
+
+        auto conf = core::trust::Daemon::Skeleton::Configuration::from_command_line(10, argv);
+        return core::trust::Daemon::Skeleton::main(conf);
+
+        return core::posix::exit::Status::failure;
+    }, core::posix::StandardStream::empty);
+
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+
+    for (std::size_t i = 0; i < 15; i++)
+    {
+        auto stub = core::posix::fork([this]()
+        {
+            auto bus = session_bus();
+            bus->install_executor(core::dbus::asio::make_executor(bus, core::trust::Runtime::instance().service()));
+
+            auto agent = core::trust::dbus::create_per_user_agent_for_bus_connection(bus, "TestService");
+
+            for (unsigned int i = 0; i < 1000; i++)
+                EXPECT_EQ(core::trust::Request::Answer::denied, agent->authenticate_request_with_parameters(ref_params));
+
+            return ::testing::Test::HasFailure() ?
+                        core::posix::exit::Status::failure :
+                        core::posix::exit::Status::success;
+        }, core::posix::StandardStream::empty);
+
+        EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+    }
+
+    daemon.send_signal_or_throw(core::posix::Signal::sig_term);
+    EXPECT_TRUE(ProcessExitedSuccessfully(daemon.wait_for(core::posix::wait::Flags::untraced)));
 }
 
 TEST_F(DBusAgent, remote_invocation_works_correctly)

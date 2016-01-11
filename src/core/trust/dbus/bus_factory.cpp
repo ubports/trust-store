@@ -19,36 +19,86 @@
 #include <core/trust/dbus/bus_factory.h>
 #include <core/trust/runtime.h>
 
+#include <core/dbus/asio/executor.h>
 #include <core/posix/this_process.h>
+
+#include <boost/lexical_cast.hpp>
 
 namespace env = core::posix::this_process::env;
 
 namespace
 {
-class BusFactory : public core::trust::dbus::BusFactory
+class DefaultBusFactory : public core::trust::dbus::BusFactory
 {
-    core::dbus::Bus::Ptr bus_for_name(const std::string& bus_name) override
+    core::dbus::Bus::Ptr bus_for_type(Type type) override
     {
         core::dbus::Bus::Ptr bus;
 
-        if (bus_name == "system")
+        switch (type)
+        {
+        case Type::system:
             bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
-        else if (bus_name == "session")
+            break;
+        case Type::session:
             bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
-        else if (bus_name == "system_with_address_from_env")
+            break;
+        case Type::system_with_address_from_env:
             bus = std::make_shared<core::dbus::Bus>(env::get_or_throw("DBUS_SYSTEM_BUS_ADDRESS"));
-        else if (bus_name == "session_with_address_from_env")
+            break;
+        case Type::session_with_address_from_env:
             bus = std::make_shared<core::dbus::Bus>(env::get_or_throw("DBUS_SESSION_BUS_ADDRESS"));
+            break;
+        }
 
         if (not bus) throw std::runtime_error
         {
-            "Could not create bus for name: " + bus_name
+            "Could not create bus for name: " + boost::lexical_cast<std::string>(type)
         };
 
-        bus->install_executor(core::dbus::asio::make_executor(bus, core::trust::Runtime::instance().io_service));
+        bus->install_executor(core::dbus::asio::make_executor(bus, core::trust::Runtime::instance().service()));
         return bus;
     }
 };
 }
 
+core::trust::dbus::BusFactory::Ptr core::trust::dbus::BusFactory::create_default()
+{
+    return std::make_shared<DefaultBusFactory>();
+}
 
+std::ostream& core::trust::dbus::operator<<(std::ostream& out, core::trust::dbus::BusFactory::Type type)
+{
+    switch (type)
+    {
+    case core::trust::dbus::BusFactory::Type::system:
+        out << "system";
+        break;
+    case core::trust::dbus::BusFactory::Type::session:
+        out << "session";
+        break;
+    case core::trust::dbus::BusFactory::Type::system_with_address_from_env:
+        out << "system_with_address_from_env";
+        break;
+    case core::trust::dbus::BusFactory::Type::session_with_address_from_env:
+        out << "session_with_address_from_env";
+        break;
+    }
+
+    return out;
+}
+
+std::istream& core::trust::dbus::operator>>(std::istream& in, core::trust::dbus::BusFactory::Type& type)
+{
+    std::string s; in >> s;
+
+    if (s == "system")
+        type = core::trust::dbus::BusFactory::Type::system;
+    else if (s == "session")
+        type = core::trust::dbus::BusFactory::Type::session;
+    else if (s == "system_with_address_from_env")
+        type = core::trust::dbus::BusFactory::Type::system_with_address_from_env;
+    else if (s == "session_with_address_from_env")
+        type = core::trust::dbus::BusFactory::Type::session_with_address_from_env;
+
+    return in;
+}

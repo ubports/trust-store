@@ -28,6 +28,8 @@
 #include <core/dbus/macros.h>
 #include <core/dbus/object.h>
 
+#include <boost/format.hpp>
+
 namespace core
 {
 namespace trust
@@ -36,14 +38,10 @@ namespace dbus
 {
 struct Agent
 {
-    static const std::string& name()
-    {
-        static const std::string s
-        {
-            "core.trust.dbus.Agent"
-        };
-        return s;
-    }
+    CORE_TRUST_DLL_PUBLIC static boost::format default_service_name_pattern();
+    CORE_TRUST_DLL_PUBLIC static core::dbus::types::ObjectPath default_object_path();
+
+    static const std::string& name();
 
     struct Errors
     {
@@ -54,10 +52,7 @@ struct Agent
                 "core.trust.dbus.Agent.Errors.CouldNotDetermineConclusiveAnswer"
             };
 
-            CouldNotDetermineConclusiveAnswer()
-                : std::runtime_error("Could not determine conclusive answer to trust request.")
-            {
-            }
+            CouldNotDetermineConclusiveAnswer();
         };
     };
 
@@ -66,39 +61,21 @@ struct Agent
     {
         // And thus not constructible
         Methods() = delete;
-
         DBUS_CPP_METHOD_WITH_TIMEOUT_DEF(AuthenticateRequestWithParameters, Agent, 120000)
     };
 
-    class Stub : public core::trust::Agent
+    class CORE_TRUST_DLL_PUBLIC Stub : public core::trust::Agent
     {
     public:
-        Stub(const core::dbus::Object::Ptr& object)
-            : object{object}
-        {
-        }
+        Stub(const core::dbus::Object::Ptr& object);
 
-        Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) override
-        {
-            auto result = object->transact_method
-                    <
-                        Methods::AuthenticateRequestWithParameters,
-                        core::trust::Request::Answer
-                    >(parameters);
-
-            if (result.is_error()) throw std::runtime_error
-            {
-                result.error().print()
-            };
-
-            return result.value();
-        }
+        Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters) override;
 
     private:
         core::dbus::Object::Ptr object;
     };
 
-    class Skeleton : public core::trust::Agent
+    class CORE_TRUST_DLL_PUBLIC Skeleton : public core::trust::Agent
     {
     public:
         // All creation time parameters go here.
@@ -112,35 +89,9 @@ struct Agent
             std::function<core::trust::Request::Answer(const core::trust::Agent::RequestParameters&)> agent;
         };
 
-        Skeleton(const Configuration& config)
-            : configuration(config)
-        {
-            configuration.object->install_method_handler<Methods::AuthenticateRequestWithParameters>([this](const core::dbus::Message::Ptr& in)
-            {
-                core::trust::Agent::RequestParameters params; in->reader() >> params;
+        Skeleton(const Configuration& config);
 
-                core::dbus::Message::Ptr reply;
-                try
-                {
-                    reply = core::dbus::Message::make_method_return(in);
-                    reply->writer() << authenticate_request_with_parameters(params);
-                } catch(const std::exception& e)
-                {
-                    // TODO(tvoss): we should report the error locally here.
-                    reply = core::dbus::Message::make_error(in, Errors::CouldNotDetermineConclusiveAnswer::name, "");
-                } catch(...)
-                {
-                    reply = core::dbus::Message::make_error(in, Errors::CouldNotDetermineConclusiveAnswer::name, "");
-                }
-
-                configuration.bus->send(reply);
-            });
-        }
-
-        Request::Answer authenticate_request_with_parameters(const RequestParameters& request) override
-        {
-            return configuration.agent(request);
-        }
+        Request::Answer authenticate_request_with_parameters(const RequestParameters& request) override;
 
     private:
         // We just store all creation time parameters.
@@ -149,27 +100,6 @@ struct Agent
 };
 }
 }
-}
-
-/**
- * @brief create_per_user_agent_for_bus_connection creates a trust::Agent implementation communicating with a remote agent
- * implementation living in the same user session.
- * @param connection An existing DBus connection.
- * @param service The name of the service we are operating for.
- * @throws std::runtime_error in case of issues.
- */
-std::shared_ptr<core::trust::Agent> core::trust::dbus::create_per_user_agent_for_bus_connection(
-        const std::shared_ptr<core::dbus::Bus>& connection,
-        const std::string& service_name)
-{
-    auto object =
-            core::dbus::Service::use_service(connection,"core.trust.dbus.Agent." + service_name)
-            ->object_for_path(core::dbus::types::ObjectPath{"/core/trust/dbus/Agent"});
-
-    return std::shared_ptr<core::trust::dbus::Agent::Stub>
-    {
-        new core::trust::dbus::Agent::Stub{object}
-    };
 }
 
 #endif // CORE_TRUST_DBUS_AGENT_H_

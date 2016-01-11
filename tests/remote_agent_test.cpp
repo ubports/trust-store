@@ -30,6 +30,8 @@
 #include <core/dbus/asio/executor.h>
 #include <core/dbus/fixture.h>
 
+#include <core/trust/runtime.h>
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -792,6 +794,12 @@ namespace
 {
 struct DBus : public core::dbus::testing::Fixture
 {
+    core::dbus::Bus::Ptr session_bus_with_executor()
+    {
+        auto sb = session_bus();
+        sb->install_executor(core::trust::Runtime::instance().make_executor_for_bus(sb));
+        return sb;
+    }
 };
 
 std::string service_name
@@ -803,10 +811,6 @@ std::string service_name
 TEST_F(DBus, a_service_can_query_a_remote_agent)
 {
     using namespace ::testing;
-
-    core::testing::CrossProcessSync
-            stub_ready,         // signals stub     --| I'm ready |--> skeleton
-            skeleton_ready;     // signals skeleton --| I'm ready |--> stub
 
     auto app = core::posix::fork([]()
     {
@@ -825,7 +829,50 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
     const core::trust::Uid app_uid{::getuid()};
     const core::trust::Pid app_pid{app.pid()};
 
-    auto stub = core::posix::fork([this, app_uid, app_pid, answer, &stub_ready, &skeleton_ready]()
+    auto skeleton = core::posix::fork([this, answer]()
+    {
+        auto bus = session_bus_with_executor();
+
+        // We have to rely on a MockAgent to break the dependency on a running Mir instance.
+        auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
+
+        ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
+                .WillByDefault(Return(answer));
+
+        std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
+
+        auto service = core::dbus::Service::use_service(bus, dbus_service_name);
+        auto object = service->object_for_path(core::dbus::types::ObjectPath
+        {
+            core::trust::remote::dbus::default_agent_registry_path
+        });
+
+        core::dbus::DBus daemon{bus};
+
+        core::trust::remote::dbus::Agent::Skeleton::Configuration config
+        {
+            mock_agent,
+            object,
+            daemon.make_service_watcher(dbus_service_name),
+            service,
+            bus,
+            core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
+        };
+
+        auto skeleton = std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(std::move(config));
+
+        core::trust::Runtime::instance().run();
+        return core::posix::exit::Status::success;
+    }, core::posix::StandardStream::empty);
+
+
+    // stubf models a trusted helper, with the following simplified
+    // mode of operation:
+    //   (1.) Helper claims its unique name on the bus.
+    //   (2.) Helper installs an AgentRegistry::Skeleton.
+    //   (3.) Helper learns about per-user trust::Agent instances on the bus.
+    //   (4.) Helper issues requests for authentication.
+    auto stubf = [this, app_uid, app_pid, answer]()
     {
         core::trust::Agent::RequestParameters ref_params
         {
@@ -836,10 +883,7 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
             "just an example description"
         };
 
-        auto bus = session_bus();
-        bus->install_executor(core::dbus::asio::make_executor(bus));
-
-        std::thread worker{[bus]() { bus->run(); }};
+        auto bus = session_bus_with_executor();
 
         std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 
@@ -857,76 +901,24 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
 
         auto stub = std::make_shared<core::trust::remote::dbus::Agent::Stub>(config);
 
-        stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
-        skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
+        std::this_thread::sleep_for(std::chrono::seconds(1));
 
         for (unsigned int i = 0; i < 100; i++)
             EXPECT_EQ(answer, stub->authenticate_request_with_parameters(ref_params));
 
-        bus->stop();
-
-        if (worker.joinable())
-            worker.join();
-
         return Test::HasFailure() ?
                     core::posix::exit::Status::failure :
                     core::posix::exit::Status::success;
-    }, core::posix::StandardStream::empty);
+    };
 
-    auto skeleton = core::posix::fork([this, answer, &stub_ready, &skeleton_ready]()
-    {
-        auto trap = core::posix::trap_signals_for_all_subsequent_threads({core::posix::Signal::sig_term});
-
-        trap->signal_raised().connect([trap](core::posix::Signal)
-        {
-            trap->stop();
-        });
-
-        auto bus = session_bus();
-        bus->install_executor(core::dbus::asio::make_executor(bus));
-
-        std::thread worker{[bus]() { bus->run(); }};
-
-        // We have to rely on a MockAgent to break the dependency on a running Mir instance.
-        auto mock_agent = std::make_shared<::testing::NiceMock<MockAgent>>();
-
-        ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
-                .WillByDefault(Return(answer));
-
-        std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
-
-        stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
-
-        auto service = core::dbus::Service::use_service(bus, dbus_service_name);
-        auto object = service->object_for_path(core::dbus::types::ObjectPath
-        {
-            core::trust::remote::dbus::default_agent_registry_path
-        });
-
-        core::trust::remote::dbus::Agent::Skeleton::Configuration config
-        {
-            mock_agent,
-            object,
-            service,
-            bus,
-            core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
-        };
-
-        auto skeleton = std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
-
-        skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
-
-        trap->run();
-
-        bus->stop();
-
-        if (worker.joinable())
-            worker.join();
-
-        return core::posix::exit::Status::success;
-    }, core::posix::StandardStream::empty);
-
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    auto stub = core::posix::fork(stubf, core::posix::StandardStream::empty);
     EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+
+    std::this_thread::sleep_for(std::chrono::seconds(2));
+    stub = core::posix::fork(stubf, core::posix::StandardStream::empty);
+    EXPECT_TRUE(ProcessExitedSuccessfully(stub.wait_for(core::posix::wait::Flags::untraced)));
+
     skeleton.send_signal_or_throw(core::posix::Signal::sig_term);
     EXPECT_TRUE(ProcessExitedSuccessfully(skeleton.wait_for(core::posix::wait::Flags::untraced)));
 
