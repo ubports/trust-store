@@ -1,3 +1,9 @@
+trust-store (1.1.0+15.04.20160112-0ubuntu1) vivid; urgency=medium
+
+  * Update pot file for trust-store. (LP: #1532870)
+
+ -- Thomas Voß <ci-train-bot@canonical.com>  Tue, 12 Jan 2016 20:09:20 +0000
+
 trust-store (1.1.0+15.04.20151211-0ubuntu1) vivid; urgency=medium
 
   [ CI Train Bot ]
