@@ -1,6 +1,7 @@
 Source: trust-store
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+X-Ubuntu-Use-Langpack: yes
 Build-Depends: cmake,
                debhelper (>= 9),
                doxygen,
