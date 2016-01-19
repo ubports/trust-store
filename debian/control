@@ -12,11 +12,14 @@ Build-Depends: cmake,
                google-mock,
                graphviz,
                libapparmor-dev,
+               libboost-filesystem-dev,
                libboost-program-options-dev,
                libboost-system-dev,
+               libboost-test-dev,
                libdbus-cpp-dev (>= 4.0.0),
                libdbus-1-dev,
                libgflags-dev,
+               libglib2.0-dev,
                libgoogle-glog-dev,
                libgtest-dev,
                libjson-c-dev,
@@ -35,6 +38,7 @@ Homepage: https://launchpad.net/trust-store
 # directly to Ubuntu, don't worry: your changes will be merged back into the
 # upstream branch
 Vcs-Bzr: lp:trust-store
+X-Ubuntu-Use-Langpack: yes
 
 Package: libtrust-store1
 Architecture: any

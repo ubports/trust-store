@@ -15,40 +15,76 @@
  */
 
 import QtQuick 2.0
-import Ubuntu.Components 1.1
-import Ubuntu.Components.Popups 1.0
+import Ubuntu.Components 1.3
+import Ubuntu.Components.Popups 1.3
 
-Rectangle {
-    width: units.gu(40)
-    height: units.gu(71)
-    color: "transparent"
+Item {
 
-    property var dialogTitle: title
-    property var dialogDescription: description
+    property var appIcon: icon
+    property var appName: name
+    property var appId: id
+    property var serviceDescription: description
 
     signal quit(int code)
 
-    Component.onCompleted: dialog.show();
-
-    Dialog {
+    Component {
         id: dialog
-
-        title: dialogTitle
-        text: dialogDescription
-        fadingAnimation: PropertyAnimation { duration: 0 }
-
-        Button {
-            objectName: "deny"
-            text: i18n.tr("Deny")
-            color: UbuntuColors.red
-            onClicked: quit(1)
-        }
-
-        Button {
-            objectName: "allow"
-            text: i18n.tr("Allow")
-            color: UbuntuColors.green
-            onClicked: quit(0)
+        Dialog {
+            id: dialogue
+            Column {
+                spacing: units.gu(0.5)
+                UbuntuShape {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    id: iconShape
+                    radius: "medium"
+                    aspect: UbuntuShape.DropShadow
+                    anchors.margins: units.gu(1)
+                    sourceFillMode: UbuntuShape.PreserveAspectCrop
+                    source: Image {
+                        id: icon
+                        sourceSize.width: iconShape.width
+                        sourceSize.height: iconShape.height
+                        source: appIcon
+                    }
+                }
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: appName
+                    horizontalAlignment: Text.AlignHCenter
+                    width: parent.width
+                    elide: Text.ElideRight
+                    wrapMode: Text.Wrap
+                    maximumLineCount: 2
+                }
+                Label {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    text: appId
+                    color: UbuntuColors.lightGrey
+                    fontSize: "small"
+                    width: parent.width
+                    horizontalAlignment: Text.AlignHCenter
+                    elide: Text.ElideMiddle
+                    maximumLineCount: 1
+                }
+            }
+            Label {
+                anchors.horizontalCenter: parent.horizontalCenter
+                text: serviceDescription
+                horizontalAlignment: Text.AlignHCenter
+                width: parent.width
+                wrapMode: Text.Wrap
+            }
+            Button {
+                text: i18n.tr("Allow")
+                color: UbuntuColors.green
+                onClicked: quit(0)
+            }
+            Button {
+                text: i18n.tr("Don’t Allow")
+                color: UbuntuColors.lightGrey
+                onClicked: quit(1)
+            }           
         }
     }
+    Component.onCompleted: PopupUtils.open(dialog)
 }

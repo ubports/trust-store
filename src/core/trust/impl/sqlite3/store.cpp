@@ -17,10 +17,12 @@
  */
 
 #include <core/trust/store.h>
+#include <core/trust/impl/sqlite3/store.h>
 
 #include <core/posix/this_process.h>
 
 #include <sqlite3.h>
+#include <xdg.h>
 
 #include <cstring>
 #include <iostream>
@@ -30,39 +32,32 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+namespace fs = boost::filesystem;
+
 namespace core
 {
-std::string home()
-{
-    return core::posix::this_process::env::get_or_throw("HOME");
-}
-
-std::string runtime_persistent_data_dir()
-{
-    return core::posix::this_process::env::get(
-                "XDG_DATA_HOME",
-                home() + "/.local/share");
-}
-
-struct Directory
-{
-    Directory(const std::string& name)
-    {
-        // Default permissions for directory creation.
-        mode_t default_mode = 0755;
-        // This is only a helper and we are consciously ignoring
-        // errors. We will fail later on when trying to opening the
-        // database, anyway.
-        mkdir(name.c_str(), default_mode);
-    }
-};
-
 namespace trust
 {
 namespace impl
 {
 namespace sqlite
 {
+// ensure_dirs_or_throw ensures that the directory p exists
+// with the correct permissions, i.e., 0700.
+fs::path ensure_dir_or_throw(const fs::path& p)
+{
+    // Ideally, we would use fs::create_directories but
+    //   https://svn.boost.org/trac/boost/ticket/11179
+    // Prevents us from doing so.
+    static const mode_t owner_all = S_IRWXU;
+    if (mkdir(p.string().c_str(), owner_all) != 0)
+    {
+        if (errno != EEXIST) throw std::system_error(errno, std::system_category());
+    }
+
+    return p;
+}
+
 std::pair<int, bool> is_error(int result)
 {
     switch(result)
@@ -333,7 +328,7 @@ struct Database
             throw std::runtime_error(sqlite3_errstr(result) + std::string(": ") + error());
 
         return TaggedPreparedStatement<Statement>(this, stmt);
-    }    
+    }
 
     std::string error() const
     {
@@ -687,7 +682,7 @@ struct Store
         } d;
     };
 
-    Store(const std::string &service_name);
+    Store(const std::string &service_name, xdg::BaseDirSpecification& spec);
     ~Store();
 
     // Handles upgrades to the underlying database if the schema changes.
@@ -704,7 +699,6 @@ struct Store
     std::shared_ptr<core::trust::Store::Query> query();
 
     std::mutex guard;
-    core::Directory runtime_peristent_data_directory;
     Database db;
     TaggedPreparedStatement<Statements::CreateDataTableIfNotExists> create_data_table_statement;
 
@@ -719,9 +713,8 @@ struct Store
 namespace trust = core::trust;
 namespace sqlite = core::trust::impl::sqlite;
 
-sqlite::Store::Store(const std::string& service_name)
-    : runtime_peristent_data_directory{core::runtime_persistent_data_dir() + "/" + service_name},
-      db{core::runtime_persistent_data_dir() + "/" + service_name + "/trust.db"},
+sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification& spec)
+    : db{(ensure_dir_or_throw(spec.data().home() / service_name) / "trust.db").string()},
       create_data_table_statement{db.prepare_tagged_statement<Statements::CreateDataTableIfNotExists>()}
 {
     upgrade(db.get_version());
@@ -783,10 +776,15 @@ std::shared_ptr<trust::Store::Query> sqlite::Store::query()
     return std::shared_ptr<trust::Store::Query>{new sqlite::Store::Query{shared_from_this()}};
 }
 
-std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
+std::shared_ptr<core::trust::Store> core::trust::impl::sqlite::create_for_service(const std::string& name, xdg::BaseDirSpecification& spec)
 {
-    if (service_name.empty())
+    if (name.empty())
         throw core::trust::Errors::ServiceNameMustNotBeEmpty();
 
-    return std::shared_ptr<trust::Store>{new sqlite::Store(service_name)};
+    return std::make_shared<sqlite::Store>(name, spec);
+}
+
+std::shared_ptr<core::trust::Store> core::trust::create_default_store(const std::string& service_name)
+{
+    return core::trust::impl::sqlite::create_for_service(service_name, *xdg::BaseDirSpecification::create());
 }
