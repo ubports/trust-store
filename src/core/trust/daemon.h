@@ -22,6 +22,7 @@
 #include <core/trust/agent.h>
 #include <core/trust/store.h>
 
+#include <core/trust/dbus/bus_factory.h>
 #include <core/trust/remote/agent.h>
 
 #include <core/dbus/bus.h>
@@ -92,11 +93,20 @@ struct Daemon
         };
 
         // A remote agent implementation leveraging dbus.
-        struct DBusRemoteAgent
+        struct SystemServiceDBusRemoteAgent
         {
             static constexpr const char* name
             {
-                "DBusRemoteAgent"
+                "DBusRemoteAgent" // TODO(tvoss): Rename and adjust downstream projects on next abi bump.
+            };
+        };
+
+        // A remote agent implementation leveraging dbus.
+        struct SessionServiceDBusRemoteAgent
+        {
+            static constexpr const char* name
+            {
+                "SessionServiceDBusRemoteAgent"
             };
         };
     };
@@ -107,15 +117,16 @@ struct Daemon
         typedef std::function<
             std::shared_ptr<core::trust::Agent>(
                 const std::string&, // The name of the service.
-                const Dictionary&)  // Dictionary containing Agent-specific configuration options.
+                const Dictionary&)  // Dictionary containing Agent-specific configuration options.        
         > LocalAgentFactory;
 
         // Functor for creating trust::remote::Agent instances given a
         // set of parameters.
         typedef std::function<
-            std::shared_ptr<core::trust::remote::Agent::Skeleton>(
+            std::shared_ptr<core::trust::Agent>(
                 const std::string&,             // The name of the service.
                 const std::shared_ptr<Agent>&,  // The local agent implementation.
+                const core::trust::dbus::BusFactory::Ptr&, // The bus bus factory.
                 const Dictionary&               // Dictionary containing Agent-specific configuration options.
                 )
         > RemoteAgentFactory;
@@ -187,7 +198,7 @@ struct Daemon
             // of this daemon instance.
             struct
             {
-                std::shared_ptr<core::trust::remote::Agent::Skeleton> agent;
+                std::shared_ptr<core::trust::Agent> agent;
             } remote;
         };
 
@@ -201,6 +212,7 @@ struct Daemon
         typedef std::function<
             std::shared_ptr<core::trust::remote::Agent::Stub>(
                 const std::string&, // The name of the service.
+                const core::trust::dbus::BusFactory::Ptr&, // The bus bus factory.
                 const Dictionary&)  // Dictionary containing Agent-specific configuration options.
         > RemoteAgentFactory;
 

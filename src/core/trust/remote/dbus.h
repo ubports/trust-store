@@ -25,6 +25,8 @@
 #include <core/trust/dbus/agent.h>
 #include <core/trust/dbus/agent_registry.h>
 
+#include <core/dbus/service_watcher.h>
+
 #include <unistd.h>
 #include <sys/types.h>
 
@@ -86,6 +88,8 @@ struct CORE_TRUST_DLL_PUBLIC Agent
             std::shared_ptr<Agent> impl;
             // The remote object implementing core.trust.dbus.AgentRegistry.
             core::dbus::Object::Ptr agent_registry_object;
+            // The watcher monitoring the remote object implementing core.trust.dbus.AgentRegistry.
+            std::unique_ptr<core::dbus::ServiceWatcher> agent_registry_watcher;
             // The service that objects implementing core.trust.dbus.Agent should be added to.
             core::dbus::Service::Ptr service;
             // The underlying bus instance.
@@ -95,11 +99,13 @@ struct CORE_TRUST_DLL_PUBLIC Agent
         };
 
         // Constructs a new Skeleton instance, installing impl for handling actual requests.
-        Skeleton(const Configuration& configuration);
+        Skeleton(Configuration configuration);
 
         // From core::trust::Agent, dispatches to the actual implementation.
         core::trust::Request::Answer authenticate_request_with_parameters(const RequestParameters& parameters);
 
+        // Store all creation-time parameters.
+        Configuration config;
         // Stub for accessing the remote agent registry.
         core::trust::dbus::AgentRegistry::Stub agent_registry_stub;
     };

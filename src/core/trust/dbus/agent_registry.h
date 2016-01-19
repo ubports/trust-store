@@ -179,6 +179,44 @@ struct AgentRegistry
             locking_agent_registry.register_agent_for_user(uid, skeleton);
         }
 
+        // Calls into the remote implementation to register the given agent implementation.
+        // Throws std::runtime_error and std::logic_error in case of issues.
+        void register_agent_for_user_async(const core::trust::Uid& uid, const std::shared_ptr<core::trust::Agent>& impl, const std::function<void()>& then)
+        {
+            // We sample a path for the given uid
+            auto path = configuration.object_path_generator(uid);
+            // And construct the skeleton instance.
+            auto skeleton = std::shared_ptr<core::trust::dbus::Agent::Skeleton>
+            {
+                new core::trust::dbus::Agent::Skeleton
+                {
+                    core::trust::dbus::Agent::Skeleton::Configuration
+                    {
+                        configuration.service->add_object_for_path(path),
+                        configuration.bus,
+                        std::bind(&core::trust::Agent::authenticate_request_with_parameters, impl, std::placeholders::_1)
+                    }
+                }
+            };
+
+            // And announce the agent.
+            configuration.object->invoke_method_asynchronously_with_callback<
+                Methods::RegisterAgentForUser, void
+            >([this, then, uid, skeleton](const core::dbus::Result<void>& result)
+            {
+                if (result.is_error())
+                {
+                    std::cerr << "Failed to register agent for user: " << result.error().print() << std::endl;
+                }
+                else
+                {
+                    // All good, update our own state prior to invoking the supplied callback.
+                    locking_agent_registry.register_agent_for_user(uid, skeleton);
+                    then();
+                }
+            }, uid, path);
+        }
+
         // Calls into the remote implementation to unregister any agent registered for the given uid.
         // Throws std::runtime_error and std::logic_error in case of issues.
         void unregister_agent_for_user(const core::trust::Uid& uid) override

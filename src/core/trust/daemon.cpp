@@ -23,10 +23,13 @@
 #include <core/trust/expose.h>
 #include <core/trust/i18n.h>
 #include <core/trust/privilege_escalation_prevention_agent.h>
+#include <core/trust/runtime.h>
 #include <core/trust/store.h>
 #include <core/trust/white_listing_agent.h>
 
 #include <core/trust/mir_agent.h>
+
+#include <core/trust/dbus/bus_factory.h>
 
 #include <core/trust/remote/agent.h>
 #include <core/trust/remote/dbus.h>
@@ -50,67 +53,6 @@ namespace Options = boost::program_options;
 
 namespace
 {
-    struct Runtime
-    {
-        // Do not execute in parallel, serialize
-        // accesses.
-        static constexpr std::size_t concurrency_hint{2};
-
-        // Our evil singleton pattern. Not bad though, we control the
-        // entire executable and rely on automatic cleanup of static
-        // instances.
-        static Runtime& instance()
-        {
-            static Runtime runtime;
-            return runtime;
-        }
-
-        ~Runtime()
-        {
-            io_service.stop();
-
-            if (worker1.joinable())
-                worker1.join();
-
-            if (worker2.joinable())
-                worker2.join();
-        }
-
-        // We trap sig term to ensure a clean shutdown.
-        std::shared_ptr<core::posix::SignalTrap> signal_trap
-        {
-            core::posix::trap_signals_for_all_subsequent_threads(
-            {
-                core::posix::Signal::sig_term,
-                core::posix::Signal::sig_int
-            })
-        };
-
-        // Our io_service instance exposed to remote agents.
-        boost::asio::io_service io_service
-        {
-            concurrency_hint
-        };
-
-        // We keep the io_service alive and introduce some artificial
-        // work.
-        boost::asio::io_service::work keep_alive
-        {
-            io_service
-        };
-
-        // We immediate execute the io_service instance
-        std::thread worker1
-        {
-            std::thread{[this]() { io_service.run(); }}
-        };
-
-        std::thread worker2
-        {
-            std::thread{[this]() { io_service.run(); }}
-        };
-    };
-
     core::trust::Daemon::Dictionary fill_dictionary_from_unrecognized_options(const Options::parsed_options& parsed_options)
     {
         auto unrecognized = Options::collect_unrecognized(
@@ -152,34 +94,6 @@ namespace
 
         core::trust::Request::Answer canned_answer;
     };
-
-    core::dbus::Bus::Ptr bus_from_name(const std::string& bus_name)
-    {
-        core::dbus::Bus::Ptr bus;
-
-        if (bus_name == "system")
-            bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::system);
-        else if (bus_name == "session")
-            bus = std::make_shared<core::dbus::Bus>(core::dbus::WellKnownBus::session);
-        else if (bus_name == "system_with_address_from_env")
-            bus = std::make_shared<core::dbus::Bus>(core::posix::this_process::env::get_or_throw("DBUS_SYSTEM_BUS_ADDRESS"));
-        else if (bus_name == "session_with_address_from_env")
-            bus = std::make_shared<core::dbus::Bus>(core::posix::this_process::env::get_or_throw("DBUS_SESSION_BUS_ADDRESS"));
-
-        if (not bus) throw std::runtime_error
-        {
-            "Could not create bus for name: " + bus_name
-        };
-
-        bus->install_executor(core::dbus::asio::make_executor(bus, Runtime::instance().io_service));
-
-        return bus;
-    }
-
-    core::dbus::Bus::Ptr bus_from_dictionary(const core::trust::Daemon::Dictionary& dict)
-    {
-        return bus_from_name(dict.at("bus"));
-    }
 }
 
 const std::map<std::string, core::trust::Daemon::Skeleton::LocalAgentFactory>& core::trust::Daemon::Skeleton::known_local_agent_factories()
@@ -247,7 +161,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
     {
         {
             std::string{Daemon::RemoteAgents::UnixDomainSocketRemoteAgent::name},
-            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const Dictionary& dict)
+            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const core::trust::dbus::BusFactory::Ptr&, const Dictionary& dict)
             {
                 if (dict.count("endpoint") == 0) throw std::runtime_error
                 {
@@ -257,7 +171,7 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                 core::trust::remote::posix::Skeleton::Configuration config
                 {
                     agent,
-                    Runtime::instance().io_service,
+                    core::trust::Runtime::instance().service(),
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver(),
@@ -271,15 +185,15 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
             }
         },
         {
-            std::string{Daemon::RemoteAgents::DBusRemoteAgent::name},
-            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const Dictionary& dict)
+            std::string{Daemon::RemoteAgents::SystemServiceDBusRemoteAgent::name},
+            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const core::trust::dbus::BusFactory::Ptr& bf, const Dictionary& dict)
             {
                 if (dict.count("bus") == 0) throw std::runtime_error
                 {
                     "Missing bus specifier, please choose from {system, session}."
                 };
 
-                auto bus = bus_from_dictionary(dict);
+                auto bus = bf->bus_for_type(boost::lexical_cast<core::trust::dbus::BusFactory::Type>(dict.at("bus")));
 
                 std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 
@@ -290,16 +204,45 @@ const std::map<std::string, core::trust::Daemon::Skeleton::RemoteAgentFactory>& 
                                 core::trust::remote::dbus::default_agent_registry_path
                             });
 
+                core::dbus::DBus daemon{bus};
+
                 core::trust::remote::dbus::Agent::Skeleton::Configuration config
                 {
                     agent,
                     object,
+                    daemon.make_service_watcher(dbus_service_name),
                     service,
                     bus,
                     core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
                 };
 
-                return std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
+                return std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(std::move(config));
+            }
+        },
+        {
+            std::string{Daemon::RemoteAgents::SessionServiceDBusRemoteAgent::name},
+            [](const std::string& service_name, const std::shared_ptr<Agent>& agent, const core::trust::dbus::BusFactory::Ptr& bf, const Dictionary& dict)
+            {
+                if (dict.count("bus") == 0) throw std::runtime_error
+                {
+                    "Missing bus specifier, please choose from {system, session}."
+                };
+
+                auto bus = bf->bus_for_type(boost::lexical_cast<core::trust::dbus::BusFactory::Type>(dict.at("bus")));
+
+                auto service = core::dbus::Service::add_service(bus, (core::trust::dbus::Agent::default_service_name_pattern() % service_name).str());
+                auto object = service->add_object_for_path(core::trust::dbus::Agent::default_object_path());
+
+                return std::make_shared<core::trust::dbus::Agent::Skeleton>(
+                            core::trust::dbus::Agent::Skeleton::Configuration
+                            {
+                                object,
+                                bus,
+                                [agent](const core::trust::Agent::RequestParameters& params)
+                                {
+                                    return agent->authenticate_request_with_parameters(params);
+                                }
+                            });
             }
         }
     };
@@ -316,7 +259,7 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     options.add_options()
             (Parameters::ForService::name, Options::value<std::string>()->required(), Parameters::ForService::description)
             (Parameters::WithTextDomain::name, Options::value<std::string>(), Parameters::WithTextDomain::description)
-            (Parameters::StoreBus::name, Options::value<std::string>()->default_value("session"), Parameters::StoreBus::description)
+            (Parameters::StoreBus::name, Options::value<core::trust::dbus::BusFactory::Type>()->required(), Parameters::StoreBus::description)
             (Parameters::LocalAgent::name, Options::value<std::string>()->required(), Parameters::LocalAgent::description)
             (Parameters::RemoteAgent::name, Options::value<std::string>()->required(), Parameters::RemoteAgent::description);
 
@@ -324,10 +267,10 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
     {
         argc,
         argv
-    };
+    };    
 
     try
-    {
+    {        
         auto parsed_options = parser.options(options).allow_unregistered().run();
         Options::store(parsed_options, vm);
         Options::notify(vm);
@@ -340,6 +283,8 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
             "Error parsing command line: " + boost::diagnostic_information(e)
         };
     }
+
+    auto bf = core::trust::dbus::BusFactory::create_default();
 
     auto service_name = vm[Parameters::ForService::name].as<std::string>();
 
@@ -381,12 +326,12 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
         core::trust::PrivilegeEscalationPreventionAgent::default_user_id_functor(),
         formatting_agent);
 
-    auto remote_agent = remote_agent_factory(service_name, formatting_agent, dict);
+    auto remote_agent = remote_agent_factory(service_name, formatting_agent, bf, dict);
 
     return core::trust::Daemon::Skeleton::Configuration
     {
         service_name,
-        bus_from_name(vm[Parameters::StoreBus::name].as<std::string>()),
+        bf->bus_for_type(vm[Parameters::StoreBus::name].as<core::trust::dbus::BusFactory::Type>()),
         {local_store, privilege_escalation_prevention_agent},
         {remote_agent}
     };
@@ -395,16 +340,6 @@ core::trust::Daemon::Skeleton::Configuration core::trust::Daemon::Skeleton::Conf
 // Executes the daemon with the given configuration.
 core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust::Daemon::Skeleton::Configuration& configuration)
 {
-    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
-    {
-        Runtime::instance().signal_trap->stop();
-    });
-
-    std::thread worker
-    {
-        [configuration]() { configuration.bus->run(); }
-    };
-
     // Expose the local store to the bus, keeping it exposed for the
     // lifetime of the returned token.
     auto token = core::trust::expose_store_to_bus_with_name(
@@ -412,12 +347,7 @@ core::posix::exit::Status core::trust::Daemon::Skeleton::main(const core::trust:
                 configuration.bus,
                 configuration.service_name);
 
-    Runtime::instance().signal_trap->run();
-
-    configuration.bus->stop();
-
-    if (worker.joinable())
-        worker.join();
+    core::trust::Runtime::instance().run();
 
     return core::posix::exit::Status::success;
 }
@@ -428,7 +358,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core
     {
         {
             std::string{Daemon::RemoteAgents::UnixDomainSocketRemoteAgent::name},
-            [](const std::string&, const Dictionary& dict)
+            [](const std::string&, const core::trust::dbus::BusFactory::Ptr&, const Dictionary& dict)
             {
                 if (dict.count("endpoint") == 0) throw std::runtime_error
                 {
@@ -437,7 +367,7 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core
 
                 core::trust::remote::posix::Stub::Configuration config
                 {
-                    Runtime::instance().io_service,
+                    core::trust::Runtime::instance().service(),
                     boost::asio::local::stream_protocol::endpoint{dict.at("endpoint")},
                     core::trust::remote::helpers::proc_stat_start_time_resolver(),
                     core::trust::remote::posix::Stub::get_sock_opt_credentials_resolver(),
@@ -448,10 +378,10 @@ const std::map<std::string, core::trust::Daemon::Stub::RemoteAgentFactory>& core
             }
         },
         {
-            std::string{Daemon::RemoteAgents::DBusRemoteAgent::name},
-            [](const std::string& service_name, const Dictionary& dict)
+            std::string{Daemon::RemoteAgents::SystemServiceDBusRemoteAgent::name},
+            [](const std::string& service_name, const core::trust::dbus::BusFactory::Ptr& bf, const Dictionary& dict)
             {
-                auto bus = bus_from_dictionary(dict);
+                auto bus = bf->bus_for_type(boost::lexical_cast<core::trust::dbus::BusFactory::Type>(dict.at("bus")));
 
                 std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 
@@ -507,12 +437,14 @@ core::trust::Daemon::Stub::Configuration core::trust::Daemon::Stub::Configuratio
         };
     }
 
+    auto bf = core::trust::dbus::BusFactory::create_default();
+
     auto service_name = vm[Parameters::ForService::name].as<std::string>();
 
     auto remote_agent_factory = core::trust::Daemon::Stub::known_remote_agent_factories()
             .at(vm[Parameters::RemoteAgent::name].as<std::string>());
 
-    auto remote_agent = remote_agent_factory(service_name, dict);
+    auto remote_agent = remote_agent_factory(service_name, bf, dict);
 
     return core::trust::Daemon::Stub::Configuration
     {
@@ -527,11 +459,16 @@ namespace
 // A user can feed a request to the stub.
 struct Shell : public std::enable_shared_from_this<Shell>
 {
-    Shell(const std::shared_ptr<core::trust::Agent>& agent)
+    Shell(const std::shared_ptr<core::trust::Agent>& agent, boost::asio::io_service& ios)
         : agent{agent},
-          stdin{Runtime::instance().io_service, STDIN_FILENO},
+          stdin{ios, STDIN_FILENO},
           app_id_resolver{core::trust::remote::helpers::aa_get_task_con_app_id_resolver()}
     {
+    }
+
+    ~Shell()
+    {
+        stop();
     }
 
     // Prints out the initial prompt and initiates a read operation on stdin.
@@ -610,20 +547,13 @@ struct Shell : public std::enable_shared_from_this<Shell>
 core::posix::exit::Status core::trust::Daemon::Stub::main(const core::trust::Daemon::Stub::Configuration& configuration)
 {
     // We setup our minimal shell here.
-    auto shell = std::make_shared<Shell>(configuration.remote.agent);
-
-    Runtime::instance().signal_trap->signal_raised().connect([](core::posix::Signal)
-    {
-        Runtime::instance().signal_trap->stop();
-    });
+    auto shell = std::make_shared<Shell>(configuration.remote.agent, core::trust::Runtime::instance().service());
 
     // We start up our shell
     shell->start();
 
     // Wait until signal arrives.
-    Runtime::instance().signal_trap->run();
-
-    shell->stop();
+    core::trust::Runtime::instance().run();
 
     return core::posix::exit::Status::success;
 }

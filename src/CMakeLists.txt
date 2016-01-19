@@ -137,10 +137,15 @@ add_library(
   core/trust/expose.cpp
   core/trust/request.cpp
   core/trust/resolve.cpp
+  core/trust/runtime.h
+  core/trust/runtime.cpp
 
   # All dbus-specific headers go here
   core/trust/dbus/agent.h
+  core/trust/dbus/agent.cpp
   core/trust/dbus/agent_registry.h
+  core/trust/dbus/bus_factory.h
+  core/trust/dbus/bus_factory.cpp
   core/trust/dbus/codec.h
   core/trust/dbus/interface.h
 
@@ -157,6 +162,9 @@ add_library(
   trust-stored
 
   core/trust/daemon.cpp
+
+  core/trust/runtime.h
+  core/trust/runtime.cpp
 )
 
 add_executable(

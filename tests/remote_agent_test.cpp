@@ -381,6 +381,10 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
 
     cps.wait_for_signal_ready_for(std::chrono::milliseconds{500});
 
+    // We have to provide some grace to the service, such that it can spin up threads
+    // and handle incoming connections. This is specifically required to satisfy slow builders.
+    std::this_thread::sleep_for(std::chrono::seconds{1});
+
     EXPECT_CALL(process_start_time_resolver, resolve_process_start_time(_))
             .Times(2)
             .WillRepeatedly(Return(42));
@@ -860,6 +864,8 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
         stub_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
         skeleton_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
 
+        std::this_thread::sleep_for(std::chrono::seconds{1});
+
         for (unsigned int i = 0; i < 100; i++)
             EXPECT_EQ(answer, stub->authenticate_request_with_parameters(ref_params));
 
@@ -893,6 +899,8 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
         ON_CALL(*mock_agent, authenticate_request_with_parameters(_))
                 .WillByDefault(Return(answer));
 
+        Mock::AllowLeak(mock_agent.get());
+
         std::string dbus_service_name = core::trust::remote::dbus::default_service_name_prefix + std::string{"."} + service_name;
 
         stub_ready.wait_for_signal_ready_for(std::chrono::milliseconds{1000});
@@ -903,16 +911,19 @@ TEST_F(DBus, a_service_can_query_a_remote_agent)
             core::trust::remote::dbus::default_agent_registry_path
         });
 
+        core::dbus::DBus daemon{bus};
+
         core::trust::remote::dbus::Agent::Skeleton::Configuration config
         {
             mock_agent,
             object,
+            daemon.make_service_watcher(dbus_service_name),
             service,
             bus,
             core::trust::remote::helpers::aa_get_task_con_app_id_resolver()
         };
 
-        auto skeleton = std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(config);
+        auto skeleton = std::make_shared<core::trust::remote::dbus::Agent::Skeleton>(std::move(config));
 
         skeleton_ready.try_signal_ready_for(std::chrono::milliseconds{1000});
 
