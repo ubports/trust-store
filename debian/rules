@@ -5,6 +5,18 @@ export DPKG_GENSYMBOLS_CHECK_LEVEL=4
 
 include /usr/share/dpkg/default.mk
 
+distro=$(shell lsb_release -c -s)
+
+ifeq ($(distro),vivid)
+	full_version=$(shell cat $(CURDIR)/debian/VERSION.vivid)
+else
+	full_version=$(shell cat $(CURDIR)/debian/VERSION)
+endif
+
+major=$(shell echo $(full_version) | cut -d'.' -f1)
+minor=$(shell echo $(full_version) | cut -d'.' -f2)
+patch=$(shell echo $(full_version) | cut -d'.' -f3)
+
 # Mir is an optional build dependency
 ifneq (,$(filter $(DEB_HOST_ARCH),amd64 arm64 i386 armhf))
         TRUST_STORE_MIR_AGENT_ENABLED = ON
@@ -19,4 +31,8 @@ export XDG_DATA_HOME=/tmp
 	dh $@ --fail-missing
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED)
+	dh_auto_configure -- -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED) -DTRUST_STORE_VERSION_MAJOR=$(major) -DTRUST_STORE_VERSION_MINOR=$(minor) -DTRUST_STORE_VERSION_PATCH=$(patch)
+
+override_dh_auto_clean:
+	/bin/sh $(CURDIR)/debian/gen-debian-files.sh $(CURDIR)/debian
+	dh_auto_clean
