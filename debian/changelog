@@ -1,3 +1,16 @@
+trust-store (2.0.0+16.04.20160119-0ubuntu1) xenial; urgency=medium
+
+  [ CI Train Bot ]
+  * Resync trunk.
+
+  [ Thomas Voß ]
+  * Enable dual landing to vivid+o, and all later releases.
+  * Merge core::trust::Runtime changes. Add better support for in-
+    session service scenarios, with services likely being activated on
+    demand. Add load test cases around in-session service scenario.
+
+ -- Rodney Dawes <ci-train-bot@canonical.com>  Tue, 19 Jan 2016 15:22:52 +0000
+
 trust-store (2.0.0+15.10.20150831.3-0ubuntu1) wily; urgency=medium
 
   [ Alfonso Sanchez-Beato (email Canonical) ]
