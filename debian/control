@@ -26,7 +26,7 @@ Build-Depends: cmake,
                libmirclient-dev [amd64 arm64 i386 armhf],
                libprocess-cpp-dev,
                libsqlite3-dev,
-	       lsb-release,
+               lsb-release,
                pkg-config,
                qt5-default,
                qtbase5-dev,
@@ -40,7 +40,7 @@ Homepage: https://launchpad.net/trust-store
 Vcs-Bzr: lp:trust-store
 X-Ubuntu-Use-Langpack: yes
 
-Package: libtrust-store1
+Package: libtrust-store2
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
@@ -58,7 +58,7 @@ Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends},
 Recommends: libtrust-store-doc,
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
 Description: C++11 library for persisting trust requests - dev files
  Provides a common implementation of a trust store to be used by trusted
@@ -70,7 +70,7 @@ Description: C++11 library for persisting trust requests - dev files
 Package: trust-store-bin
 Section: devel
 Architecture: any
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
 Description: Daemon binaries to be used by services.
  Provides a common implementation of a trust store to be used by trusted
@@ -81,7 +81,7 @@ Description: Daemon binaries to be used by services.
 Package: trust-store-tests
 Section: libdevel
 Architecture: any
-Depends: libtrust-store1 (= ${binary:Version}),
+Depends: libtrust-store2 (= ${binary:Version}),
          ${misc:Depends},
 Suggests: libtrust-store-dev,
 Description: Test files for libtrust-store1
