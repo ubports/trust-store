@@ -16,6 +16,7 @@
 #
 # Authored by: Michi Henning <michi.henning@canonical.com>
 #              Thomas Voß <thomas.voss@canonical.com>
+#              Robert Bruce Park <robert.park@canonical.com>
 
 #
 # Script to generate debian files for dual landing in Vivid (gcc 4.9 ABI)
@@ -24,16 +25,9 @@
 # This script is called from debian/rules and generates:
 #
 # - control
-# - libtrust-store${soversion}.install.${target_arch}
+# - libtrust-store${soversion}.install
 #
 # For all but control, this is a straight substition and/or renaming exercise for each file.
-# For control, if building on Wily or later, we also fix the "Replaces:" and "Conflicts:"
-# entries, so we don't end up with two packages claiming ownership of the same places
-# in the file system.
-#
-# Because the debian files for the different distributions are generated on the fly,
-# this allows us to keep a single source tree for both distributions. See ../HACKING
-# for more explanations.
 #
 
 set -e  # Fail if any command fails.
@@ -54,7 +48,6 @@ version_dir=$(mktemp -d)
 sh ${dir}/get-versions.sh ${dir} ${version_dir}
 
 export TRUST_STORE_SOVERSION=$(cat $version_dir/libtrust-store.soversion)
-export TRUST_STORE_VIVID_SOVERSION=$(cat $version_dir/libtrust-store.vivid-soversion)
 
 trap "rm -fr $version_dir" 0 INT TERM QUIT
 
@@ -69,8 +62,6 @@ process()
 EOF
     perl -pe 's/@([A-Z_]+)@/$ENV{$1} or die "$1 undefined"/eg' <"$1"
 }
-
-[ "$SERIES" = "vivid" ] && export TRUST_STORE_SOVERSION="$TRUST_STORE_VIVID_SOVERSION"
 
 process "$dir/control.in" >"$dir/control"
 process "$dir/libtrust-store.install.in" > "$dir/libtrust-store${TRUST_STORE_SOVERSION}.install"
