@@ -34,5 +34,5 @@ override_dh_auto_configure:
 	dh_auto_configure -- -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED) -DTRUST_STORE_VERSION_MAJOR=$(major) -DTRUST_STORE_VERSION_MINOR=$(minor) -DTRUST_STORE_VERSION_PATCH=$(patch)
 
 override_dh_auto_clean:
-	/bin/sh $(CURDIR)/debian/gen-debian-files.sh $(CURDIR)/debian
+	/bin/sh $(CURDIR)/debian/bileto_pre_release_hook
 	dh_auto_clean
