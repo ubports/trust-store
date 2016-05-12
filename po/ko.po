@@ -14,12 +14,12 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Launchpad-Export-Date: 2016-03-04 06:13+0000\n"
-"X-Generator: Launchpad (build 17936)\n"
+"X-Launchpad-Export-Date: 2016-05-12 05:39+0000\n"
+"X-Generator: Launchpad (build 18025)\n"
 
 #: /home/tvoss/ubuntu/scratch/fix-1532870/src/core/trust/daemon.cpp:266
 msgid "is trying to access"
-msgstr ""
+msgstr "이(가) 접근하려 함"
 
 #: /home/tvoss/ubuntu/scratch/fix-1532870/src/core/trust/mir/prompt_main.qml:78
 msgid "Allow"
@@ -27,7 +27,7 @@ msgstr "허용"
 
 #: /home/tvoss/ubuntu/scratch/fix-1532870/src/core/trust/mir/prompt_main.qml:83
 msgid "Don’t Allow"
-msgstr ""
+msgstr "허용하지 않음"
 
 #~ msgid "Deny"
 #~ msgstr "거부"
