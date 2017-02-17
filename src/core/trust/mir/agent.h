@@ -58,18 +58,6 @@ public:
     // Just a convenience typedef
     typedef std::shared_ptr<PromptSessionVirtualTable> Ptr;
 
-    // Just a helper struct to be passed to client_fd_callbacks.
-    struct Context
-    {
-        // Marks the value of an invalid fd.
-        static constexpr const int invalid_fd{-1};
-        // The fd contained within this context instance.
-        int fd{invalid_fd};
-    };
-
-    // Invoked whenever a request for creation of pre-authenticated fds succeeds.
-    static void mir_client_fd_callback(MirPromptSession */*prompt_session*/, size_t count, int const* fds, void* context);
-
     // Create a MirPromptSessionVirtualTable for a given prompt session instance.
     // Please note that no change of ownwership is happening here. Instead, we expect
     // the calling code to handle object lifetimes.
@@ -111,7 +99,7 @@ public:
             // The process id of the requesting app/service
             Pid app_pid,
             // Callback handling prompt session state changes.
-            mir_prompt_session_state_change_callback cb,
+            MirPromptSessionStateChangeCallback cb,
             // Callback context
             void* context);
 protected:
