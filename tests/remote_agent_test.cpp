@@ -34,6 +34,7 @@
 #include <gtest/gtest.h>
 
 #include <thread>
+#include <random>
 
 namespace
 {
