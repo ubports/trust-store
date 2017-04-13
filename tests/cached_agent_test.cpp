@@ -22,6 +22,8 @@
 #include "mock_store.h"
 #include "the.h"
 
+#include <random>
+
 namespace
 {
 struct MockReporter : public core::trust::CachedAgent::Reporter

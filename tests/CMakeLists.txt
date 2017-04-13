@@ -1,11 +1,6 @@
 include_directories(${CMAKE_BINARY_DIR}/src)
 
-# Build with system gmock and embedded gtest
-set (GMOCK_INCLUDE_DIR "/usr/include/gmock/include" CACHE PATH "gmock source include directory")
-set (GMOCK_SOURCE_DIR "/usr/src/gmock" CACHE PATH "gmock source directory")
-set (GTEST_INCLUDE_DIR "${GMOCK_SOURCE_DIR}/gtest/include" CACHE PATH "gtest source include directory")
-
-add_subdirectory(${GMOCK_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/gmock")
+find_package(GMock)
 
 pkg_check_modules(DBUS dbus-1)
 
@@ -13,12 +8,22 @@ add_definitions(-DCORE_DBUS_ENABLE_GOOGLE_TEST_FIXTURE)
 
 configure_file(test_data.h.in test_data.h @ONLY)
 
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-Wgnu-zero-variadic-macro-arguments HAS_W_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+
+if (HAS_W_GNU_ZERO_VARIADIC_MACRO_ARGUMENTS)
+  # INSTANTIATE_TEST_CASE_P hits this like a slice of lemon wrapped around a large gold brick.
+  set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-gnu-zero-variadic-macro-arguments")
+else()
+  # GCC is a bit less flexible than clang and needs a bigger hammer...
+  # Work around the Google Test headers not being C++11 friendly (LP: #1658604)
+  string(REPLACE "-pedantic" "" CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS})
+endif()
+
 include_directories(
   ${CMAKE_SOURCE_DIR}/src
 
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${GMOCK_INCLUDE_DIR}
-  ${GTEST_INCLUDE_DIR}
   ${PROCESS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
 )
@@ -91,10 +96,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
 )
 
 target_link_libraries(
@@ -102,10 +105,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
 )
 
 target_link_libraries(
@@ -113,11 +114,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -126,11 +124,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -139,11 +134,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -152,11 +144,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -165,11 +154,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -178,11 +164,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -192,11 +175,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -206,11 +186,8 @@ target_link_libraries(
   trust-store
   trust-stored
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -220,11 +197,8 @@ target_link_libraries(
   trust-store
   trust-stored
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -233,11 +207,8 @@ target_link_libraries(
 
   trust-store-preseed-helper
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -277,11 +248,8 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     trust-store
     xdg
 
-    gmock
-
-    gtest
-    gtest_main
-
+    ${GMOCK_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
     ${PROCESS_CPP_LIBRARIES}
   )
 
@@ -290,11 +258,8 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
 
     trust-store
 
-    gmock
-
-    gtest
-    gtest_main
-
+    ${GMOCK_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
     ${PROCESS_CPP_LIBRARIES}
   )
 
