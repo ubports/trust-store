@@ -1,3 +1,9 @@
+trust-store (2.0.1+ubports) xenial; urgency=medium
+
+  * Imported to UBports
+
+ -- UBports auto importer <infra@ubports.com>  Sun, 07 Jan 2018 22:16:42 +0300
+
 trust-store (2.0.0+16.04.20160119-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
