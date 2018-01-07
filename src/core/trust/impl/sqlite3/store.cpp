@@ -473,6 +473,23 @@ struct Store
                 return s;
             }
         };
+
+        struct RemoveApplication
+        {
+            static const std::string& statement()
+            {
+                static const std::string s
+                {
+                    "DELETE FROM " + Store::RequestsTable::name() + " WHERE ApplicationId=?;"
+                };
+                return s;
+            }
+
+            struct Parameter
+            {
+                struct ApplicationId { static const int index = 1; };
+            };
+        };
     };
 
     // An implementation of the query interface for the SQLite-based store.
@@ -696,6 +713,7 @@ struct Store
     // From core::trust::Store
     void reset();
     void add(const Request& request);
+    void remove_application(const std::string& id);
     std::shared_ptr<core::trust::Store::Query> query();
 
     std::mutex guard;
@@ -704,6 +722,7 @@ struct Store
 
     TaggedPreparedStatement<Statements::Delete> delete_statement;
     TaggedPreparedStatement<Statements::Insert> insert_statement;
+    TaggedPreparedStatement<Statements::RemoveApplication> remove_application_statement;
 };
 }
 }
@@ -721,6 +740,7 @@ sqlite::Store::Store(const std::string& service_name, xdg::BaseDirSpecification&
 
     delete_statement = db.prepare_tagged_statement<Statements::Delete>();
     insert_statement = db.prepare_tagged_statement<Statements::Insert>();
+    remove_application_statement = db.prepare_tagged_statement<Statements::RemoveApplication>();
 }
 
 sqlite::Store::~Store()
@@ -769,6 +789,15 @@ void sqlite::Store::add(const trust::Request& request)
     insert_statement.bind_int64<sqlite::Store::RequestsTable::Column::Timestamp::index>(request.when.time_since_epoch().count());
     insert_statement.bind_int<sqlite::Store::RequestsTable::Column::Answer::index>(static_cast<int>(request.answer));
     insert_statement.step();
+}
+
+void sqlite::Store::remove_application(const std::string& id)
+{
+    std::lock_guard<std::mutex> lg(guard);
+
+    remove_application_statement.reset();
+    remove_application_statement.bind_text<Statements::RemoveApplication::Parameter::ApplicationId::index>(id);
+    remove_application_statement.step();
 }
 
 std::shared_ptr<trust::Store::Query> sqlite::Store::query()

@@ -84,6 +84,11 @@ struct Token : public core::trust::Token
             handle_add(msg);
         });
 
+        object->install_method_handler<core::trust::dbus::Store::RemoveApplication>([this](const core::dbus::Message::Ptr& msg)
+        {
+            handle_remove_application(msg);
+        });
+
         object->install_method_handler<core::trust::dbus::Store::Reset>([this](const core::dbus::Message::Ptr& msg)
         {
             handle_reset(msg);
@@ -105,6 +110,7 @@ struct Token : public core::trust::Token
     ~Token()
     {
         object->uninstall_method_handler<core::trust::dbus::Store::Add>();
+        object->uninstall_method_handler<core::trust::dbus::Store::RemoveApplication>();
         object->uninstall_method_handler<core::trust::dbus::Store::Reset>();
         object->uninstall_method_handler<core::trust::dbus::Store::AddQuery>();
         object->uninstall_method_handler<core::trust::dbus::Store::RemoveQuery>();
@@ -128,6 +134,29 @@ struct Token : public core::trust::Token
             auto error = dbus::Message::make_error(
                         msg,
                         core::trust::dbus::Store::Error::AddingRequest::name(),
+                        e.what());
+
+            bus->send(error);
+            return;
+        }
+
+        auto reply = dbus::Message::make_method_return(msg);
+        bus->send(reply);
+    }
+
+    void handle_remove_application(const core::dbus::Message::Ptr& msg)
+    {
+        std::string application_id;
+        msg->reader() >> application_id;
+
+        try
+        {
+            store->remove_application(application_id);
+        } catch(const std::runtime_error& e)
+        {
+            auto error = dbus::Message::make_error(
+                        msg,
+                        core::trust::dbus::Store::Error::RemovingApplication::name(),
                         e.what());
 
             bus->send(error);
