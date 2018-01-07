@@ -24,6 +24,7 @@
 #include <gtest/gtest.h>
 
 #include <thread>
+#include <unordered_set>
 
 namespace
 {
@@ -398,6 +399,49 @@ TEST(TrustStore, erasing_requests_empties_store)
     auto query = store->query();
     query->execute();
     EXPECT_EQ(core::trust::Store::Query::Status::eor, query->status());
+}
+
+TEST(TrustStore, removing_application)
+{
+    auto store = core::trust::create_default_store(service_name);
+    store->reset();
+
+    // Insert a bunch of requests and erase the application after that.
+    {
+        core::trust::Request r
+        {
+            "this.does.not.exist.app",
+            core::trust::Feature{0},
+            std::chrono::system_clock::now(),
+            core::trust::Request::Answer::granted
+        };
+
+        for (unsigned int i = 0; i < 100; i++)
+        {
+            r.from = "this.does.not.exist.app" + std::to_string(i % 10);
+            r.feature.value = i;
+            store->add(r);
+        }
+
+        auto query = store->query();
+        query->execute();
+        EXPECT_EQ(core::trust::Store::Query::Status::has_more_results, query->status());
+
+        store->remove_application("this.does.not.exist.app4");
+    }
+
+    // Now let's see if the records are actually gone.
+    std::unordered_set<std::string> remaining_apps;
+    auto query = store->query();
+    query->execute();
+    while (query->status() != core::trust::Store::Query::Status::eor)
+    {
+        auto r = query->current();
+        remaining_apps.insert(r.from);
+        query->next();
+    }
+    EXPECT_FALSE(remaining_apps.empty());
+    EXPECT_EQ(remaining_apps.find("this.does.not.exist.app4"), remaining_apps.end());
 }
 
 #include <core/trust/impl/sqlite3/store.h>

@@ -85,6 +85,20 @@ struct Store
             typedef core::trust::Store Interface;
         };
 
+        struct RemovingApplication
+        {
+            static const std::string& name()
+            {
+                static const std::string s
+                {
+                    "core.trust.store.error.RemovingApplication"
+                };
+
+                return s;
+            }
+            typedef core::trust::Store Interface;
+        };
+
         struct ResettingStore
         {
             static const std::string& name()
@@ -338,6 +352,26 @@ struct Store
         }
         typedef core::trust::Store Interface;
         typedef core::trust::Request ArgumentType;
+        typedef void ResultType;
+
+        inline static const std::chrono::milliseconds default_timeout()
+        {
+            return std::chrono::seconds{1};
+        }
+    };
+
+    struct RemoveApplication
+    {
+        inline static const std::string& name()
+        {
+            static const std::string& s
+            {
+                "RemoveApplication"
+            };
+            return s;
+        }
+        typedef core::trust::Store Interface;
+        typedef std::string ArgumentType;
         typedef void ResultType;
 
         inline static const std::chrono::milliseconds default_timeout()

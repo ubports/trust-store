@@ -176,6 +176,11 @@ public:
     virtual void add(const Request& request) = 0;
 
     /**
+     * @brief Remove all requests issued by the given application.
+     */
+    virtual void remove_application(const std::string& id) = 0;
+
+    /**
      * @brief Create a query for this store.
      */
     virtual std::shared_ptr<Query> query() = 0;

@@ -69,6 +69,10 @@ struct MockStore : public core::trust::Store
       */
     MOCK_METHOD1(add, void(const core::trust::Request&));
 
+    /** @brief Remove all records about the given application.
+      */
+    MOCK_METHOD1(remove_application, void(const std::string&));
+
     /**
      * @brief Create a query for this store.
      */

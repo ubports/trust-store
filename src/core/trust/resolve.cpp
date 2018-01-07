@@ -195,6 +195,17 @@ struct Store : public core::trust::Store
             throw std::runtime_error(response.error().print());
     }
 
+    void remove_application(const std::string& id)
+    {
+        auto response =
+                proxy->invoke_method_synchronously<
+                    core::trust::dbus::Store::RemoveApplication,
+                    void>(id);
+
+        if (response.is_error())
+            throw std::runtime_error(response.error().print());
+    }
+
     void reset()
     {
         try
