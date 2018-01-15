@@ -218,7 +218,7 @@ int main(int argc, char** argv)
     // the respective value changes with the installation state.
     view->engine()->setBaseUrl(QUrl::fromLocalFile(appDirectory()));
 
-    view->setSource(QUrl::fromLocalFile("prompt_main.qml"));
+    view->setSource(QUrl::fromLocalFile(QString("%1/prompt_main.qml").arg(appDirectory())));
     view->show();
 
     QObject::connect(
