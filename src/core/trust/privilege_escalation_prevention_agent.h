@@ -22,6 +22,7 @@
 #include <core/trust/agent.h>
 
 #include <stdexcept>
+#include <functional>
 
 namespace core
 {

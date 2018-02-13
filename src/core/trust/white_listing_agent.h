@@ -20,6 +20,7 @@
 #define CORE_TRUST_WHITE_LISTING_AGENT_H_
 
 #include <core/trust/agent.h>
+#include <functional>
 
 namespace core
 {
