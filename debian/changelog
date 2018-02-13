@@ -4,6 +4,13 @@ trust-store (2.0.1+ubports) xenial; urgency=medium
 
  -- UBports auto importer <infra@ubports.com>  Sun, 07 Jan 2018 22:16:42 +0300
 
+trust-store (2.0.0+17.04.20170413.2-0ubuntu1) zesty; urgency=medium
+
+  [ Brandon Schaefer, Cemil Azizoglu ]
+  * Updated to eliminate the Mir deprecations.
+
+ -- Brandon Schaefer <brandon.schaefer@canonical.com>  Thu, 13 Apr 2017 15:22:29 +0000
+
 trust-store (2.0.0+16.04.20160119-0ubuntu1) xenial; urgency=medium
 
   [ CI Train Bot ]
@@ -63,7 +70,7 @@ trust-store (1.1.0+15.04.20151126-0ubuntu1) vivid; urgency=medium
 
   [ Thomas Voß ]
   * Revert bump to major revision 2, vivid (+overlay) still has
-    1.1.0 and gcc 4.9. 
+    1.1.0 and gcc 4.9.
 
   [ CI Train Bot ]
   * New rebuild forced.

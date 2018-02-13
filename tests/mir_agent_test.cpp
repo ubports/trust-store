@@ -66,7 +66,7 @@ struct MockConnectionVirtualTable : public core::trust::mir::ConnectionVirtualTa
                      // The process id of the requesting app/service
                      core::trust::Pid app_pid,
                      // Callback handling prompt session state changes.
-                     mir_prompt_session_state_change_callback,
+                     MirPromptSessionStateChangeCallback,
                      // Callback context
                      void*));
 };

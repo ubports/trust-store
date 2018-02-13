@@ -2,6 +2,7 @@ Source: trust-store
 Priority: optional
 Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
 Build-Depends: cmake,
+               cmake-extras,
                debhelper (>= 9),
                doxygen,
                google-mock,
@@ -18,7 +19,7 @@ Build-Depends: cmake,
                libgoogle-glog-dev,
                libgtest-dev,
                libjson-c-dev,
-               libmirclient-dev [amd64 arm64 i386 armhf],
+               libmirclient-dev (>= 0.26.1) [amd64 arm64 i386 armhf],
                libprocess-cpp-dev,
                libsqlite3-dev,
                lsb-release,
