@@ -1,4 +1,4 @@
-trust-store (2.0.1+ubports) xenial; urgency=medium
+trust-store (2.0.1+ubports) bionic; urgency=medium
 
   * Imported to UBports
 
