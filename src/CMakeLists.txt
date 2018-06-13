@@ -105,11 +105,10 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     core/trust/mir/prompt_main.cpp
   )
 
-  target_link_libraries(trust-prompt Qt5::Core Qt5::Gui Qt5::Qml Qt5::Quick)
-
   target_link_libraries(
     trust-prompt
 
+    Qt5::Core Qt5::Gui Qt5::Qml Qt5::Quick
     ${Boost_LIBRARIES}
     ${PROCESS_CPP_LDFLAGS}
   )
