@@ -32,7 +32,3 @@ export XDG_DATA_HOME=/tmp
 
 override_dh_auto_configure:
 	dh_auto_configure -- -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED) -DTRUST_STORE_VERSION_MAJOR=$(major) -DTRUST_STORE_VERSION_MINOR=$(minor) -DTRUST_STORE_VERSION_PATCH=$(patch)
-
-override_dh_auto_clean:
-	/bin/sh $(CURDIR)/debian/bileto_pre_release_hook
-	dh_auto_clean
