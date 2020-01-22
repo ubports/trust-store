@@ -25,11 +25,15 @@
 #include <boost/format.hpp>
 
 #include <regex>
+// For std::cerr
+#include <iostream>
 
 // For getuid
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/types.h>
+// For strerror()
+#include <string.h>
 
 namespace mir = core::trust::mir;
 
@@ -232,24 +236,33 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     // We ensure that the prompt session is always released cleanly, either on return or on throw.
     struct Scope
     {
-        ~Scope() { prompt_session->release_sync(); }
+        ~Scope() {
+            // The parent process has to close this FD after passing it to a child.
+            if (fd != -1 && close(fd) != 0) {
+                // throwing from destructors risks termination - avoid...
+                std::cerr << "Unable to close prompt provider FD: "
+                    << strerror(errno) << std::endl;
+            }
+
+            prompt_session->release_sync();
+        }
         mir::PromptSessionVirtualTable::Ptr prompt_session;
+        int fd;
     } scope
     {
         // We setup the prompt session and wire up to our own internal callback helper.
         config.connection_vtable->create_prompt_session_sync(
                     parameters.application.pid,
                     Agent::on_trust_session_changed_state,
-                    &cb_context)
+                    &cb_context),
+        // Acquire a new fd for the prompt provider.
+        scope.prompt_session->new_fd_for_prompt_provider()
     };
-
-    // Acquire a new fd for the prompt provider.
-    auto fd = scope.prompt_session->new_fd_for_prompt_provider();
 
     // And prepare the actual execution in a child process.
     mir::PromptProviderHelper::InvocationArguments args
     {
-        fd,
+        scope.fd,
         config.app_info_resolver->resolve(parameters.application.id),
         parameters.description
     };
