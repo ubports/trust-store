@@ -14,12 +14,11 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import QtQuick 2.0
+import QtQuick 2.9
 import Ubuntu.Components 1.3
 import Ubuntu.Components.Popups 1.3
 
 Item {
-
     property var appIcon: icon
     property var appName: name
     property var appId: id
@@ -59,7 +58,7 @@ Item {
                 Label {
                     anchors.horizontalCenter: parent.horizontalCenter
                     text: appId
-                    color: UbuntuColors.lightGrey
+                    color: theme.palette.normal.overlaySecondaryText
                     fontSize: "small"
                     width: parent.width
                     horizontalAlignment: Text.AlignHCenter
@@ -76,14 +75,13 @@ Item {
             }
             Button {
                 text: i18n.tr("Allow")
-                color: UbuntuColors.green
+                color: theme.palette.normal.positive
                 onClicked: quit(0)
             }
             Button {
                 text: i18n.tr("Don’t Allow")
-                color: UbuntuColors.lightGrey
                 onClicked: quit(1)
-            }           
+            }
         }
     }
     Component.onCompleted: PopupUtils.open(dialog)
