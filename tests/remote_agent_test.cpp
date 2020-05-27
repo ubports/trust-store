@@ -409,6 +409,7 @@ TEST_F(UnixDomainSocketRemoteAgent, stub_and_skeleton_query_process_start_time_f
 **************************************/
 
 #include <ctime>
+#include <random>
 
 namespace
 {

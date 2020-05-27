@@ -16,6 +16,8 @@
  * Authored by: Thomas Voß <thomas.voss@canonical.com>
  */
 
+#include <random>
+
 #include <core/trust/cached_agent.h>
 
 #include "mock_agent.h"

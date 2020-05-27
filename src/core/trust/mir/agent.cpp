@@ -42,27 +42,6 @@ bool mir::operator==(const mir::AppInfo& lhs, const mir::AppInfo& rhs)
     return lhs.icon == rhs.icon && lhs.id == rhs.id && lhs.name == rhs.name;
 }
 
-// Invoked whenever a request for creation of pre-authenticated fds succeeds.
-void mir::PromptSessionVirtualTable::mir_client_fd_callback(MirPromptSession */*prompt_session*/, size_t count, int const* fds, void* context)
-{
-    if (count == 0)
-        return;
-
-    auto ctxt = static_cast<mir::PromptSessionVirtualTable::Context*>(context);
-
-    if (not ctxt)
-        return;
-
-    ctxt->fd = fds[0];
-
-    // Upstart enables FD_CLOEXEC by default. We have to counteract.
-    if (::fcntl(ctxt->fd, F_SETFD, 0) == -1) throw std::system_error
-    {
-        errno,
-        std::system_category()
-    };
-}
-
 mir::PromptSessionVirtualTable::PromptSessionVirtualTable(MirPromptSession* prompt_session)
     : prompt_session(prompt_session)
 {
@@ -80,21 +59,28 @@ mir::PromptSessionVirtualTable::PromptSessionVirtualTable()
 int mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()
 {
     static const unsigned int fd_count = 1;
+    // Marks the value of an invalid fd.
+    static constexpr const int invalid_fd{-1};
+    int fd;
 
-    mir::PromptSessionVirtualTable::Context context;
+    mir_prompt_session_new_fds_for_prompt_providers_sync(
+        prompt_session,
+        fd_count,
+        &fd);
 
-    mir_wait_for(mir_prompt_session_new_fds_for_prompt_providers(
-                     prompt_session,
-                     fd_count,
-                     PromptSessionVirtualTable::mir_client_fd_callback,
-                     &context));
-
-    if (context.fd == Context::invalid_fd) throw std::runtime_error
+    if (fd == invalid_fd) throw std::runtime_error
     {
         "Could not acquire pre-authenticated file descriptors for Mir prompt session."
     };
 
-    return context.fd;
+    // Upstart enables FD_CLOEXEC by default. We have to counteract.
+    if (::fcntl(fd, F_SETFD, 0) == -1) throw std::system_error
+    {
+        errno,
+        std::system_category()
+    };
+
+    return fd;
 }
 
 void mir::PromptSessionVirtualTable::release_sync()
@@ -120,7 +106,7 @@ mir::PromptSessionVirtualTable::Ptr mir::ConnectionVirtualTable::create_prompt_s
         // The process id of the requesting app/service
         core::trust::Pid app_pid,
         // Callback handling prompt session state changes.
-        mir_prompt_session_state_change_callback cb,
+        MirPromptSessionStateChangeCallback cb,
         // Callback context
         void* context)
 {

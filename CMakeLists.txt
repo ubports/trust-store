@@ -9,10 +9,8 @@ set(TRUST_STORE_VERSION_PATCH 0)
 
 message(STATUS "${CMAKE_PROJECT_NAME} ${TRUST_STORE_VERSION_MAJOR}.${TRUST_STORE_VERSION_MINOR}.${TRUST_STORE_VERSION_PATCH}")
 
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+find_package(CoverageReport)
 
-include(cmake/EnableCoverageReport.cmake)
-include(cmake/PrePush.cmake)
 include(GNUInstallDirs)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -pedantic -Wextra -fPIC -fvisibility=hidden -pthread")
