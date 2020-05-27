@@ -1,11 +1,6 @@
 include_directories(${CMAKE_BINARY_DIR}/src)
 
-# Build with system gmock and embedded gtest
-set (GMOCK_INCLUDE_DIR "/usr/include/gmock/include" CACHE PATH "gmock source include directory")
-set (GMOCK_SOURCE_DIR "/usr/src/gmock" CACHE PATH "gmock source directory")
-set (GTEST_INCLUDE_DIR "${GMOCK_SOURCE_DIR}/gtest/include" CACHE PATH "gtest source include directory")
-
-add_subdirectory(${GMOCK_SOURCE_DIR} "${CMAKE_CURRENT_BINARY_DIR}/gmock")
+find_package(GMock REQUIRED)
 
 pkg_check_modules(DBUS dbus-1)
 
@@ -17,8 +12,6 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src
 
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${GMOCK_INCLUDE_DIR}
-  ${GTEST_INCLUDE_DIR}
   ${PROCESS_CPP_INCLUDE_DIRS}
   ${DBUS_INCLUDE_DIRS}
 )
@@ -91,10 +84,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
 )
 
 target_link_libraries(
@@ -102,10 +93,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
 )
 
 target_link_libraries(
@@ -113,11 +102,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -126,11 +112,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -139,11 +122,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -152,11 +132,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -165,11 +142,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -178,11 +152,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -192,11 +163,8 @@ target_link_libraries(
 
   trust-store
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -206,11 +174,8 @@ target_link_libraries(
   trust-store
   trust-stored
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -220,11 +185,8 @@ target_link_libraries(
   trust-store
   trust-stored
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -233,11 +195,8 @@ target_link_libraries(
 
   trust-store-preseed-helper
 
-  gmock
-
-  gtest
-  gtest_main
-
+  ${GMOCK_LIBRARIES}
+  ${GTEST_BOTH_LIBRARIES}
   ${PROCESS_CPP_LIBRARIES}
 )
 
@@ -277,11 +236,8 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     trust-store
     xdg
 
-    gmock
-
-    gtest
-    gtest_main
-
+    ${GMOCK_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
     ${PROCESS_CPP_LIBRARIES}
   )
 
@@ -290,11 +246,8 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
 
     trust-store
 
-    gmock
-
-    gtest
-    gtest_main
-
+    ${GMOCK_LIBRARIES}
+    ${GTEST_BOTH_LIBRARIES}
     ${PROCESS_CPP_LIBRARIES}
   )
 
