@@ -35,28 +35,6 @@ if (ASTYLE_EXECUTABLE)
 endif (ASTYLE_EXECUTABLE)
 
 #######################################################################
-#      Add target for creating a source tarball with bzr export       #
-#######################################################################
-add_custom_target(
-  pre-push-source-tarball
-
-  COMMAND rm -rf pre-push-build-area
-  COMMAND mkdir pre-push-build-area
-  COMMAND bzr export --root pre-push pre-push-build-area/${PROJECT_NAME}_${DBUS_CPP_VERSION_MAJOR}.${DBUS_CPP_VERSION_MAJOR}.${DBUS_CPP_VERSION_MAJOR}.orig.tar.bz2 ${CMAKE_SOURCE_DIR}
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-  COMMENT "Preparing source tarball for pre-push build & test"
-)
-
-#######################################################################
-#      Add target for extracting source tarball for pdebuild          #
-#######################################################################
-add_custom_target(
-  extract-pre-push-tarball
-  COMMAND tar -xf {PROJECT_NAME}_${DBUS_CPP_VERSION_MAJOR}.${DBUS_CPP_VERSION_MAJOR}.${DBUS_CPP_VERSION_MAJOR}.orig.tar.bz2
-  WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/pre-push-build-area VERBATIM
-)
-
-#######################################################################
 #  Builds & tests the last committed revision of the current branch   #
 #######################################################################
 find_program(PDEBUILD_EXECUTABLE pdebuild)
@@ -76,7 +54,4 @@ add_custom_target(
 # pdebuild: make tarball -> extract to build area -> pdebuild         #
 # android-build: invoke cross-compile script                          #
 #######################################################################
-add_dependencies(extract-pre-push-tarball pre-push-source-tarball)
-add_dependencies(pdebuild extract-pre-push-tarball)
-
 add_dependencies(pre-push pdebuild android-build)
