@@ -42,6 +42,9 @@ struct MockPromptSessionVirtualTable : public core::trust::mir::PromptSessionVir
     {
     }
 
+    // Retrieve a text description of the last error.
+    MOCK_METHOD0(error_message, std::string());
+
     // Requests a new, pre-authenticated fd for associating prompt providers.
     // Returns the fd or throws std::runtime_error.
     MOCK_METHOD0(new_fd_for_prompt_provider, int());
@@ -234,6 +237,9 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
 
+    ON_CALL(*prompt_session_vtable, error_message())
+            .WillByDefault(Return(std::string()));
+
     ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
             .WillByDefault(Return(pre_authenticated_fd));
 
@@ -304,6 +310,9 @@ TEST(MirAgent, calls_into_app_info_resolver_with_app_id)
 
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
+
+    ON_CALL(*prompt_session_vtable, error_message())
+            .WillByDefault(Return(std::string()));
 
     ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
             .WillByDefault(Return(pre_authenticated_fd));
@@ -380,6 +389,9 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
                         a_spinning_process,
                         core::posix::StandardStream::empty)));
 
+    ON_CALL(*prompt_session_vtable, error_message())
+            .WillByDefault(Return(std::string()));
+
     ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
             .WillByDefault(
                 Return(
@@ -443,6 +455,65 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
     // And some clean up.
     if (asynchronously_stop_the_prompting_session.joinable())
         asynchronously_stop_the_prompting_session.join();
+}
+
+TEST(MirAgent, dont_exec_provider_when_unable_to_create_a_prompt_session)
+{
+    using namespace ::testing;
+
+    const core::trust::Pid app_pid {21};
+    const std::string app_icon{"/tmp"};
+    const std::string app_name {"Does not exist"};
+    const std::string app_id {"does.not.exist.application"};
+    const core::trust::Feature feature{42};
+    const std::string app_description {"This is just an extended description %1%"};
+    const int pre_authenticated_fd {42};
+
+    auto connection_vtable = a_mocked_connection_vtable();
+    auto prompt_session_vtable = a_mocked_prompt_session_vtable();
+
+    auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
+    auto app_info_resolver = a_mocked_app_info_resolver();
+
+    ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
+            .WillByDefault(Return(prompt_session_vtable));
+
+    ON_CALL(*prompt_session_vtable, error_message())
+            .WillByDefault(Return(std::string("Fabricated error.")));
+    ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
+            .WillByDefault(Return(pre_authenticated_fd));
+
+    ON_CALL(*app_info_resolver, resolve(_))
+            .WillByDefault(Return(core::trust::mir::AppInfo{app_icon, app_name, app_id}));
+
+    EXPECT_CALL(*connection_vtable, create_prompt_session_sync(app_pid, _, _)).Times(1);
+    EXPECT_CALL(*prompt_session_vtable, error_message()).Times(1);
+    // We have an error. New FD shouldn't be requested, and the prompt provider
+    // shouldn't be exec'ed, otherwise the provider can hang.
+    EXPECT_CALL(*prompt_session_vtable, new_fd_for_prompt_provider()).Times(0);
+    EXPECT_CALL(*prompt_provider_exec_helper,
+                exec_prompt_provider_with_arguments(_)).Times(0);
+
+    core::trust::mir::Agent agent
+    {
+        core::trust::mir::Agent::Configuration
+        {
+            connection_vtable,
+            prompt_provider_exec_helper,
+            core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
+            app_info_resolver
+        }
+    };
+
+    EXPECT_THROW(agent.authenticate_request_with_parameters(
+                  core::trust::Agent::RequestParameters
+                  {
+                     core::trust::Uid{::getuid()},
+                     app_pid,
+                     app_id,
+                     feature,
+                     app_description
+                  }), std::runtime_error);
 }
 
 TEST(TrustPrompt, aborts_for_missing_title)

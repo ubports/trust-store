@@ -56,6 +56,11 @@ mir::PromptSessionVirtualTable::PromptSessionVirtualTable()
 {
 }
 
+std::string mir::PromptSessionVirtualTable::error_message()
+{
+    return std::string(mir_prompt_session_error_message(prompt_session));
+}
+
 int mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()
 {
     static const unsigned int fd_count = 1;
@@ -241,9 +246,18 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
                     parameters.application.pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context),
-        // Acquire a new fd for the prompt provider.
-        scope.prompt_session->new_fd_for_prompt_provider()
+        /* fd */ -1
     };
+
+    auto error = scope.prompt_session->error_message();
+    if (!error.empty()) {
+        throw std::runtime_error{
+            "Unable to create a prompt session: " + error
+        };
+    }
+
+    // Acquire a new fd for the prompt provider.
+    scope.fd = scope.prompt_session->new_fd_for_prompt_provider();
 
     // And prepare the actual execution in a child process.
     mir::PromptProviderHelper::InvocationArguments args
