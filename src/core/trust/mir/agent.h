@@ -64,6 +64,9 @@ public:
     PromptSessionVirtualTable(MirPromptSession* prompt_session);
     virtual ~PromptSessionVirtualTable() = default;
 
+    // Retrieve a text description of the last error.
+    virtual std::string error_message();
+
     // Requests a new, pre-authenticated fd for associating prompt providers.
     // Returns the fd or throws std::runtime_error.
     virtual int new_fd_for_prompt_provider();
