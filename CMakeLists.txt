@@ -44,6 +44,7 @@ option(
 
 if (TRUST_STORE_MIR_AGENT_ENABLED)
   pkg_check_modules(MIR_CLIENT mirclient REQUIRED)
+  pkg_check_modules(UAL ubuntu-app-launch-2 REQUIRED)
 
   include_directories(
     ${MIR_CLIENT_INCLUDE_DIRS}
