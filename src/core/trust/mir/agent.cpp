@@ -35,6 +35,14 @@
 // For strerror()
 #include <string.h>
 
+// Probably UAL should be fixed, but for now...
+#pragma GCC diagnostic push
+#pragma GCC diagnostic warning "-Wignored-qualifiers"
+#include <ubuntu-app-launch/registry.h>
+#include <ubuntu-app-launch/appid.h>
+#include <ubuntu-app-launch/application.h>
+#pragma GCC diagnostic pop
+
 namespace mir = core::trust::mir;
 
 bool mir::operator==(const mir::AppInfo& lhs, const mir::AppInfo& rhs)
@@ -207,6 +215,30 @@ std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> mi
     };
 }
 
+std::function<core::trust::Pid(const std::string&, core::trust::Pid)> mir::Agent::ual_get_primary_pid_resolver()
+{
+    // Single instance, constructed on first entry, destructed on program end.
+    static auto registry = std::make_shared<ubuntu::app_launch::Registry>();
+    return [] (const std::string& app_id, core::trust::Pid requesting_pid)
+    {
+        try {
+            auto ualAppId = ubuntu::app_launch::AppID::find(registry, app_id);
+            auto ualApp = ubuntu::app_launch::Application::create(ualAppId, registry);
+
+            for (auto const& ualInstance: ualApp->instances()) {
+                if (ualInstance->hasPid(requesting_pid.value)) {
+                    return core::trust::Pid{ualInstance->primaryPid()};
+                }
+            }
+
+            // If we can't determine the primary pid, fallback to the requesting pid.
+            return requesting_pid;
+        } catch (...) {
+            return requesting_pid;
+        }
+    };
+}
+
 mir::Agent::Agent(const mir::Agent::Configuration& config)
     : config(config)
 {
@@ -223,6 +255,14 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     {
         core::posix::ChildProcess::invalid()
     };
+
+    // Mir expects a PID of a process that have a Mir session. Meanwhile, the trust-store
+    // users supply us the PID of the requesting process, which might not be the same process.
+    // For example, QtWebEngine uses a helper process to record the audio. Thus, we have
+    // to find the PID of the app's main PID, which hopefully has a Mir session.
+
+    auto primary_pid = config.primary_pid_resolver(
+            parameters.application.id, parameters.application.pid);
 
     // We ensure that the prompt session is always released cleanly, either on return or on throw.
     struct Scope
@@ -243,7 +283,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     {
         // We setup the prompt session and wire up to our own internal callback helper.
         config.connection_vtable->create_prompt_session_sync(
-                    parameters.application.pid,
+                    primary_pid,
                     Agent::on_trust_session_changed_state,
                     &cb_context),
         /* fd */ -1
@@ -311,6 +351,12 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
 
     mir::AppInfoResolver::Ptr anr{new mir::ClickDesktopEntryAppInfoResolver{}};
 
-    mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
+    mir::Agent::Configuration config{
+        cvt,
+        pph,
+        mir::Agent::translator_only_accepting_exit_status_success(),
+        anr,
+        mir::Agent::ual_get_primary_pid_resolver(),
+        };
     return mir::Agent::Ptr{new mir::Agent{config}};
 }

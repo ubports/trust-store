@@ -94,7 +94,10 @@ if (TRUST_STORE_MIR_AGENT_ENABLED)
     ${CMAKE_CURRENT_SOURCE_DIR}/core/trust/mir/prompt_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/prompt_config.h @ONLY)
 
-  include_directories(${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/)
+  include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}/core/trust/mir/
+    ${UAL_INCLUDE_DIRS}
+    )
 
   add_executable(
     trust-prompt
@@ -207,6 +210,7 @@ target_link_libraries(
   ${GOBJECT_LDFLAGS}
   ${LIBAPPARMOR_LDFLAGS}
   ${MIR_CLIENT_LDFLAGS}
+  ${UAL_LDFLAGS}
   ${PROCESS_CPP_LDFLAGS}
   ${SQLITE3_LIBRARIES}
 )
