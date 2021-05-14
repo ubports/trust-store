@@ -35,6 +35,8 @@
 // For strerror()
 #include <string.h>
 
+#include <core/posix/linux/proc/process/stat.h>
+
 namespace mir = core::trust::mir;
 
 bool mir::operator==(const mir::AppInfo& lhs, const mir::AppInfo& rhs)
@@ -208,6 +210,16 @@ std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> mi
     };
 }
 
+std::function<core::trust::Pid(core::trust::Pid)> mir::Agent::get_parent_pid_resolver()
+{
+    return [] (core::trust::Pid pid) {
+        core::posix::Process proc(pid.value);
+        core::posix::linux::proc::process::Stat stat;
+        proc >> stat;
+        return core::trust::Pid(stat.parent);
+    };
+}
+
 mir::Agent::Agent(const mir::Agent::Configuration& config)
     : config(config)
 {
@@ -243,18 +255,46 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
         /* fd */ -1
     };
 
-    // We setup the prompt session and wire up to our own internal callback helper.
-    prompt_session =
-        config.connection_vtable->create_prompt_session_sync(
-                    parameters.application.pid,
-                    Agent::on_trust_session_changed_state,
-                &cb_context);
+    // Mir expects a PID of a process that have a Mir session. Meanwhile, the trust-store
+    // users supply us the PID of the requesting process, which might not be the same process.
+    // For example, QtWebEngine uses a helper process to record the audio. In this case,
+    // Mir won't be able to find a session and fails.
+    //
+    // What we do here is that, when we encounter such error from Mir, get the process's
+    // parent pid, and then try again.
 
-    auto error = prompt_session->error_message();
-    if (!error.empty()) {
-        throw std::runtime_error{
-            "Unable to create a prompt session: " + error
-        };
+    core::trust::Pid pid = parameters.application.pid;
+
+    while (true) {
+        // We setup the prompt session and wire up to our own internal callback helper.
+        prompt_session =
+            config.connection_vtable->create_prompt_session_sync(
+                        pid,
+                        Agent::on_trust_session_changed_state,
+                    &cb_context);
+
+        auto error = prompt_session->error_message();
+        if (error.empty())
+            break;
+
+        const std::string ERROR_NO_SESSION(
+            "Error processing request: Could not identify application session\n");
+
+        if (error.compare(/* pos */ 0, /* len */ ERROR_NO_SESSION.size(), ERROR_NO_SESSION) != 0) {
+            throw std::runtime_error{
+                "Unable to create a prompt session: " + error
+            };
+        }
+
+        // Find the parent process.
+        pid = config.parent_pid_resolver(pid);
+        if (pid.value <= 1) { // We're pretty sure that init doesn't have
+                              // a Mir session.
+            throw std::runtime_error{
+                "Could not identify Mir session associated with pid "
+                + std::to_string(parameters.application.pid.value)
+            };
+        }
     }
 
     // Acquire a new fd for the prompt provider.
@@ -312,6 +352,12 @@ std::shared_ptr<core::trust::Agent> mir::create_agent_for_mir_connection(MirConn
 
     mir::AppInfoResolver::Ptr anr{new mir::ClickDesktopEntryAppInfoResolver{}};
 
-    mir::Agent::Configuration config{cvt, pph, mir::Agent::translator_only_accepting_exit_status_success(), anr};
+    mir::Agent::Configuration config{
+        cvt,
+        pph,
+        mir::Agent::translator_only_accepting_exit_status_success(),
+        anr,
+        mir::Agent::get_parent_pid_resolver(),
+    };
     return mir::Agent::Ptr{new mir::Agent{config}};
 }
