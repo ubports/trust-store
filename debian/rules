@@ -16,7 +16,10 @@ endif
 export XDG_DATA_HOME=/tmp
 
 %:
-	dh $@ --fail-missing
+	dh $@ --fail-missing --parallel
 
 override_dh_auto_configure:
 	dh_auto_configure -- -DTRUST_STORE_MIR_AGENT_ENABLED=$(TRUST_STORE_MIR_AGENT_ENABLED)
+
+override_dh_auto_test:
+	dh_auto_test --no-parallel
