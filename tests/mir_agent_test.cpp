@@ -52,9 +52,6 @@ struct MockPromptSessionVirtualTable : public core::trust::mir::PromptSessionVir
     // Adds a prompt provider process to the prompting session, identified by its PID.
     // Returns true if addition of the prompt provider succeeded.
     MOCK_METHOD1(add_prompt_provider_sync, bool(pid_t));
-
-    // Finalizes and releases the given prompt session instance.
-    MOCK_METHOD0(release_sync, void());
 };
 
 struct MockConnectionVirtualTable : public core::trust::mir::ConnectionVirtualTable
@@ -107,6 +104,28 @@ struct MockAppInfoResolver : public core::trust::mir::AppInfoResolver
     MOCK_METHOD1(resolve, core::trust::mir::AppInfo(const std::string&));
 };
 
+using ParentPidResolver = core::trust::Pid(core::trust::Pid);
+class MockParentPidResolver: public testing::MockFunction<ParentPidResolver> {
+public:
+    MockParentPidResolver() {
+        using namespace testing;
+
+        // Assume that everything is a child of init by defult.
+        ON_CALL(*this, Call(_)).WillByDefault(Return(core::trust::Pid(1)));
+    }
+
+    // Unfortunately, old GMock doesn't have a convenient AsStdFunction(), thus
+    // we have to implement it ourself. Use a different name so that it also builds
+    // with newer GMock (I don't want to check for GMock version).
+    std::function<ParentPidResolver> GetStdFunction()
+    {
+        return [this] (core::trust::Pid requesting_pid)
+        {
+            return this->Call(requesting_pid);
+        };
+    }
+};
+
 std::shared_ptr<MockConnectionVirtualTable> a_mocked_connection_vtable()
 {
     return std::make_shared<testing::NiceMock<MockConnectionVirtualTable>>();
@@ -130,6 +149,12 @@ std::shared_ptr<MockAppInfoResolver> a_mocked_app_info_resolver()
 {
     return std::make_shared<MockAppInfoResolver>();
 }
+
+std::shared_ptr<MockParentPidResolver> a_mocked_parent_pid_resolver()
+{
+    return std::make_shared<MockParentPidResolver>();
+}
+
 }
 
 TEST(DefaultProcessStateTranslator, throws_for_signalled_process)
@@ -233,6 +258,7 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
 
     auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
     auto app_info_resolver = a_mocked_app_info_resolver();
+    auto parent_pid_resolver = a_mocked_parent_pid_resolver();
 
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
@@ -263,7 +289,8 @@ TEST(MirAgent, creates_prompt_session_and_execs_helper_with_preauthenticated_fd)
             connection_vtable,
             prompt_provider_exec_helper,
             core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
-            app_info_resolver
+            app_info_resolver,
+            parent_pid_resolver->GetStdFunction(),
         }
     };
 
@@ -307,6 +334,7 @@ TEST(MirAgent, calls_into_app_info_resolver_with_app_id)
 
     auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
     auto app_info_resolver = a_mocked_app_info_resolver();
+    auto parent_pid_resolver = a_mocked_parent_pid_resolver();
 
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
@@ -334,7 +362,8 @@ TEST(MirAgent, calls_into_app_info_resolver_with_app_id)
             connection_vtable,
             prompt_provider_exec_helper,
             core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
-            app_info_resolver
+            app_info_resolver,
+            parent_pid_resolver->GetStdFunction(),
         }
     };
 
@@ -379,6 +408,7 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
                 core::trust::mir::PromptProviderHelper::CreationArguments{"/bin/false"});
 
     auto app_info_resolver = a_mocked_app_info_resolver();
+    auto parent_pid_resolver = a_mocked_parent_pid_resolver();
 
     void* prompt_session_state_callback_context{nullptr};
 
@@ -421,7 +451,8 @@ TEST(MirAgent, sig_kills_prompt_provider_process_on_status_change)
             connection_vtable,
             prompt_provider_helper,
             core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
-            app_info_resolver
+            app_info_resolver,
+            parent_pid_resolver->GetStdFunction(),
         }
     };
 
@@ -474,6 +505,7 @@ TEST(MirAgent, dont_exec_provider_when_unable_to_create_a_prompt_session)
 
     auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
     auto app_info_resolver = a_mocked_app_info_resolver();
+    auto parent_pid_resolver = a_mocked_parent_pid_resolver();
 
     ON_CALL(*connection_vtable, create_prompt_session_sync(_, _, _))
             .WillByDefault(Return(prompt_session_vtable));
@@ -490,6 +522,7 @@ TEST(MirAgent, dont_exec_provider_when_unable_to_create_a_prompt_session)
     EXPECT_CALL(*prompt_session_vtable, error_message()).Times(1);
     // We have an error. New FD shouldn't be requested, and the prompt provider
     // shouldn't be exec'ed, otherwise the provider can hang.
+    EXPECT_CALL(*parent_pid_resolver, Call(_)).Times(0);
     EXPECT_CALL(*prompt_session_vtable, new_fd_for_prompt_provider()).Times(0);
     EXPECT_CALL(*prompt_provider_exec_helper,
                 exec_prompt_provider_with_arguments(_)).Times(0);
@@ -501,7 +534,8 @@ TEST(MirAgent, dont_exec_provider_when_unable_to_create_a_prompt_session)
             connection_vtable,
             prompt_provider_exec_helper,
             core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
-            app_info_resolver
+            app_info_resolver,
+            parent_pid_resolver->GetStdFunction(),
         }
     };
 
@@ -514,6 +548,98 @@ TEST(MirAgent, dont_exec_provider_when_unable_to_create_a_prompt_session)
                      feature,
                      app_description
                   }), std::runtime_error);
+}
+
+TEST(MirAgent, creates_prompt_session_for_parent_pid)
+{
+    using namespace ::testing;
+
+    const core::trust::Pid app_pid {21};
+    const core::trust::Pid app_parent_pid {7};
+    const std::string app_icon{"/tmp"};
+    const std::string app_name {"Does not exist"};
+    const std::string app_id {"does.not.exist.application"};
+    const core::trust::Feature feature{42};
+    const std::string app_description {"This is just an extended description %1%"};
+    const int pre_authenticated_fd {42};
+
+    const core::trust::mir::PromptProviderHelper::InvocationArguments reference_invocation_args
+    {
+        pre_authenticated_fd,
+        {
+            app_icon,
+            app_name,
+            app_id
+        },
+        app_description
+    };
+
+    auto connection_vtable = a_mocked_connection_vtable();
+    auto prompt_session_vtable_error = a_mocked_prompt_session_vtable();
+    auto prompt_session_vtable = a_mocked_prompt_session_vtable();
+
+    auto prompt_provider_exec_helper = a_mocked_prompt_provider_calling_bin_false();
+    auto app_info_resolver = a_mocked_app_info_resolver();
+    auto parent_pid_resolver = a_mocked_parent_pid_resolver();
+
+    ON_CALL(*prompt_session_vtable, error_message())
+            .WillByDefault(Return(std::string()));
+
+    ON_CALL(*prompt_session_vtable, new_fd_for_prompt_provider())
+            .WillByDefault(Return(pre_authenticated_fd));
+
+    ON_CALL(*prompt_session_vtable, add_prompt_provider_sync(_))
+            .WillByDefault(Return(true));
+
+    ON_CALL(*app_info_resolver, resolve(_))
+            .WillByDefault(Return(core::trust::mir::AppInfo{app_icon, app_name, app_id}));
+
+    EXPECT_CALL(*connection_vtable, create_prompt_session_sync(app_pid, _, _))
+        .Times(1)
+        .WillOnce(Return(prompt_session_vtable_error));
+    EXPECT_CALL(*prompt_session_vtable_error, error_message())
+        .Times(1)
+        .WillOnce(Return(
+            std::string("Error processing request: Could not identify application session\n")
+        ));
+    EXPECT_CALL(*prompt_session_vtable_error, new_fd_for_prompt_provider())
+        .Times(0);
+
+    EXPECT_CALL(*parent_pid_resolver, Call(app_pid))
+        .Times(1)
+        .WillOnce(Return(app_parent_pid));
+    EXPECT_CALL(*connection_vtable, create_prompt_session_sync(app_parent_pid, _, _))
+        .Times(1)
+        .WillOnce(Return(prompt_session_vtable));
+
+    EXPECT_CALL(*prompt_session_vtable, new_fd_for_prompt_provider()).Times(1);
+
+    EXPECT_CALL(*prompt_provider_exec_helper,
+                exec_prompt_provider_with_arguments(
+                    reference_invocation_args)).Times(1);
+
+    core::trust::mir::Agent agent
+    {
+        core::trust::mir::Agent::Configuration
+        {
+            connection_vtable,
+            prompt_provider_exec_helper,
+            core::trust::mir::Agent::translator_only_accepting_exit_status_success(),
+            app_info_resolver,
+            parent_pid_resolver->GetStdFunction(),
+        }
+    };
+
+    EXPECT_EQ(core::trust::Request::Answer::denied, // /bin/false exits with failure.
+              agent.authenticate_request_with_parameters(
+                  core::trust::Agent::RequestParameters
+                  {
+                     core::trust::Uid{::getuid()},
+                     app_pid,
+                     app_id,
+                     feature,
+                     app_description
+                  }));
 }
 
 TEST(TrustPrompt, aborts_for_missing_title)
