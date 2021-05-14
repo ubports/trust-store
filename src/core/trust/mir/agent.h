@@ -62,7 +62,7 @@ public:
     // Please note that no change of ownwership is happening here. Instead, we expect
     // the calling code to handle object lifetimes.
     PromptSessionVirtualTable(MirPromptSession* prompt_session);
-    virtual ~PromptSessionVirtualTable() = default;
+    virtual ~PromptSessionVirtualTable();
 
     // Retrieve a text description of the last error.
     virtual std::string error_message();
@@ -70,9 +70,6 @@ public:
     // Requests a new, pre-authenticated fd for associating prompt providers.
     // Returns the fd or throws std::runtime_error.
     virtual int new_fd_for_prompt_provider();
-
-    // Finalizes and releases the given prompt session instance.
-    virtual void release_sync();
 
 protected:
     // Mainly used in testing to circumvent any assertions on the

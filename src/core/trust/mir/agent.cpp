@@ -88,9 +88,10 @@ int mir::PromptSessionVirtualTable::new_fd_for_prompt_provider()
     return fd;
 }
 
-void mir::PromptSessionVirtualTable::release_sync()
+mir::PromptSessionVirtualTable::~PromptSessionVirtualTable()
 {
-    mir_prompt_session_release_sync(prompt_session);
+    if (prompt_session)
+        mir_prompt_session_release_sync(prompt_session);
 }
 
 mir::ConnectionVirtualTable::ConnectionVirtualTable(MirConnection* connection)
@@ -225,6 +226,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     };
 
     // We ensure that the prompt session is always released cleanly, either on return or on throw.
+    mir::PromptSessionVirtualTable::Ptr prompt_session;
     struct Scope
     {
         ~Scope() {
@@ -234,22 +236,21 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
                 std::cerr << "Unable to close prompt provider FD: "
                     << strerror(errno) << std::endl;
             }
-
-            prompt_session->release_sync();
         }
-        mir::PromptSessionVirtualTable::Ptr prompt_session;
         int fd;
     } scope
     {
-        // We setup the prompt session and wire up to our own internal callback helper.
-        config.connection_vtable->create_prompt_session_sync(
-                    parameters.application.pid,
-                    Agent::on_trust_session_changed_state,
-                    &cb_context),
         /* fd */ -1
     };
 
-    auto error = scope.prompt_session->error_message();
+    // We setup the prompt session and wire up to our own internal callback helper.
+    prompt_session =
+        config.connection_vtable->create_prompt_session_sync(
+                    parameters.application.pid,
+                    Agent::on_trust_session_changed_state,
+                &cb_context);
+
+    auto error = prompt_session->error_message();
     if (!error.empty()) {
         throw std::runtime_error{
             "Unable to create a prompt session: " + error
@@ -257,7 +258,7 @@ core::trust::Request::Answer mir::Agent::authenticate_request_with_parameters(co
     }
 
     // Acquire a new fd for the prompt provider.
-    scope.fd = scope.prompt_session->new_fd_for_prompt_provider();
+    scope.fd = prompt_session->new_fd_for_prompt_provider();
 
     // And prepare the actual execution in a child process.
     mir::PromptProviderHelper::InvocationArguments args

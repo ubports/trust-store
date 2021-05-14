@@ -52,9 +52,6 @@ struct MockPromptSessionVirtualTable : public core::trust::mir::PromptSessionVir
     // Adds a prompt provider process to the prompting session, identified by its PID.
     // Returns true if addition of the prompt provider succeeded.
     MOCK_METHOD1(add_prompt_provider_sync, bool(pid_t));
-
-    // Finalizes and releases the given prompt session instance.
-    MOCK_METHOD0(release_sync, void());
 };
 
 struct MockConnectionVirtualTable : public core::trust::mir::ConnectionVirtualTable
