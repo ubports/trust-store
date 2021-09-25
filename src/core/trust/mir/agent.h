@@ -62,7 +62,7 @@ public:
     // Please note that no change of ownwership is happening here. Instead, we expect
     // the calling code to handle object lifetimes.
     PromptSessionVirtualTable(MirPromptSession* prompt_session);
-    virtual ~PromptSessionVirtualTable() = default;
+    virtual ~PromptSessionVirtualTable();
 
     // Retrieve a text description of the last error.
     virtual std::string error_message();
@@ -70,9 +70,6 @@ public:
     // Requests a new, pre-authenticated fd for associating prompt providers.
     // Returns the fd or throws std::runtime_error.
     virtual int new_fd_for_prompt_provider();
-
-    // Finalizes and releases the given prompt session instance.
-    virtual void release_sync();
 
 protected:
     // Mainly used in testing to circumvent any assertions on the
@@ -181,6 +178,8 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
         std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator;
         // AppNameResolver used by the agent to map incoming request app ids to application names.
         AppInfoResolver::Ptr app_info_resolver;
+        // A function for retreiving a process's parent pid.
+        std::function<core::trust::Pid(const core::trust::Pid)> parent_pid_resolver;
     };
 
     // Helper struct for injecting state into on_trust_changed_state_state callbacks.
@@ -205,6 +204,9 @@ struct CORE_TRUST_DLL_PUBLIC Agent : public core::trust::Agent
     // the prompt provider child process exits cleanly with status success.
     // Throws std::logic_error if the process did not exit but was signaled.
     static std::function<core::trust::Request::Answer(const core::posix::wait::Result&)> translator_only_accepting_exit_status_success();
+
+    // Returns a function resolving parent pid of a process using process-cpp.
+    static std::function<core::trust::Pid(core::trust::Pid)> get_parent_pid_resolver();
 
     // Creates a new MirAgent instance with the given Configuration.
     Agent(const Configuration& config);
